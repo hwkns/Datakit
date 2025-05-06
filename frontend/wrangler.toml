@@ -1,0 +1,5 @@
+name = "datakit"
+compatibility_date = "2025-05-06"
+
+[site]
+bucket = "./dist"
