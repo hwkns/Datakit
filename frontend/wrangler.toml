@@ -1,5 +1,7 @@
 name = "datakit"
 compatibility_date = "2025-05-06"
 
+main = "./node_modules/wrangler/templates/pages-template.ts"
+
 [site]
 bucket = "./dist"
