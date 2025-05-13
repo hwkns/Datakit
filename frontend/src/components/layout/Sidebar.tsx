@@ -1,95 +1,155 @@
-import { useState } from "react";
-import { AlertCircle } from "lucide-react";
-
+import React from "react";
+import { FileText } from "lucide-react";
 import { FileUploadButton } from "@/components/common/FileUploadButton";
 import { ThemeColorPicker } from "@/components/common/ThemeColorPicker";
+import useFileAccess from "@/hooks/useFileAccess";
+import { useDuckDBStore } from "@/store/duckDBStore";
+import useDirectFileImport from "@/hooks/useDirectFileImport";
 
-import useCSVParser from "@/hooks/useCSVParser";
+import { ColumnType } from "@/types/csv";
+import { DataSourceType, DataParseResult } from "@/types/json";
 
-import type { CSVParseResult } from "@/types/csv";
+export interface DataLoadWithDuckDBResult {
+  data: string[][];
+  columnTypes: ColumnType[];
+  fileName: string;
+  rowCount: number;
+  columnCount: number;
+  sourceType?: DataSourceType;
+  rawData?: any;
+  schema?: any;
+  loadedToDuckDB: boolean;
+  tableName?: string;
+}
 
-type SidebarProps = {
-  onDataLoad: (result: CSVParseResult) => void;
-};
+interface SidebarProps {
+  onDataLoad?: (result: DataLoadWithDuckDBResult) => void;
+}
 
-const Sidebar = ({ onDataLoad }: SidebarProps) => {
-  const { parseCSV, isLoading, error } = useCSVParser();
-  const [processingStatus, setProcessingStatus] = useState("");
+const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
+  const { recentFiles } = useFileAccess();
 
-  const handleFileUpload = async (file: File) => {
-    // Validate file type
-    if (!file.name.endsWith(".csv")) {
-      alert("Please upload a CSV file");
-      return;
-    }
+  const {
+    handleUploadClick,
+    handleRecentFileSelect,
+    processFile,
+    isProcessing,
+    loadingStatus,
+    loadingProgress,
+    processingError,
+  } = useDirectFileImport();
 
-    // Validate file size (limit to 50MB for browser-based parsing)
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    
-    if (file.size > maxSize) {
-      alert(
-        `File size exceeds 50MB limit. Current size: ${(
-          file.size /
-          1024 /
-          1024
-        ).toFixed(2)}MB`
-      );
-      return;
-    }
-
-    setProcessingStatus("Parsing CSV file...");
-
-    try {
-      const result = await parseCSV(file);
-      if (result) {
-        setProcessingStatus(
-          `Parsed ${result.rowCount} rows and ${result.columnCount} columns`
-        );
-        onDataLoad(result);
-      }
-    } catch (err) {
-      console.error("Error parsing CSV:", err);
-    }
-  };
+  // Monitor DuckDB state
+  const {
+    isLoading: duckDBLoading,
+    processingProgress: duckDBProgress,
+    error: duckDBError,
+  } = useDuckDBStore();
 
   return (
-    <div className="h-screen w-64 bg-darkNav flex flex-col border-r border-white border-opacity-10">
-      <div className="p-4 border-b border-white border-opacity-10">
-        <h1 className="text-2xl font-heading font-bold text-white">Datakit</h1>
+    <div className="bg-darkNav w-64 flex flex-col h-full border-r border-white border-opacity-10">
+      {/* Logo and title */}
+      <div className="p-4 flex items-center border-b border-white border-opacity-10">
+        <h1 className="text-white font-heading font-medium text-lg">DataKit</h1>
       </div>
 
-      <div className="flex-1 p-4">
+      <div className="p-4 overflow-y-auto">
         <p className="text-sm text-white text-opacity-70 mb-4">
-          Datakit leverages WebAssembly and DuckDB to process millions of rows
-          directly in your browser, delivering lightning-fast visualizations
-          without uploading your data to any server.
+          Datakit leverages WebAssembly and DuckDB to process large datasets
+          directly in your browser, without uploading your data to any server.
         </p>
+      </div>
 
+      {/* File Upload Section */}
+      <div className="p-4">
         <FileUploadButton
-          onFileSelect={handleFileUpload}
-          isLoading={isLoading}
+          onFileSelect={(file) => {
+            // Use processFile directly with the new file
+            // This is cleaner than creating a fake FileAccessEntry
+            return onDataLoad ? processFile(file, onDataLoad) : processFile(file);
+          }}
+          isLoading={isProcessing}
+          className="w-full"
+          supportLargeFiles={true}
         />
 
-        {isLoading && (
-          <div className="mt-2">
-            <div className="w-full bg-gray-800 rounded-full h-1 mb-1">
-              <div className="bg-primary h-1 rounded-full animate-pulse"></div>
-            </div>
-            <p className="text-xs text-white text-opacity-50">
-              {processingStatus}
-            </p>
-          </div>
-        )}
+        {/* Loading Status */}
+        {(isProcessing || loadingStatus) && (
+          <div className="mt-3 text-xs">
+            {loadingStatus && (
+              <div className="text-white text-opacity-70 mb-1">
+                {loadingStatus}
+              </div>
+            )}
 
-        {error && (
-          <div className="mt-2 flex items-center text-red-500 text-xs">
-            <AlertCircle className="w-3 h-3 mr-1" />
-            <span>{error}</span>
+            {isProcessing && (
+              <div className="w-full bg-gray-800 rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${loadingProgress}%` }}
+                ></div>
+              </div>
+            )}
+
+            {processingError && (
+              <div className="text-red-400 mt-1">{processingError}</div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Navigation */}
+      <nav className="mt-2 flex-1 overflow-auto">
+        {/* Section Divider */}
+        <div className="px-2 py-2 mt-2 w-full">
+          <div className="border-t border-white border-opacity-10"></div>
+        </div>
+
+        {/* Recent Files */}
+        <div className="px-4 py-2">
+          <h3 className="text-xs font-medium text-white text-opacity-50 uppercase tracking-wider mb-2">
+            Recent Files
+          </h3>
+
+          {recentFiles.length > 0 ? (
+            <ul className="space-y-1">
+              {recentFiles.slice(0, 5).map((file) => (
+                <li key={file.name + file.lastAccessed}>
+                  <button
+                    onClick={() => handleRecentFileSelect(file, onDataLoad)}
+                    disabled={isProcessing}
+                    className="w-full text-left flex items-center p-1.5 rounded text-xs text-white text-opacity-80 hover:bg-background hover:bg-opacity-30"
+                  >
+                    <FileText size={12} className="mr-2 shrink-0" />
+                    <span className="truncate">{file.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-xs text-white text-opacity-60">
+              No recent files
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Footer */}
       <div className="flex flex-col p-4">
         <ThemeColorPicker />
+        <div className="flex items-center text-xs mt-4 text-white text-opacity-60">
+          {/* <Database size={12} className="mr-1" /> */}
+          <span>DuckDB</span>
+          {duckDBError ? (
+            <span className="ml-auto text-red-400">Error</span>
+          ) : duckDBLoading ? (
+            <span className="ml-auto">
+              Loading ({Math.round(duckDBProgress * 100)}%)
+            </span>
+          ) : (
+            <span className="ml-auto">Ready</span>
+          )}
+        </div>
       </div>
       <div className="p-4 border-t border-white border-opacity-10">
         <p className="text-xs text-white text-opacity-50">
@@ -98,9 +158,19 @@ const Sidebar = ({ onDataLoad }: SidebarProps) => {
           <a
             href="https://amin.contact"
             target="_blank"
+            rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
             by Amin
+          </a>
+          {" @ "}
+          <a
+            href="https://wavequery.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            WaveQuery
           </a>
         </p>
       </div>

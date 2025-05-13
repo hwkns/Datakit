@@ -137,6 +137,7 @@
     border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
     transition: all 150ms ease;
     position: relative;
+    cursor: pointer;
   }
 
   .csv-grid-cell:hover {
