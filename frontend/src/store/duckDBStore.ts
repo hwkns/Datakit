@@ -1,0 +1,698 @@
+import { create } from "zustand";
+
+import * as duckdb from "@duckdb/duckdb-wasm";
+import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
+import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
+import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
+import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
+
+import { ColumnType } from "@/types/csv";
+import { DataSourceType } from "@/types/json";
+
+// Types for the store
+interface DuckDBState {
+  // DB state
+  db: duckdb.AsyncDuckDB | null;
+  connection: duckdb.AsyncDuckDBConnection | null;
+  isInitializing: boolean;
+  isInitialized: boolean;
+  error: string | null;
+
+  // Table registry - maps raw names to escaped names
+  registeredTables: Map<string, string>;
+
+  // Progress tracking
+  isLoading: boolean;
+  processingProgress: number;
+  processingStatus: string;
+
+  // Actions
+  initialize: () => Promise<boolean>;
+  createTable: (
+    tableName: string,
+    headers: string[],
+    columnTypes: ColumnType[]
+  ) => Promise<string>;
+  insertData: (
+    tableName: string,
+    data: string[][],
+    onProgress?: (progress: number) => void
+  ) => Promise<boolean>;
+  loadData: (
+    data: string[][],
+    headers: string[],
+    fileName: string,
+    columnTypes: ColumnType[],
+    onProgress?: (progress: number) => void
+  ) => Promise<string>;
+  executeQuery: (sql: string) => Promise<duckdb.ResultStreamBatch | null>;
+  getAvailableTables: () => string[];
+  getTableSchema: (
+    tableName: string
+  ) => Promise<{ name: string; type: string }[] | null>;
+  resetError: () => void;
+  cleanupDB: () => Promise<void>;
+  importFileDirectly: (file: File) => Promise<{tableName: string; rowCount: number}>;
+}
+
+// Create the store
+export const useDuckDBStore = create<DuckDBState>((set, get) => ({
+  // Initial state
+  db: null,
+  connection: null,
+  isInitializing: false,
+  isInitialized: false,
+  error: null,
+  registeredTables: new Map(),
+  isLoading: false,
+  processingProgress: 0,
+  processingStatus: "",
+
+  // Initialize DuckDB - should be called early in app lifecycle
+  initialize: async () => {
+    // If already initialized or initializing, don't do it again
+    if (get().isInitialized || get().isInitializing) {
+      return get().isInitialized;
+    }
+
+    set({ isInitializing: true, error: null });
+    console.log("[DuckDBStore] Starting DuckDB initialization...");
+
+    try {
+      // Select bundle based on browser capabilities
+      const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+        mvp: {
+          mainModule: duckdb_wasm,
+          mainWorker: mvp_worker,
+        },
+        eh: {
+          mainModule: duckdb_wasm_eh,
+          mainWorker: eh_worker,
+        },
+      };
+
+      const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+      console.log("[DuckDBStore] Selected bundle:", bundle);
+
+      const worker = new Worker(bundle.mainWorker!);
+      const logger = new duckdb.ConsoleLogger();
+      const dbInstance = new duckdb.AsyncDuckDB(logger, worker);
+
+      await dbInstance.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      const conn = await dbInstance.connect();
+
+      // Configure DuckDB for large datasets
+      try {
+        console.log("[DuckDBStore] Configuring DuckDB settings...");
+
+        // Set memory limits to prevent browser crashes
+        await conn.query(`PRAGMA memory_limit='4GB'`);
+        console.log("[DuckDBStore] Set memory limit to 4GB");
+
+        // Set temporary directory - if supported
+        try {
+          await conn.query(`PRAGMA temp_directory='/tmp/duckdb'`);
+          console.log("[DuckDBStore] Set temp directory");
+        } catch (tempDirErr) {
+          console.log(
+            "[DuckDBStore] Temp directory configuration not supported, proceeding without it"
+          );
+        }
+
+        // Load extensions - only if needed
+        try {
+          await conn.query(`INSTALL json`);
+          await conn.query(`LOAD json`);
+          console.log("[DuckDBStore] JSON extension loaded");
+        } catch (jsonErr) {
+          console.log(
+            "[DuckDBStore] JSON extension not available, proceeding without it"
+          );
+        }
+      } catch (configErr) {
+        console.warn(
+          "[DuckDBStore] Failed to configure DuckDB (non-critical):",
+          configErr
+        );
+      }
+
+      set({
+        db: dbInstance,
+        connection: conn,
+        isInitialized: true,
+        isInitializing: false,
+      });
+
+      console.log("[DuckDBStore] DuckDB initialized successfully");
+      return true;
+    } catch (err) {
+      console.error("[DuckDBStore] Failed to initialize DuckDB:", err);
+      set({
+        error: `Failed to initialize DuckDB: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        isInitializing: false,
+      });
+      return false;
+    }
+  },
+
+  // Create a table with the given schema
+  createTable: async (tableName, headers, columnTypes) => {
+    const { connection, isInitialized } = get();
+
+    if (!connection || !isInitialized) {
+      await get().initialize();
+      if (!get().connection) {
+        throw new Error("DuckDB is not initialized");
+      }
+    }
+
+    try {
+      set({ isLoading: true, processingStatus: "Creating table structure..." });
+      console.log(`[DuckDBStore] Creating table: ${tableName}`);
+      console.log(`[DuckDBStore] Headers:`, headers);
+      console.log(`[DuckDBStore] Column types:`, columnTypes);
+
+      // Convert ColumnType to DuckDB type
+      const duckDBTypeFromColumnType = (colType: ColumnType): string => {
+        switch (colType) {
+          case ColumnType.Number:
+            return "DOUBLE";
+          case ColumnType.Boolean:
+            return "BOOLEAN";
+          case ColumnType.Date:
+            return "VARCHAR"; // Using VARCHAR for dates to avoid parsing issues
+          case ColumnType.Array:
+          case ColumnType.Object:
+            return "TEXT"; // Use TEXT instead of JSON for better compatibility
+          default:
+            return "VARCHAR";
+        }
+      };
+
+      // Generate column definitions with proper escaping
+      const columnDefs = headers
+        .map((header, index) => {
+          const type =
+            index < columnTypes.length
+              ? duckDBTypeFromColumnType(columnTypes[index])
+              : "VARCHAR";
+          // Properly escape header names with double quotes
+          return `"${header.replace(/"/g, '""')}" ${type}`;
+        })
+        .join(", ");
+
+      console.log(`[DuckDBStore] Column definitions:`, columnDefs);
+
+      // Drop table if exists (with proper escaping)
+      const escapedTableName = `"${tableName}"`;
+      const dropQuery = `DROP TABLE IF EXISTS ${escapedTableName}`;
+      console.log(`[DuckDBStore] Executing:`, dropQuery);
+      await get().connection!.query(dropQuery);
+
+      // Create the table (with proper escaping)
+      const createQuery = `CREATE TABLE ${escapedTableName} (${columnDefs})`;
+      console.log(`[DuckDBStore] Executing:`, createQuery);
+      await get().connection!.query(createQuery);
+
+      // Register the table with proper escaping
+      const newTables = new Map(get().registeredTables);
+      newTables.set(tableName, escapedTableName);
+      set({ registeredTables: newTables });
+
+      // Verify table creation
+      const verifyQuery = `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`;
+      console.log(`[DuckDBStore] Verifying table creation:`, verifyQuery);
+      const verifyResult = await get().connection!.query(verifyQuery);
+      const tables = verifyResult.toArray();
+      console.log(`[DuckDBStore] Verification result:`, tables);
+
+      if (tables.length === 0) {
+        throw new Error(`Table "${tableName}" was not created successfully`);
+      }
+
+      set({ isLoading: false });
+      console.log(`[DuckDBStore] Table created successfully`);
+      return escapedTableName;
+    } catch (err) {
+      console.error(`[DuckDBStore] Failed to create table:`, err);
+      set({
+        error: `Failed to create table: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  // Insert data into a table
+  insertData: async (tableName, data, onProgress) => {
+    const { connection, isInitialized, registeredTables } = get();
+
+    if (!connection || !isInitialized) {
+      throw new Error("DuckDB is not initialized");
+    }
+
+    // Get the properly escaped table name
+    const escapedTableName =
+      registeredTables.get(tableName) || `"${tableName}"`;
+
+    try {
+      console.log(`[DuckDBStore] Starting data insertion for ${tableName}`);
+      console.log(`[DuckDBStore] Total rows to insert: ${data.length}`);
+
+      set({
+        isLoading: true,
+        processingStatus: `Inserting data into ${tableName}...`,
+      });
+
+      // Get table schema
+      const schemaQuery = `PRAGMA table_info(${escapedTableName})`;
+      console.log(`[DuckDBStore] Getting schema:`, schemaQuery);
+      const schema = await connection.query(schemaQuery);
+      const columnNames = schema.toArray().map((col) => col.name);
+      console.log(`[DuckDBStore] Column names:`, columnNames);
+
+      // Process in smaller batches to prevent blocking
+      const batchSize = 1000; // Start with smaller batches for debugging
+      const totalBatches = Math.ceil(data.length / batchSize);
+      let totalInserted = 0;
+
+      console.log(
+        `[DuckDBStore] Processing ${totalBatches} batches of size ${batchSize}`
+      );
+
+      for (let i = 0; i < data.length; i += batchSize) {
+        const currentBatch = Math.floor(i / batchSize) + 1;
+        console.log(
+          `[DuckDBStore] Processing batch ${currentBatch}/${totalBatches} (rows ${
+            i + 1
+          }-${Math.min(i + batchSize, data.length)})`
+        );
+
+        const batch = data.slice(i, i + batchSize);
+
+        // Format values for SQL with proper escaping
+        const values = batch
+          .map((row, rowIndex) => {
+            try {
+              // Format each value based on the column
+              const formattedValues = row.map((val, colIndex) => {
+                if (val === null || val === undefined || val === "") {
+                  return "NULL";
+                }
+
+                // Simple type handling without relying on schema type names
+                // Check if it's a number
+                const num = Number(val);
+                if (!isNaN(num) && val.trim() !== "") {
+                  return val; // Numeric value (no quotes)
+                }
+
+                // Check if it's a boolean
+                const lowerVal = val.toLowerCase();
+                if (lowerVal === "true" || lowerVal === "false") {
+                  return lowerVal.toUpperCase();
+                }
+
+                // Default to string with proper escaping
+                return `'${val.replace(/'/g, "''")}'`;
+              });
+
+              return `(${formattedValues.join(", ")})`;
+            } catch (rowErr) {
+              console.error(
+                `[DuckDBStore] Error formatting row ${i + rowIndex}:`,
+                rowErr
+              );
+              throw rowErr;
+            }
+          })
+          .join(",\n");
+
+        if (values.length > 0) {
+          const columns = columnNames.map((c) => `"${c}"`).join(", ");
+          const insertSQL = `INSERT INTO ${escapedTableName} (${columns}) VALUES ${values}`;
+
+          try {
+            // Execute the insert
+            await connection.query(insertSQL);
+            totalInserted += batch.length;
+
+            // Log progress every 10 batches or on last batch
+            if (currentBatch % 10 === 0 || currentBatch === totalBatches) {
+              console.log(
+                `[DuckDBStore] Successfully inserted ${totalInserted} rows (${(
+                  (totalInserted / data.length) *
+                  100
+                ).toFixed(1)}%)`
+              );
+            }
+
+            // Update progress
+            if (onProgress) {
+              const progress = Math.min((i + batch.length) / data.length, 1);
+              onProgress(progress);
+              set({ processingProgress: progress });
+            }
+
+            // Yield control to browser after each batch
+            await new Promise((resolve) => {
+              requestAnimationFrame(resolve);
+            });
+          } catch (insertErr) {
+            console.error(
+              `[DuckDBStore] Error inserting batch ${currentBatch}:`,
+              insertErr
+            );
+            console.error(
+              `[DuckDBStore] Failed SQL:`,
+              insertSQL.substring(0, 500) + "..."
+            );
+            throw insertErr;
+          }
+        }
+      }
+
+      // Verify final row count
+      try {
+        const countQuery = `SELECT COUNT(*) as count FROM ${escapedTableName}`;
+        console.log(`[DuckDBStore] Verifying final count:`, countQuery);
+        const countResult = await connection.query(countQuery);
+        const count = countResult.toArray()[0].count;
+        console.log(
+          `[DuckDBStore] Successfully inserted ${count} rows into ${tableName} (expected: ${data.length})`
+        );
+
+        if (count !== data.length) {
+          console.warn(
+            `[DuckDBStore] Row count mismatch! Expected: ${data.length}, Actual: ${count}`
+          );
+        }
+      } catch (countErr) {
+        console.warn(`[DuckDBStore] Failed to get final row count:`, countErr);
+      }
+
+      set({ isLoading: false, processingProgress: 0, processingStatus: "" });
+      console.log(`[DuckDBStore] Data insertion completed`);
+      return true;
+    } catch (err) {
+      console.error(`[DuckDBStore] Failed to insert data into DuckDB:`, err);
+      set({
+        error: `Failed to insert data: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        isLoading: false,
+        processingProgress: 0,
+        processingStatus: "",
+      });
+      throw err;
+    }
+  },
+
+  // Load data from a file into DuckDB
+  loadData: async (data, headers, fileName, columnTypes, onProgress) => {
+    try {
+      // Initialize DB if needed
+      if (!get().isInitialized) {
+        await get().initialize();
+      }
+
+      console.log(`[DuckDBStore] Starting loadData`);
+      console.log(`[DuckDBStore] File: ${fileName}`);
+      console.log(
+        `[DuckDBStore] Data size: ${data.length} rows x ${headers.length} columns`
+      );
+
+      // Generate table name with proper escaping
+      const rawTableName = fileName
+        ? `${fileName.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_")}`
+        : "imported_data";
+
+      console.log(`[DuckDBStore] Generated table name: ${rawTableName}`);
+
+      // Create table structure
+      await get().createTable(rawTableName, headers, columnTypes);
+
+      // Insert data
+      await get().insertData(rawTableName, data, onProgress);
+
+      console.log(`[DuckDBStore] Data loading completed successfully`);
+      console.log(`[DuckDBStore] Table name for queries: "${rawTableName}"`);
+
+      return rawTableName;
+    } catch (err) {
+      console.error(`[DuckDBStore] Failed to load data:`, err);
+      throw err;
+    }
+  },
+
+  // Execute a SQL query
+  executeQuery: async (sql) => {
+    const { connection, isInitialized, registeredTables } = get();
+
+    if (!connection || !isInitialized) {
+      await get().initialize();
+      if (!get().connection) {
+        set({ error: "DuckDB is not initialized" });
+        return null;
+      }
+    }
+
+    try {
+      console.log(`[DuckDBStore] Executing query:`, sql);
+      set({ isLoading: true, error: null });
+
+      // PRE-PROCESSING: Replace unquoted table names with quoted ones
+      let processedSQL = sql;
+
+      // Log available tables for debugging
+      try {
+        const tablesQuery = `SELECT name FROM sqlite_master WHERE type='table'`;
+        const tablesResult = await get().connection!.query(tablesQuery);
+        const tables = tablesResult.toArray();
+        console.log(`[DuckDBStore] Available tables:`, tables);
+
+        // Get all known table names
+        const knownTableNames = Array.from(registeredTables.keys());
+
+        // Replace unquoted table names with quoted versions
+        for (const tableName of knownTableNames) {
+          // This regex matches the table name when it's not already in quotes
+          // and not part of another identifier
+          const tableNameRegex = new RegExp(
+            `\\b${tableName}\\b(?=(?:[^"]*"[^"]*")*[^"]*$)`,
+            "g"
+          );
+          const escapedName =
+            registeredTables.get(tableName) || `"${tableName}"`;
+          processedSQL = processedSQL.replace(tableNameRegex, escapedName);
+        }
+
+        if (processedSQL !== sql) {
+          console.log(`[DuckDBStore] Processed SQL query:`, processedSQL);
+        }
+      } catch (tablesErr) {
+        console.error(`[DuckDBStore] Could not list tables:`, tablesErr);
+      }
+
+      const result = await connection.query(processedSQL);
+      set({ isLoading: false });
+      console.log(`[DuckDBStore] Query executed successfully`);
+      return result;
+    } catch (err) {
+      console.error(`[DuckDBStore] Query execution error:`, err);
+      set({
+        error: `Query execution error: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        isLoading: false,
+      });
+      return null;
+    }
+  },
+
+  // Get available tables
+  getAvailableTables: () => {
+    return Array.from(get().registeredTables.keys());
+  },
+
+  // Get table schema
+  getTableSchema: async (tableName) => {
+    const { connection, isInitialized, registeredTables } = get();
+
+    if (!connection || !isInitialized) {
+      return null;
+    }
+
+    try {
+      const escapedTableName =
+        registeredTables.get(tableName) || `"${tableName}"`;
+      const schemaQuery = `PRAGMA table_info(${escapedTableName})`;
+      const result = await connection.query(schemaQuery);
+      return result.toArray().map((col) => ({
+        name: col.name,
+        type: col.type,
+      }));
+    } catch (err) {
+      console.error(
+        `[DuckDBStore] Failed to get schema for ${tableName}:`,
+        err
+      );
+      return null;
+    }
+  },
+
+  // Reset error state
+  resetError: () => set({ error: null }),
+
+  // Cleanup function for DB
+  cleanupDB: async () => {
+    const { db, connection } = get();
+
+    if (connection) {
+      await connection.close();
+    }
+
+    if (db) {
+      await db.terminate();
+    }
+
+    set({
+      db: null,
+      connection: null,
+      isInitialized: false,
+      registeredTables: new Map(),
+    });
+  },
+
+  importFileDirectly: async (file: File) => {
+    const { db, connection, isInitialized } = get();
+
+    // Initialize if needed
+    if (!connection || !isInitialized) {
+      await get().initialize();
+      if (!get().connection || !get().db) {
+        throw new Error("DuckDB is not initialized");
+      }
+    }
+
+    try {
+      set({
+        isLoading: true,
+        error: null,
+        processingStatus: "Importing file directly into DuckDB...",
+        processingProgress: 0.1, // Show initial progress
+      });
+
+      // Generate a safe table name from the file name
+      const rawTableName = file.name
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-zA-Z0-9_]/g, "_");
+
+      const escapedTableName = `"${rawTableName}"`;
+      console.log(
+        `[DuckDBStore] Importing file directly as table: ${rawTableName}`
+      );
+
+      // Drop existing table if any
+      const dropQuery = `DROP TABLE IF EXISTS ${escapedTableName}`;
+      await get().connection!.query(dropQuery);
+      set({ processingProgress: 0.2 });
+
+      // Create a temporary connection for this operation
+      const conn = await get().db!.connect();
+
+      try {
+        // Register the file with DuckDB
+        // This creates a virtual filesystem entry that DuckDB can use
+        const fileName = `import_${Date.now()}.csv`;
+
+        // Use the registerFileHandle method - this is the recommended way
+        await get().db!.registerFileHandle(
+          fileName,
+          file,
+          duckdb.DuckDBDataProtocol.BROWSER_FILEREADER,
+          false
+        );
+
+        set({ processingProgress: 0.4 });
+        console.log(`[DuckDBStore] File registered with DuckDB as ${fileName}`);
+
+        // Now use DuckDB's CSV reader to create a table from this file
+        const createTableQuery = `
+        CREATE TABLE ${escapedTableName} AS 
+        SELECT * FROM read_csv_auto('${fileName}', header=true, auto_detect=true)
+      `;
+
+        console.log(
+          `[DuckDBStore] Creating table from file: ${createTableQuery}`
+        );
+        await conn.query(createTableQuery);
+        set({ processingProgress: 0.9 });
+
+        // Close the temporary connection
+        await conn.close();
+
+        // Verify the import
+        const countQuery = `SELECT COUNT(*) as count FROM ${escapedTableName}`;
+        const countResult = await get().connection!.query(countQuery);
+        const count = countResult.toArray()[0].count;
+        console.log(
+          `[DuckDBStore] Successfully imported table with ${count} rows`
+        );
+
+        // Register the table in our store
+        const newTables = new Map(get().registeredTables);
+        newTables.set(rawTableName, escapedTableName);
+        set({
+          registeredTables: newTables,
+          isLoading: false,
+          processingStatus: "Import complete",
+          processingProgress: 1.0,
+        });
+
+        return {
+          tableName: rawTableName,
+          rowCount: count,
+        };
+      } catch (err) {
+        // Make sure to close the connection on error
+        await conn.close();
+        throw err;
+      }
+    } catch (err) {
+      console.error(`[DuckDBStore] Direct file import failed:`, err);
+
+      // Provide clearer error messages based on common failures
+      let errorMessage = `Import failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`;
+
+      if (err instanceof Error) {
+        const errMsg = err.message.toLowerCase();
+
+        if (errMsg.includes("auto_detect")) {
+          errorMessage =
+            "Import failed: Could not auto-detect the file format. Please try a different file.";
+        } else if (errMsg.includes("permission") || errMsg.includes("access")) {
+          errorMessage =
+            "Import failed: Permission denied when accessing the file.";
+        } else if (errMsg.includes("memory")) {
+          errorMessage =
+            "Import failed: Not enough memory to process this file. Try a smaller file.";
+        }
+      }
+
+      set({
+        error: errorMessage,
+        isLoading: false,
+        processingProgress: 0,
+        processingStatus: "Import failed",
+      });
+      throw err;
+    }
+  },
+}));
