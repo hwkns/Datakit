@@ -1,10 +1,7 @@
 import { create } from "zustand";
-
 import * as duckdb from "@duckdb/duckdb-wasm";
-import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
-import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
-import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
-import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
+import { cleanup, initializeDuckDB } from "@/lib/duckdb/init";
+import { isDevelopment } from "@/lib/duckdb/config";
 
 import { ColumnType } from "@/types/csv";
 import { DataSourceType } from "@/types/json";
@@ -72,87 +69,28 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
   // Initialize DuckDB - should be called early in app lifecycle
   initialize: async () => {
-    // If already initialized or initializing, don't do it again
     if (get().isInitialized || get().isInitializing) {
       return get().isInitialized;
     }
 
     set({ isInitializing: true, error: null });
-    console.log("[DuckDBStore] Starting DuckDB initialization...");
-
+    
     try {
-      // Select bundle based on browser capabilities
-      const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-        mvp: {
-          mainModule: duckdb_wasm,
-          mainWorker: mvp_worker,
-        },
-        eh: {
-          mainModule: duckdb_wasm_eh,
-          mainWorker: eh_worker,
-        },
-      };
-
-      const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-      console.log("[DuckDBStore] Selected bundle:", bundle);
-
-      const worker = new Worker(bundle.mainWorker!);
-      const logger = new duckdb.ConsoleLogger();
-      const dbInstance = new duckdb.AsyncDuckDB(logger, worker);
-
-      await dbInstance.instantiate(bundle.mainModule, bundle.pthreadWorker);
-      const conn = await dbInstance.connect();
-
-      // Configure DuckDB for large datasets
-      try {
-        console.log("[DuckDBStore] Configuring DuckDB settings...");
-
-        // Set memory limits to prevent browser crashes
-        await conn.query(`PRAGMA memory_limit='4GB'`);
-        console.log("[DuckDBStore] Set memory limit to 4GB");
-
-        // Set temporary directory - if supported
-        try {
-          await conn.query(`PRAGMA temp_directory='/tmp/duckdb'`);
-          console.log("[DuckDBStore] Set temp directory");
-        } catch (tempDirErr) {
-          console.log(
-            "[DuckDBStore] Temp directory configuration not supported, proceeding without it"
-          );
-        }
-
-        // Load extensions - only if needed
-        try {
-          await conn.query(`INSTALL json`);
-          await conn.query(`LOAD json`);
-          console.log("[DuckDBStore] JSON extension loaded");
-        } catch (jsonErr) {
-          console.log(
-            "[DuckDBStore] JSON extension not available, proceeding without it"
-          );
-        }
-      } catch (configErr) {
-        console.warn(
-          "[DuckDBStore] Failed to configure DuckDB (non-critical):",
-          configErr
-        );
-      }
+      const { db, conn } = await initializeDuckDB();
 
       set({
-        db: dbInstance,
+        db,
         connection: conn,
         isInitialized: true,
         isInitializing: false,
       });
 
-      console.log("[DuckDBStore] DuckDB initialized successfully");
+      console.log(`[DuckDBStore] DuckDB initialized successfully in ${isDevelopment ? 'development' : 'production'} mode`);
       return true;
     } catch (err) {
       console.error("[DuckDBStore] Failed to initialize DuckDB:", err);
       set({
-        error: `Failed to initialize DuckDB: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
+        error: `Failed to initialize DuckDB: ${err instanceof Error ? err.message : String(err)}`,
         isInitializing: false,
       });
       return false;
@@ -562,6 +500,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       await db.terminate();
     }
 
+    cleanup();
+    
     set({
       db: null,
       connection: null,

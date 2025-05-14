@@ -17,5 +17,29 @@ export default defineConfig({
       '@types': path.resolve(__dirname, './src/types'),
       '@utils': path.resolve(__dirname, './src/utils')
     }
-  }
+  },
+  optimizeDeps: {
+    exclude: ['@duckdb/duckdb-wasm'],
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        // Exclude WASM and worker files from the build
+        /.*\.wasm(\?url)?$/,
+        /.*\.worker\.js(\?url)?$/,
+      ],
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@duckdb/duckdb-wasm')) {
+              return 'duckdb';
+            }
+            if (id.includes('xlsx')) {
+              return 'xlsx';
+            }
+          }
+        },
+      },
+    },
+  },
 })
