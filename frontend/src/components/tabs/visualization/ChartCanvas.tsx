@@ -1,0 +1,288 @@
+
+import React from 'react';
+import { useChartsStore, ChartType } from '@/store/chartsStore';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Label
+} from 'recharts';
+
+/**
+ * Component that renders the appropriate chart based on the current configuration
+ */
+const ChartCanvas: React.FC = () => {
+  const { currentChart, colorPalettes } = useChartsStore();
+  
+  if (!currentChart || !currentChart.data || currentChart.data.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-darkNav/20 rounded-lg border border-white/5">
+        <div className="text-center p-8">
+          <h3 className="text-lg font-medium text-white/80 mb-2">No Chart Data</h3>
+          <p className="text-sm text-white/60">
+            Configure your chart or run a query to visualize data.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Get color palette
+  const palette = colorPalettes[currentChart.palette] || colorPalettes.primary;
+  
+  // Common props for charts
+  const commonProps = {
+    data: currentChart.data,
+    margin: { top: 20, right: 30, left: 20, bottom: 20 }
+  };
+  
+  // Render the appropriate chart based on type
+  return (
+    <div className="h-full w-full bg-darkNav/20 rounded-lg border border-white/5 p-4">
+      <h3 className="text-lg font-medium mb-2">{currentChart.title}</h3>
+      {currentChart.description && (
+        <p className="text-sm text-white/70 mb-4">{currentChart.description}</p>
+      )}
+      
+      <div className="h-[calc(100%-60px)]">
+        <ResponsiveContainer width="100%" height="100%">
+          {renderChart(currentChart.type, palette)}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+  
+  // Helper function to render the appropriate chart
+  function renderChart(type: ChartType, colors: string[]) {
+    const { xAxis, yAxis, showGrid, showLegend, colorBy } = currentChart;
+    
+    // Common axis configuration
+    const xAxisConfig = (
+      <XAxis 
+        dataKey={xAxis.dataKey || xAxis.field} 
+        name={xAxis.label}
+        stroke="#ffffff60"
+      >
+        <Label 
+          value={xAxis.label} 
+          position="bottom" 
+          dy={15}
+          fill="#ffffff90"
+        />
+      </XAxis>
+    );
+    
+    const yAxisConfig = (
+      <YAxis 
+        name={yAxis.label}
+        stroke="#ffffff60"
+      >
+        <Label 
+          value={yAxis.label} 
+          position="left" 
+          angle={-90} 
+          dx={-15}
+          fill="#ffffff90"
+        />
+      </YAxis>
+    );
+    
+    // Common elements
+    const gridConfig = showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" /> : null;
+    const tooltipConfig = <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#ffffff20', color: '#ffffff' }} />;
+    const legendConfig = showLegend ? <Legend /> : null;
+    
+    switch (type) {
+      case 'bar':
+        return (
+          <BarChart {...commonProps}>
+            {gridConfig}
+            {xAxisConfig}
+            {yAxisConfig}
+            {tooltipConfig}
+            {legendConfig}
+            <Bar 
+              dataKey={yAxis.dataKey || yAxis.field} 
+              name={yAxis.label} 
+              fill={colors[0]}
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        );
+        
+      case 'line':
+        return (
+          <LineChart {...commonProps}>
+            {gridConfig}
+            {xAxisConfig}
+            {yAxisConfig}
+            {tooltipConfig}
+            {legendConfig}
+            <Line 
+              type="monotone" 
+              dataKey={yAxis.dataKey || yAxis.field} 
+              name={yAxis.label}
+              stroke={colors[0]}
+              strokeWidth={2}
+              dot={{ r: 4, fill: colors[0] }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        );
+        
+      case 'area':
+        return (
+          <AreaChart {...commonProps}>
+            {gridConfig}
+            {xAxisConfig}
+            {yAxisConfig}
+            {tooltipConfig}
+            {legendConfig}
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={colors[0]} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={colors[0]} stopOpacity={0.1}/>
+              </linearGradient>
+            </defs>
+            <Area 
+              type="monotone" 
+              dataKey={yAxis.dataKey || yAxis.field} 
+              name={yAxis.label}
+              stroke={colors[0]}
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorGradient)"
+            />
+          </AreaChart>
+        );
+        
+      case 'pie':
+        // For pie charts, we need to transform the data if it's not already in the right format
+        const pieData = preparePieData(currentChart.data, yAxis.field, xAxis.field);
+        
+        return (
+          <PieChart {...commonProps}>
+            {tooltipConfig}
+            {legendConfig}
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              outerRadius="80%"
+              innerRadius="0%"
+              fill="#8884d8"
+              nameKey="name"
+              dataKey="value"
+              label={renderCustomizedLabel}
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        );
+        
+      case 'scatter':
+        return (
+          <ScatterChart {...commonProps}>
+            {gridConfig}
+            {xAxisConfig}
+            {yAxisConfig}
+            {tooltipConfig}
+            {legendConfig}
+            <Scatter 
+              name={`${xAxis.label} vs ${yAxis.label}`} 
+              data={currentChart.data} 
+              fill={colors[0]}
+            >
+              {currentChart.data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={colorBy && entry[colorBy] ? 
+                    colors[Math.abs(hashCode(String(entry[colorBy]))) % colors.length] : 
+                    colors[0]} 
+                />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        );
+        
+      default:
+        return (
+          <div className="h-full flex items-center justify-center text-white/70">
+            <p>Chart type not supported</p>
+          </div>
+        );
+    }
+  }
+};
+
+/**
+ * Helper to prepare data for pie chart
+ */
+function preparePieData(data: any[], valueField: string, nameField: string): any[] {
+  // If we have simple data with name/value fields, use it directly
+  if (data.every(item => item.name && item.value !== undefined)) {
+    return data;
+  }
+  
+  // Convert data to pie format
+  return data.map(item => ({
+    name: String(item[nameField]),
+    value: Number(item[valueField])
+  }));
+}
+
+/**
+ * Custom label renderer for pie chart
+ */
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 0.8;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  
+  // Only show label if segment is large enough
+  if (percent < 0.05) return null;
+  
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="white" 
+      textAnchor="middle" 
+      dominantBaseline="central"
+      fontSize={12}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+/**
+ * Simple hash function to generate consistent colors
+ */
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return hash;
+}
+
+export default ChartCanvas;
