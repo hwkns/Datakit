@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { get, set, keys, del } from 'idb-keyval';
-
-import { Clock, Heart, Star, Trash, Copy, Check } from 'lucide-react';
-
+import { useAppStore } from '@/store/appStore';
+import { SavedQuery } from '@/store/appStore';
+import { Clock, Heart, Star, Trash, Copy, Check, Edit, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-
-interface SavedQuery {
-  id: string;
-  name: string;
-  query: string;
-  timestamp: number;
-  isFavorite: boolean;
-}
 
 interface QueryHistoryProps {
   onSelectQuery: (query: string) => void;
@@ -21,86 +12,16 @@ interface QueryHistoryProps {
  * Displays and manages previously executed and saved queries
  */
 const QueryHistory: React.FC<QueryHistoryProps> = ({ onSelectQuery }) => {
-  const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([]);
-  const [recentQueries, setRecentQueries] = useState<SavedQuery[]>([]);
+  const { recentQueries, savedQueries, saveQuery, deleteQuery, loadQueriesFromStorage } = useAppStore();
+  
+  useEffect(() => {
+    loadQueriesFromStorage();
+  }, [loadQueriesFromStorage]);
+  
   const [activeTab, setActiveTab] = useState<'recent' | 'saved'>('recent');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
-  // Load queries from IndexedDB
-  useEffect(() => {
-    const loadQueries = async () => {
-      try {
-        // Get all keys from the store
-        const allKeys = await keys();
-        
-        // Filter keys for saved and recent queries
-        const savedKeys = allKeys.filter(k => String(k).startsWith('saved-query:'));
-        const recentKeys = allKeys.filter(k => String(k).startsWith('recent-query:'));
-        
-        // Load saved queries
-        const savedQueryPromises = savedKeys.map(async (key) => {
-          const query = await get(key);
-          return query;
-        });
-        
-        // Load recent queries
-        const recentQueryPromises = recentKeys.map(async (key) => {
-          const query = await get(key);
-          return query;
-        });
-        
-        // Wait for all queries to load
-        const loadedSavedQueries = await Promise.all(savedQueryPromises);
-        const loadedRecentQueries = await Promise.all(recentQueryPromises);
-        
-        // Sort by timestamp (newest first)
-        setSavedQueries(loadedSavedQueries.sort((a, b) => b.timestamp - a.timestamp));
-        setRecentQueries(loadedRecentQueries.sort((a, b) => b.timestamp - a.timestamp));
-      } catch (err) {
-        console.error('Error loading queries:', err);
-      }
-    };
-    
-    loadQueries();
-  }, []);
-  
-  // Save a query to favorites
-  const saveQuery = async (query: SavedQuery) => {
-    try {
-      // Create a new saved query
-      const savedQuery: SavedQuery = {
-        ...query,
-        id: `saved-query:${Date.now()}`,
-        isFavorite: true,
-        timestamp: Date.now()
-      };
-      
-      // Save to IndexedDB
-      await set(savedQuery.id, savedQuery);
-      
-      // Update state
-      setSavedQueries(prev => [savedQuery, ...prev]);
-    } catch (err) {
-      console.error('Error saving query:', err);
-    }
-  };
-  
-  // Delete a query
-  const deleteQuery = async (query: SavedQuery) => {
-    try {
-      // Delete from IndexedDB
-      await del(query.id);
-      
-      // Update state
-      if (query.id.startsWith('saved-query:')) {
-        setSavedQueries(prev => prev.filter(q => q.id !== query.id));
-      } else {
-        setRecentQueries(prev => prev.filter(q => q.id !== query.id));
-      }
-    } catch (err) {
-      console.error('Error deleting query:', err);
-    }
-  };
+  const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
+  const [editName, setEditName] = useState<string>('');
   
   // Handle copying to clipboard
   const copyToClipboard = (query: string, id: string) => {
@@ -111,6 +32,59 @@ const QueryHistory: React.FC<QueryHistoryProps> = ({ onSelectQuery }) => {
   
   // Get queries based on active tab
   const queries = activeTab === 'recent' ? recentQueries : savedQueries;
+  
+  // Format the date nicely
+  const formatDate = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    
+    // If today, just show time
+    if (date.toDateString() === now.toDateString()) {
+      return `Today at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    
+    // If yesterday, show "Yesterday"
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    
+    // If within last 7 days, show day name
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    if (date > sevenDaysAgo) {
+      return date.toLocaleDateString(undefined, { weekday: 'long', hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Otherwise show full date
+    return date.toLocaleDateString(undefined, { 
+      month: 'short', 
+      day: 'numeric',
+      year: now.getFullYear() !== date.getFullYear() ? 'numeric' : undefined
+    });
+  };
+  
+  // Start editing a query name
+  const startEditing = (query: SavedQuery) => {
+    setEditingQuery(query);
+    setEditName(query.name);
+  };
+  
+  // Save edited query name
+  const saveEditedQuery = () => {
+    if (!editingQuery || !editName.trim()) return;
+    
+    // Save query with new name
+    saveQuery(editingQuery.query, editName);
+    
+    // Delete old query
+    deleteQuery(editingQuery.id);
+    
+    // Reset editing state
+    setEditingQuery(null);
+    setEditName('');
+  };
   
   return (
     <div className="h-full flex flex-col">
@@ -159,48 +133,93 @@ const QueryHistory: React.FC<QueryHistoryProps> = ({ onSelectQuery }) => {
                 key={query.id} 
                 className="p-2 rounded bg-background hover:bg-background/80 border border-white/5"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs font-medium text-white/80">
-                    {query.name || 'Unnamed Query'}
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    {activeTab === 'recent' && (
+                {editingQuery?.id === query.id ? (
+                  <div className="flex items-center justify-between mb-1">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 bg-darkNav px-2 py-1 text-xs rounded border border-white/10"
+                      autoFocus
+                    />
+                    <div className="flex items-center ml-2">
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => saveQuery(query)}
-                        title="Save Query"
+                        onClick={() => setEditingQuery(null)}
+                        title="Cancel"
                       >
-                        <Star size={14} className="text-secondary" />
+                        <X size={14} className="text-white/70" />
                       </Button>
-                    )}
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => copyToClipboard(query.query, query.id)}
-                      title="Copy Query"
-                    >
-                      {copiedId === query.id ? (
-                        <Check size={14} className="text-primary" />
-                      ) : (
-                        <Copy size={14} />
-                      )}
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => deleteQuery(query)}
-                      title="Delete Query"
-                    >
-                      <Trash size={14} className="text-destructive" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={saveEditedQuery}
+                        title="Save"
+                        disabled={!editName.trim()}
+                      >
+                        <Save size={14} className="text-primary" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between mb-1 group">
+                    <div className="text-xs font-medium text-white/80 truncate flex-1">
+                      {query.name || 'Unnamed Query'}
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      {activeTab === 'recent' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => saveQuery(query.query, query.name)}
+                          title="Save Query"
+                        >
+                          <Star size={14} className="text-secondary" />
+                        </Button>
+                      )}
+                      
+                      {activeTab === 'saved' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => startEditing(query)}
+                          title="Edit Name"
+                        >
+                          <Edit size={14} className="text-white/70" />
+                        </Button>
+                      )}
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => copyToClipboard(query.query, query.id)}
+                        title="Copy Query"
+                      >
+                        {copiedId === query.id ? (
+                          <Check size={14} className="text-primary" />
+                        ) : (
+                          <Copy size={14} className="text-white/70" />
+                        )}
+                      </Button>
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => deleteQuery(query.id)}
+                        title="Delete Query"
+                      >
+                        <Trash size={14} className="text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 
                 <div 
                   className="text-xs mt-1 p-2 bg-darkNav/60 rounded font-mono overflow-hidden max-h-20 cursor-pointer"
@@ -214,7 +233,7 @@ const QueryHistory: React.FC<QueryHistoryProps> = ({ onSelectQuery }) => {
                 
                 <div className="mt-1 flex justify-between items-center">
                   <div className="text-[10px] text-white/50">
-                    {new Date(query.timestamp).toLocaleString()}
+                    {formatDate(query.timestamp)}
                   </div>
                   <Button
                     variant="ghost"
