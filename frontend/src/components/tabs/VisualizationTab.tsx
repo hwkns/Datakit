@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore } from '@/store/appStore';
 import { BarChart4, LineChart, PieChart, ScatterChart, TrendingUp } from 'lucide-react';
 
+import { useAppStore } from '@/store/appStore';
 import { useChartsStore, ChartType } from '@/store/chartsStore';
 
 import ChartCanvas from './visualization/ChartCanvas';
 import ChartControls from './visualization/ChartControls';
 import ChartConfigPanel from './visualization/ChartConfigPanel';
+import ChartGallery from './visualization/ChartGallery';
+import SaveChartModal from './visualization/SaveChartModal';
+import ExportModal from './visualization/ExportModal';
 import NoDataView from './visualization/NoDataView';
 
 /**
@@ -14,9 +17,18 @@ import NoDataView from './visualization/NoDataView';
  */
 const VisualizationTab: React.FC = () => {
   const { data: queryData, tableName } = useAppStore();
-  const { currentChart, createNewChart } = useChartsStore();
+  const { 
+    currentChart, 
+    createNewChart,
+    loadChartsFromStorage
+  } = useChartsStore();
   
   const [selectedTab, setSelectedTab] = useState<'config' | 'gallery'>('config');
+  
+  // Load saved charts on mount
+  useEffect(() => {
+    loadChartsFromStorage();
+  }, [loadChartsFromStorage]);
   
   // Initialize with data from the query tab if available
   useEffect(() => {
@@ -75,7 +87,7 @@ const VisualizationTab: React.FC = () => {
           >
             Chart Configuration
           </button>
-          <button
+          {/* <button
             className={`px-4 py-2 text-sm ${
               selectedTab === 'gallery' 
                 ? 'text-primary border-b-2 border-primary -mb-px' 
@@ -84,13 +96,13 @@ const VisualizationTab: React.FC = () => {
             onClick={() => setSelectedTab('gallery')}
           >
             Chart Gallery
-          </button>
+          </button> */}
         </div>
       </div>
       
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left panel: Chart configuration */}
+        {/* Left panel: Chart configuration or gallery */}
         <div className="w-80 border-r border-white/10 bg-darkNav/50 overflow-y-auto">
           {selectedTab === 'config' ? (
             <ChartConfigPanel />
@@ -125,6 +137,10 @@ const VisualizationTab: React.FC = () => {
         </div>
 >>>>>>> c44b1ca (first iteration on chart creation)
       </div>
+      
+      {/* Modals */}
+      <SaveChartModal />
+      <ExportModal />
     </div>
   );
 };
@@ -162,21 +178,6 @@ const ChartTypeButton: React.FC<ChartTypeButtonProps> = ({ type, icon, label }) 
       {icon}
       <span className="text-xs mt-1">{label}</span>
     </button>
-  );
-};
-
-/**
- * Chart gallery component (placeholder for now)
- */
-const ChartGallery: React.FC = () => {
-  return (
-    <div className="p-4">
-      <h3 className="text-sm font-medium mb-3">Saved Charts</h3>
-      <p className="text-sm text-white/70">
-        Your saved charts will appear here. You can save the current chart configuration 
-        for future use.
-      </p>
-    </div>
   );
 };
 
