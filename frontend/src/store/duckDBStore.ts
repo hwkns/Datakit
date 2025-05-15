@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import * as duckdb from "@duckdb/duckdb-wasm";
+
 import { cleanup, initializeDuckDB } from "@/lib/duckdb/init";
 import { isDevelopment } from "@/lib/duckdb/config";
+import { executePaginatedQuery } from "@/lib/duckdb/query";
 
+import { PaginatedQueryResult } from "@/lib/duckdb/types";
 import { ColumnType } from "@/types/csv";
-import { DataSourceType } from "@/types/json";
 
-// Types for the store
 interface DuckDBState {
   // DB state
   db: duckdb.AsyncDuckDB | null;
@@ -52,9 +53,13 @@ interface DuckDBState {
   importFileDirectly: (
     file: File
   ) => Promise<{ tableName: string; rowCount: number }>;
+  executePaginatedQuery: (
+    sql: string,
+    page: number,
+    pageSize: number
+  ) => Promise<PaginatedQueryResult | null>;
 }
 
-// Create the store
 export const useDuckDBStore = create<DuckDBState>((set, get) => ({
   // Initial state
   db: null,
@@ -74,7 +79,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     set({ isInitializing: true, error: null });
-    
+
     try {
       const { db, conn } = await initializeDuckDB();
 
@@ -85,12 +90,18 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         isInitializing: false,
       });
 
-      console.log(`[DuckDBStore] DuckDB initialized successfully in ${isDevelopment ? 'development' : 'production'} mode`);
+      console.log(
+        `[DuckDBStore] DuckDB initialized successfully in ${
+          isDevelopment ? "development" : "production"
+        } mode`
+      );
       return true;
     } catch (err) {
       console.error("[DuckDBStore] Failed to initialize DuckDB:", err);
       set({
-        error: `Failed to initialize DuckDB: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Failed to initialize DuckDB: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
         isInitializing: false,
       });
       return false;
@@ -389,7 +400,6 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
-  // Execute a SQL query
   executeQuery: async (sql) => {
     const { connection, isInitialized, registeredTables } = get();
 
@@ -454,12 +464,10 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
-  // Get available tables
   getAvailableTables: () => {
     return Array.from(get().registeredTables.keys());
   },
 
-  // Get table schema
   getTableSchema: async (tableName) => {
     const { connection, isInitialized, registeredTables } = get();
 
@@ -485,10 +493,9 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
-  // Reset error state
   resetError: () => set({ error: null }),
 
-  // Cleanup function for DB
+
   cleanupDB: async () => {
     const { db, connection } = get();
 
@@ -501,7 +508,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     cleanup();
-    
+
     set({
       db: null,
       connection: null,
@@ -791,6 +798,56 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         processingStatus: "Import failed",
       });
       throw err;
+    }
+  },
+
+  /**
+   * Execute a SQL query with pagination
+   *
+   * @param sql - SQL query to execute
+   * @param page - Current page number (1-based)
+   * @param pageSize - Number of rows per page
+   * @returns Promise resolving to paginated query result
+   */
+  executePaginatedQuery: async (sql, page, pageSize) => {
+    const { connection, isInitialized, registeredTables } = get();
+
+    if (!connection || !isInitialized) {
+      await get().initialize();
+      if (!get().connection) {
+        set({ error: "DuckDB is not initialized" });
+        return null;
+      }
+    }
+
+    try {
+      set({ isLoading: true, error: null });
+
+      // Use the refactored function from our utilities
+      const result = await executePaginatedQuery(
+        {
+          sql,
+          page,
+          pageSize,
+          applyPagination: true,
+          countTotalRows: true,
+        },
+        connection,
+        registeredTables
+      );
+
+      set({ isLoading: false });
+
+      return result;
+    } catch (err) {
+      console.error(`[DuckDBStore] Paginated query execution error:`, err);
+      set({
+        error: `Query execution error: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        isLoading: false,
+      });
+      return null;
     }
   },
 }));
