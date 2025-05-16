@@ -634,8 +634,8 @@ LIMIT 10;`);
 
       {/* Save Query Dialog */}
       {saveDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-black p-4 rounded-lg shadow-lg w-96">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-darkNav p-4 rounded-lg shadow-lg w-96">
             <h3 className="text-lg font-medium mb-4">Save Query</h3>
             <input
               type="text"

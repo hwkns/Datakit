@@ -2,9 +2,14 @@ import React from "react";
 import { FileText } from "lucide-react";
 import { FileUploadButton } from "@/components/common/FileUploadButton";
 import { ThemeColorPicker } from "@/components/common/ThemeColorPicker";
+import { RemoteFileImport } from "@/components/common/RemoteFileImport";
 import useFileAccess from "@/hooks/useFileAccess";
 import { useDuckDBStore } from "@/store/duckDBStore";
 import useDirectFileImport from "@/hooks/useDirectFileImport";
+
+import useRemoteFileImport, {
+  RemoteSourceProvider,
+} from "@/hooks/useRemoteFileImport";
 
 import { ColumnType } from "@/types/csv";
 import { DataSourceType } from "@/types/json";
@@ -20,6 +25,9 @@ export interface DataLoadWithDuckDBResult {
   schema?: any;
   loadedToDuckDB: boolean;
   tableName?: string;
+  isRemote?: boolean;
+  remoteURL?: string;
+  remoteProvider?: RemoteSourceProvider;
 }
 
 interface SidebarProps {
@@ -29,19 +37,63 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
 
+  // Local file import hooks
   const {
     handleRecentFileSelect,
     processFile,
-    isProcessing,
-    loadingStatus,
-    processingError,
+    isProcessing: isProcessingLocalFile,
+    loadingStatus: localFileLoadingStatus,
+    processingError: localFileProcessingError,
   } = useDirectFileImport();
 
+  // Remote file import hooks
+  const {
+    importFromURL,
+    isImporting: isProcessingRemoteFile,
+    importStatus: remoteFileImportStatus,
+    error: remoteFileImportError,
+  } = useRemoteFileImport();
+
+  // DuckDB store
   const {
     isLoading: duckDBLoading,
     processingProgress: duckDBProgress,
     error: duckDBError,
   } = useDuckDBStore();
+
+  // Handle remote file import
+  const handleURLSubmit = async (
+    url: string,
+    provider: RemoteSourceProvider
+  ) => {
+    if (!onDataLoad) return;
+
+    try {
+      const result = await importFromURL(url, provider);
+
+      if (result) {
+        onDataLoad({
+          ...result,
+          isRemote: true,
+          remoteURL: url,
+          remoteProvider: provider,
+        });
+      }
+    } catch (error) {
+      console.error("Error importing remote file:", error);
+    }
+  };
+
+  // Determine if any loading state is active
+  const isLoading =
+    isProcessingLocalFile || isProcessingRemoteFile || duckDBLoading;
+
+  // Determine current loading status message
+  const loadingStatus = remoteFileImportStatus || localFileLoadingStatus;
+
+  // Determine current error message
+  const errorMessage =
+    remoteFileImportError || localFileProcessingError || duckDBError;
 
   return (
     <div className="bg-darkNav w-64 flex flex-col h-full border-r border-white border-opacity-10">
@@ -59,21 +111,33 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       </div>
 
       {/* File Upload section */}
-      <div className="px-5 pt-2 pb-5">
+      <div className="px-5 pt-2 pb-3">
         <FileUploadButton
           onFileSelect={(file) => {
             return onDataLoad
               ? processFile(file, onDataLoad)
               : processFile(file);
           }}
-          isLoading={isProcessing}
+          isLoading={isProcessingLocalFile}
           className="w-full"
           supportLargeFiles={true}
         />
 
-        {/* Loading Status */}
-        {(isProcessing || loadingStatus) && (
-          <div className="mt-3 bg-background/30 p-3 border border-white/5">
+        <div className="mt-2 flex items-center">
+          <div className="w-8 text-center">
+            <span className="text-xs font-medium text-white/40">OR</span>
+          </div>
+          <div className="flex-1">
+            <RemoteFileImport
+              onURLSubmit={handleURLSubmit}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+
+        {/* Loading Status - Combined for both local and remote */}
+        {(isLoading || loadingStatus) && (
+          <div className="mt-3 bg-background/30 p-3 border border-white/5 rounded-md">
             {loadingStatus && (
               <div className="text-xs font-medium text-white text-opacity-80 mb-2 flex items-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></div>
@@ -81,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
               </div>
             )}
 
-            {isProcessing && (
+            {isLoading && (
               <div className="w-full bg-background rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-primary h-1.5 rounded-full transition-all duration-300"
@@ -90,9 +154,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
               </div>
             )}
 
-            {processingError && (
+            {errorMessage && (
               <div className="text-destructive text-xs mt-2 p-2 rounded bg-background/50 border border-destructive/20">
-                {processingError}
+                {errorMessage}
               </div>
             )}
           </div>
@@ -126,9 +190,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
               return (
                 <li key={file.name + file.lastAccessed}>
                   <button
-                    // TODO: We got to make this recent files work
-                    // onClick={() => handleRecentFileSelect(file, onDataLoad)}
-                    disabled={isProcessing}
+                    onClick={() => handleRecentFileSelect?.(file, onDataLoad)}
+                    disabled={isLoading}
                     className="w-full text-left flex items-center p-2 rounded text-xs text-white text-opacity-80 hover:bg-background hover:bg-opacity-30 transition-custom"
                   >
                     <FileText
