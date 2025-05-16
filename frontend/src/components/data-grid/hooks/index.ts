@@ -143,7 +143,7 @@ export const useWelcomeAnimation = (
     "Datakit",
     "is",
     "here,",
-    "select",
+    "open",
     "a",
     "file.",
   ];

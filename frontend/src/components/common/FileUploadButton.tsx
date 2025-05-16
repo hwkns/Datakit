@@ -162,7 +162,7 @@ export const FileUploadButton = ({
                     </div>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-white/80 mb-1">Click to select or drag files here</p>
+                    <p className="text-xs text-white/80 mb-1">Click to open or drag files here</p>
                     <p className="text-[10px] text-white/50">
                       {supportLargeFiles && 'showOpenFilePicker' in window ? 
                         'Supports files up to 5GB' : 
