@@ -1,0 +1,8 @@
+{
+  "name": "feedback-api",
+  "main": "src/index.ts",
+  "compatibility_date":"2023-05-18",
+  "observability": {
+    "enabled": true
+  }
+}

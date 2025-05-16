@@ -3,6 +3,7 @@ import TabNavigation, { Tab } from "@/components/navigation/TabNavigation";
 import DataPreviewTab from "@/components/tabs/DataPreviewTab";
 import QueryTab from "@/components/tabs/QueryTab";
 import VisualizationTab from "@/components/tabs/VisualizationTab";
+import FeedbackButton from "@/components/common/FeedbackButton";
 
 import { Table, BarChart, Database } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -73,6 +74,11 @@ const Home = () => {
     return baseText + duckDBText + interactionText;
   };
 
+  // Prepare feedback context
+  const feedbackContext = fileName 
+    ? `Feedback provided while working with: ${fileName} (${sourceType === DataSourceType.JSON ? 'JSON' : 'CSV'}, ${rowCount} rows)`
+    : undefined;
+
   // Animation variants for tab content
   const tabContentVariants = {
     hidden: { opacity: 0, x: 20 },
@@ -94,6 +100,9 @@ const Home = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Feedback Button using our reusable component */}
+            <FeedbackButton context={feedbackContext} />
+            
             {/* JSON View Mode Toggle (only show for JSON data) */}
             {sourceType === DataSourceType.JSON && jsonSchema?.isNested && (
               <div className="border border-white border-opacity-20 rounded overflow-hidden">
