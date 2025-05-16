@@ -111,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       </div>
 
       {/* File Upload section */}
-      <div className="px-5 pt-2 pb-3">
+      <div className="px-5 pt-2 pb-2">
         <FileUploadButton
           onFileSelect={(file) => {
             return onDataLoad
@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           supportLargeFiles={true}
         />
 
-        <div className="mt-2 flex items-center">
+        <div className="mt-2 mb-2 flex items-center">
           <div className="w-8 text-center">
             <span className="text-xs font-medium text-white/40">OR</span>
           </div>
