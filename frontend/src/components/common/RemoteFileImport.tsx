@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Globe, ExternalLink, AlertCircle } from "lucide-react";
+import { X, Globe, ExternalLink, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -9,11 +9,13 @@ import GCS from "@/assets/gcs.png";
 interface RemoteFileImportProps {
   onURLSubmit: (url: string, provider: "web" | "s3" | "gcs") => Promise<void>;
   isLoading?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
 export const RemoteFileImport: React.FC<RemoteFileImportProps> = ({
   onURLSubmit,
+  disabled = false,
   isLoading = false,
   className = "",
 }) => {
@@ -23,9 +25,12 @@ export const RemoteFileImport: React.FC<RemoteFileImportProps> = ({
     "web" | "s3" | "gcs"
   >("web");
   const [inputError, setInputError] = useState<string | null>(null);
+  const [showComingSoonPopover, setShowComingSoonPopover] = useState(false);
 
   const handleOpenModal = () => {
-    setIsModalOpen(true);
+    if (!disabled) {
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -122,34 +127,56 @@ export const RemoteFileImport: React.FC<RemoteFileImportProps> = ({
   ];
 
   return (
-    <>
-      {/* Button to open modal */}
-      <Button
-        variant="outline"
-        className="w-full bg-white/5 border border-white/20 hover:border-primary/80 hover:bg-black/30 transition-all mt-2"
-        onClick={handleOpenModal}
-        disabled={isLoading}
+    <div className="relative">
+      <div
+        className="relative"
+        onMouseEnter={() => disabled && setShowComingSoonPopover(true)}
+        onMouseLeave={() => disabled && setShowComingSoonPopover(false)}
       >
-        <div className="flex items-center justify-center w-full py-1">
-          <span className="text-sm text-white/80">Bring from</span>
-          <div className="flex items-center space-x-2">
-            {providers.map((provider) => (
-              <div
-                key={provider.id}
-                className={`rounded p-1 transition-transform hover:scale-110 ${provider.color}`}
-              >
-                {provider.id !== "web" && (
-                  <img
-                    src={provider.icon}
-                    alt={provider.id}
-                    className="h-4 w-4"
-                  />
-                )}
-              </div>
-            ))}
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full bg-white/5 border border-white/20 hover:border-primary/80 hover:bg-black/30 transition-all mt-2",
+            disabled &&
+              "opacity-70 cursor-not-allowed hover:border-white/20 hover:bg-white/5"
+          )}
+          onClick={handleOpenModal}
+          disabled={isLoading || disabled}
+        >
+          <div className="flex items-center justify-center w-full py-1">
+            <span className="text-sm text-white/80 mr-2">Bring from</span>
+            <div className="flex items-center space-x-2">
+              {providers.map((provider) => (
+                <div
+                  key={provider.id}
+                  className={`rounded p-1 transition-transform hover:scale-110 ${provider.color}`}
+                >
+                  {provider.id !== "web" && (
+                    <img
+                      src={provider.icon}
+                      alt={provider.id}
+                      className="h-4 w-4"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </Button>
+        </Button>
+
+        {/* Coming Soon Popover - Shows on hover when disabled */}
+        {showComingSoonPopover && (
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black border border-white/20 rounded-md shadow-lg p-3 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200 min-w-[200px]">
+            <div className="flex items-center text-primary">
+              <span className="text-xs">Coming Soon!</span>
+            </div>
+            <p className="text-xs text-white/70 mt-1">
+              Remote file import is coming in our next updates.
+            </p>
+            <div className="absolute h-0 w-0 border-x-8 border-x-transparent border-t-8 border-t-darkNav left-1/2 -translate-x-1/2 -bottom-2"></div>
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       {isModalOpen && (
@@ -320,7 +347,7 @@ export const RemoteFileImport: React.FC<RemoteFileImportProps> = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

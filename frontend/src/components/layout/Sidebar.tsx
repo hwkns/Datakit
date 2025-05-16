@@ -129,6 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           </div>
           <div className="flex-1">
             <RemoteFileImport
+              disabled={true}
               onURLSubmit={handleURLSubmit}
               isLoading={isLoading}
             />
