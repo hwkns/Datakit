@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Sparkles, Github, X, History } from "lucide-react";
+import { Github, X, History, PencilLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { processTemplate } from "@/lib/sql/templateEngine";
@@ -108,8 +108,8 @@ const QueryAssistant: React.FC<QueryAssistantProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className="h-8 relative"
       >
-        <Sparkles size={14} className="mr-1.5" />
-        <span>Write with NLP</span>
+        <PencilLine size={14} className="mr-1.5" />
+        <span>Assistant</span>
       </Button>
 
       <AnimatePresence>
@@ -125,7 +125,7 @@ const QueryAssistant: React.FC<QueryAssistantProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-white/10">
               <h3 className="text-sm font-medium flex items-center">
-                <Sparkles size={14} className="mr-1.5 text-primary" />
+               <PencilLine size={14} className="mr-1.5 text-primary" />
                 Query Assistant
               </h3>
               <button
