@@ -171,8 +171,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
 
       {/* Recent Files section */}
       <div className="px-5 py-3 flex-1 overflow-auto">
-        <h3 className="text-xs font-medium text-white text-opacity-50 uppercase tracking-wider mb-3">
-          Recent Files
+        <h3 className="text-xs font-medium text-white text-opacity-50 tracking-wider mb-3">
+          <span className="flex items-center">
+           <span className="uppercase">Recent Files</span> 
+            <span className="text-[10px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded ml-1.5">
+              from localStorage
+            </span>
+          </span>
         </h3>
 
         {recentFiles.length > 0 ? (
@@ -186,12 +191,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
                   json: "text-secondary",
                   xlsx: "text-tertiary",
                   xls: "text-tertiary",
+                  parquet: "text-violet-400",
                 }[fileExt || ""] || "text-white text-opacity-70";
 
               return (
                 <li key={file.name + file.lastAccessed}>
                   <button
-                    onClick={() => handleRecentFileSelect?.(file, onDataLoad)}
+                    // onClick={() => handleRecentFileSelect?.(file, onDataLoad)}
                     disabled={isLoading}
                     className="w-full text-left flex items-center p-2 rounded text-xs text-white text-opacity-80 hover:bg-background hover:bg-opacity-30 transition-custom"
                   >

@@ -55,12 +55,19 @@ const Home = () => {
    */
   const getStatusText = () => {
     if (!fileName) {
-      return "Bring a CSV, XSLX or JSON file to get started.";
+      return "Bring a CSV, PARQUET, XSLX or JSON file to get started.";
     }
 
     const baseText = `${rowCount.toLocaleString()} rows × ${columnCount.toLocaleString()} columns | ${
-      sourceType === DataSourceType.JSON ? "JSON data" : "CSV data"
+      sourceType === DataSourceType.JSON 
+        ? "JSON data" 
+        : sourceType === DataSourceType.PARQUET 
+          ? "Parquet data" 
+          : sourceType === DataSourceType.XLSX 
+            ? "Excel data"
+            : "CSV data"
     }`;
+    
 
     const duckDBText = inDuckDB
       ? ` | Loaded in DuckDB (table: ${tableName})`
