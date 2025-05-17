@@ -133,7 +133,7 @@ export const FileUploadButton = ({
             <img src={fileIcons.xlsx} alt="XLSX" className="h-7 w-7" />
           </div>
           <p className="text-primary font-medium">Drop your file here</p>
-          <p className="text-xs text-primary/70 mt-1">CSV, JSON, or Excel</p>
+          <p className="text-xs text-primary/70 mt-1">CSV, JSON, PARQUET or Excel</p>
         </div>
       ) : (
         <div className="overflow-hidden shadow-sm group hover:shadow-md transition-shadow">

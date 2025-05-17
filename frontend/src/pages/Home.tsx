@@ -59,8 +59,15 @@ const Home = () => {
     }
 
     const baseText = `${rowCount.toLocaleString()} rows × ${columnCount.toLocaleString()} columns | ${
-      sourceType === DataSourceType.JSON ? "JSON data" : "CSV data"
+      sourceType === DataSourceType.JSON 
+        ? "JSON data" 
+        : sourceType === DataSourceType.PARQUET 
+          ? "Parquet data" 
+          : sourceType === DataSourceType.XLSX 
+            ? "Excel data"
+            : "CSV data"
     }`;
+    
 
     const duckDBText = inDuckDB
       ? ` | Loaded in DuckDB (table: ${tableName})`
