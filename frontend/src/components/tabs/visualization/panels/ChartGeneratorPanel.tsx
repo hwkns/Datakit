@@ -131,7 +131,7 @@ const ChartGenerator: React.FC = () => {
       
       {/* Action button */}
       <Button
-        variant="primary"
+        variant="outline"
         className="w-full mt-2"
         onClick={handleGenerateChart}
         disabled={isGenerating || !dimension || !measure}

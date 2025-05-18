@@ -6,12 +6,13 @@ import { useChartsStore } from "@/store/chartsStore";
 import { Button } from "@/components/ui/Button";
 import DataTransforms from "./panels/DataTransformsPanel";
 import ChartGenerator from "./panels/ChartGeneratorPanel";
+import ChartStylePanel from "./panels/ChartStylePanel";
 
 /**
  * Component for configuring chart settings
  */
 const ChartConfigPanel: React.FC = () => {
-  const { currentChart, updateCurrentChart, colorPalettes } = useChartsStore();
+  const { currentChart, updateCurrentChart } = useChartsStore();
 
   const [activeTab, setActiveTab] = useState<"data" | "style" | "transforms">(
     "data"
@@ -99,93 +100,7 @@ const ChartConfigPanel: React.FC = () => {
         {activeTab === "data" && <ChartGenerator />}
 
         {/* Style & Colors tab */}
-        {activeTab === "style" && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Color Palette
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(colorPalettes).map(([name, colors]) => (
-                  <button
-                    key={name}
-                    className={`p-2 border rounded flex items-center cursor-pointer ${
-                      currentChart.palette === name
-                        ? "border-primary bg-primary/10"
-                        : "border-white/10 hover:border-white/30"
-                    }`}
-                    onClick={() => updateCurrentChart({ palette: name })}
-                  >
-                    <div className="flex mr-2">
-                      {colors.slice(0, 3).map((color, i) => (
-                        <div
-                          key={i}
-                          className="w-3 h-8 first:rounded-l last:rounded-r"
-                          style={{
-                            backgroundColor: color,
-                            marginLeft: i > 0 ? -4 : 0,
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs capitalize">{name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-darkNav/30 p-3 rounded space-y-2.5">
-              <h4 className="text-sm font-medium mb-1">Display Options</h4>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="show-legend"
-                  checked={currentChart.showLegend}
-                  onChange={(e) =>
-                    updateCurrentChart({ showLegend: e.target.checked })
-                  }
-                  className="mr-2"
-                />
-                <label htmlFor="show-legend" className="text-sm">
-                  Show Legend
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="show-grid"
-                  checked={currentChart.showGrid}
-                  onChange={(e) =>
-                    updateCurrentChart({ showGrid: e.target.checked })
-                  }
-                  className="mr-2"
-                />
-                <label htmlFor="show-grid" className="text-sm">
-                  Show Grid Lines
-                </label>
-              </div>
-
-              {["bar", "area", "line"].includes(currentChart.type) && (
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="stacked-data"
-                    checked={currentChart.stackedData}
-                    onChange={(e) =>
-                      updateCurrentChart({ stackedData: e.target.checked })
-                    }
-                    className="mr-2"
-                  />
-                  <label htmlFor="stacked-data" className="text-sm">
-                    Stack Data Series
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {activeTab === "style" && <ChartStylePanel />}
 
         {/* Transforms tab */}
         {activeTab === "transforms" && <DataTransforms />}

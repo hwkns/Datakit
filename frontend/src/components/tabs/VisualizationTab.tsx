@@ -27,8 +27,7 @@ const VisualizationTab: React.FC = () => {
   const {
     currentChart,
     createNewChart,
-    loadChartsFromStorage,
-    updateCurrentChart,
+    loadChartsFromStorage
   } = useChartsStore();
 
   const [selectedTab, setSelectedTab] = useState<"config" | "gallery">(

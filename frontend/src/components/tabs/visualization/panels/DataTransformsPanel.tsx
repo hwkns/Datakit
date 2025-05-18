@@ -88,11 +88,10 @@ const DataTransforms: React.FC = () => {
 
   return (
     <div className="mt-2 pt-1">
-
       {/* Existing transforms list */}
       {currentTransforms.length > 0 && (
         <div className="mb-2">
-          <h4 className="text-xs font-medium mb-2 text-white/70">
+          <h4 className="text-sm font-medium mb-2 text-white/70">
             Applied Transforms:
           </h4>
           <div className="space-y-2">
@@ -139,7 +138,7 @@ const DataTransforms: React.FC = () => {
 
       {/* Add new transform */}
       <div className="mb-3">
-        <label className="block text-xs font-medium mb-1">
+        <label className="block text-sm font-medium mb-1">
           Add Transformation:
         </label>
         <select
@@ -147,7 +146,7 @@ const DataTransforms: React.FC = () => {
           onChange={(e) =>
             setTransformType(e.target.value as DataTransform["type"])
           }
-          className="w-full p-2 bg-background border border-white/10 rounded text-white"
+          className="w-full p-2 bg-background border border-white/10 rounded text-sm font-medium text-white"
         >
           <option value="none">Select a transformation...</option>
           <option value="filter">Filter Data</option>

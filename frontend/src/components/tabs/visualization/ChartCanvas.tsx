@@ -79,44 +79,62 @@ const ChartCanvas: React.FC = () => {
     const { xAxis, yAxis, showGrid, showLegend, colorBy, stackedData } =
       currentChart;
 
-    // Common axis configuration
-    const xAxisConfig = (
-      <XAxis
-        dataKey={xAxis.dataKey || xAxis.field}
-        name={xAxis.label}
-        stroke="#ffffff60"
-        scale={xAxis.scale || "auto"}
-        domain={xAxis.domain || ["auto", "auto"]}
-        allowDataOverflow={!!xAxis.domain}
-      >
-        <Label
-          value={xAxis.label}
-          position="bottom"
-          offset={10}
-          fill="#ffffff90"
-          style={{ textAnchor: "middle" }}
+    const xAxisConfig =
+      currentChart.showXAxisLabel !== false ? (
+        <XAxis
+          dataKey={xAxis.dataKey || xAxis.field}
+          name={xAxis.label}
+          stroke="#ffffff60"
+          scale={xAxis.scale || "auto"}
+          domain={xAxis.domain || ["auto", "auto"]}
+          allowDataOverflow={!!xAxis.domain}
+        >
+          <Label
+            value={xAxis.label}
+            position="bottom"
+            offset={10}
+            fill="#ffffff90"
+            style={{ textAnchor: "middle" }}
+          />
+        </XAxis>
+      ) : (
+        <XAxis
+          dataKey={xAxis.dataKey || xAxis.field}
+          name={xAxis.label}
+          stroke="#ffffff60"
+          scale={xAxis.scale || "auto"}
+          domain={xAxis.domain || ["auto", "auto"]}
+          allowDataOverflow={!!xAxis.domain}
         />
-      </XAxis>
-    );
+      );
 
-    const yAxisConfig = (
-      <YAxis
-        name={yAxis.label}
-        stroke="#ffffff60"
-        scale={yAxis.scale || "auto"}
-        domain={yAxis.domain || ["auto", "auto"]}
-        allowDataOverflow={!!yAxis.domain}
-      >
-        <Label
-          value={yAxis.label}
-          position="left"
-          angle={-90}
-          offset={-10}
-          fill="#ffffff90"
-          style={{ textAnchor: "middle" }}
+    const yAxisConfig =
+      currentChart.showYAxisLabel !== false ? (
+        <YAxis
+          name={yAxis.label}
+          stroke="#ffffff60"
+          scale={yAxis.scale || "auto"}
+          domain={yAxis.domain || ["auto", "auto"]}
+          allowDataOverflow={!!yAxis.domain}
+        >
+          <Label
+            value={yAxis.label}
+            position="left"
+            angle={-90}
+            offset={-10}
+            fill="#ffffff90"
+            style={{ textAnchor: "middle" }}
+          />
+        </YAxis>
+      ) : (
+        <YAxis
+          name={yAxis.label}
+          stroke="#ffffff60"
+          scale={yAxis.scale || "auto"}
+          domain={yAxis.domain || ["auto", "auto"]}
+          allowDataOverflow={!!yAxis.domain}
         />
-      </YAxis>
-    );
+      );
 
     // Common elements
     const gridConfig = showGrid ? (

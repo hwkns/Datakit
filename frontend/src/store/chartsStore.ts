@@ -49,6 +49,8 @@ export interface CurrentChart extends ChartConfig {
   data: any[];
   isModified: boolean;
   originalData?: any[];
+  showXAxisLabel?: boolean;
+  showYAxisLabel?: boolean;
 }
 
 // Interface for the charts store state
@@ -195,6 +197,9 @@ export const useChartsStore = create<ChartsState>((set, get) => ({
   isSaveModalOpen: false,
   isTemplateGalleryOpen: false,
   isExportModalOpen: false,
+
+  showXAxisLabel: false,
+  showYAxisLabel: false,
   
   setCurrentChart: (chart) => set({ currentChart: chart }),
   
@@ -277,6 +282,8 @@ export const useChartsStore = create<ChartsState>((set, get) => ({
         dataKey: yAxisField
       },
       showLegend: true,
+      showXAxisLabel: false,
+      showYAxisLabel: false,
       showGrid: true,
       palette: 'primary',
       transforms: [],
