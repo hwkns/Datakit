@@ -70,6 +70,8 @@ interface AppState {
   activeTab: string;
   /** View mode for JSON data (table or tree) */
   jsonViewMode: "table" | "tree";
+  /** Sidebar collapsed state */
+  sidebarCollapsed: boolean;
 
   // Query history state
   /** Array of recent queries */
@@ -84,6 +86,10 @@ interface AppState {
   setActiveTab: (tab: string) => void;
   /** Change the JSON view mode */
   setJsonViewMode: (mode: "table" | "tree") => void;
+  /** Toggle sidebar collapsed state */
+  toggleSidebar: () => void;
+  /** Set sidebar collapsed state */
+  setSidebarCollapsed: (collapsed: boolean) => void;
 
   /** Load data from parsed result */
   loadData: (result: any) => void;
@@ -120,6 +126,7 @@ const initialState = {
   // UI state
   activeTab: "preview",
   jsonViewMode: "table" as const,
+  sidebarCollapsed: false,
 
   // Query history state
   recentQueries: [],
@@ -131,11 +138,22 @@ const initialState = {
  */
 const MAX_RECENT_QUERIES = 50;
 
+// Load sidebar collapsed state from localStorage on initialization
+const getSavedSidebarState = () => {
+  try {
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    return savedState === 'true'; // Convert string to boolean
+  } catch (e) {
+    return false; // Default to expanded if there's an error
+  }
+};
+
 /**
  * Zustand store for managing application state
  */
 export const useAppStore = create<AppState>((set, get) => ({
   ...initialState,
+  sidebarCollapsed: getSavedSidebarState(),
 
   // Actions
   setData: (data) => set({ data }),
@@ -143,6 +161,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
 
   setJsonViewMode: (jsonViewMode) => set({ jsonViewMode }),
+
+  toggleSidebar: () => {
+    const newState = !get().sidebarCollapsed;
+    // Save to localStorage for persistence
+    localStorage.setItem('sidebar-collapsed', String(newState));
+    set({ sidebarCollapsed: newState });
+  },
+
+  setSidebarCollapsed: (collapsed) => {
+    // Save to localStorage for persistence
+    localStorage.setItem('sidebar-collapsed', String(collapsed));
+    set({ sidebarCollapsed: collapsed });
+  },
 
   // Load data from result
   loadData: (result) => {
@@ -201,7 +232,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Reset state
-  resetState: () => set(initialState),
+  resetState: () => set({ ...initialState, sidebarCollapsed: get().sidebarCollapsed }),
 
   // Query history actions
   addRecentQuery: (query) => {

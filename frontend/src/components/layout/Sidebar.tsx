@@ -1,11 +1,20 @@
 import React from "react";
-import { FileText } from "lucide-react";
+import {
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  FileUp,
+  Palette,
+  ExternalLink,
+} from "lucide-react";
 import { FileUploadButton } from "@/components/common/FileUploadButton";
 import { ThemeColorPicker } from "@/components/common/ThemeColorPicker";
 import { RemoteFileImport } from "@/components/common/RemoteFileImport";
 import useFileAccess from "@/hooks/useFileAccess";
 import { useDuckDBStore } from "@/store/duckDBStore";
 import useDirectFileImport from "@/hooks/useDirectFileImport";
+import { useAppStore } from "@/store/appStore";
+import { motion } from "framer-motion";
 
 import useRemoteFileImport, {
   RemoteSourceProvider,
@@ -36,6 +45,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
+  const { sidebarCollapsed, toggleSidebar } = useAppStore();
 
   // Local file import hooks
   const {
@@ -95,11 +105,67 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const errorMessage =
     remoteFileImportError || localFileProcessingError || duckDBError;
 
-  return (
-    <div className="bg-darkNav w-64 flex flex-col h-full border-r border-white border-opacity-10">
+  // Variants for framer-motion animations
+  const sidebarVariants = {
+    expanded: { width: "16rem" }, // w-64 = 16rem
+    collapsed: { width: "4rem" }, // mini sidebar width
+  };
+
+  // Define what to show in collapsed mode - only icons
+  const renderCollapsedContent = () => (
+    <>
+      <div className="p-4 flex justify-center">
+        <button
+          onClick={toggleSidebar}
+          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer"
+          aria-label="Expand sidebar"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
+      <div className="flex flex-col items-center gap-4 p-2">
+        <button
+          className="p-2 hover:bg-background hover:bg-opacity-30 rounded transition-custom text-white text-opacity-70"
+          title="Upload File"
+        >
+          <FileUp size={20} />
+        </button>
+      </div>
+
+      <div className="mt-auto p-4 flex flex-col items-center gap-4">
+        <Palette
+          size={18}
+          className="text-white text-opacity-50"
+          title="Theme Colors"
+        />
+
+        <a
+          href="https://amin.contact"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:text-primary-foreground transition-custom"
+          title="WaveQuery"
+        >
+          <ExternalLink size={16} />
+        </a>
+      </div>
+    </>
+  );
+
+  // Define expanded sidebar content
+  const renderExpandedContent = () => (
+    <>
       {/* Header with logo and title */}
-      <div className="px-5 py-4 border-b border-white border-opacity-10 flex items-center">
+      <div className="px-5 py-4 border-b border-white border-opacity-10 flex items-center justify-between">
         <h1 className="text-white font-heading font-medium text-lg">DataKit</h1>
+        <button
+          onClick={toggleSidebar}
+          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer"
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeft size={18} />
+        </button>
       </div>
 
       {/* Introduction text */}
@@ -173,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       <div className="px-5 py-3 flex-1 overflow-auto">
         <h3 className="text-xs font-medium text-white text-opacity-50 tracking-wider mb-3">
           <span className="flex items-center">
-           <span className="uppercase">Recent Files</span> 
+            <span className="uppercase">Recent Files</span>
             <span className="text-[10px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded ml-1.5">
               from localStorage
             </span>
@@ -263,7 +329,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           </p>
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <motion.div
+      className="bg-darkNav flex flex-col h-full border-r border-white border-opacity-10 overflow-hidden"
+      initial={sidebarCollapsed ? "collapsed" : "expanded"}
+      animate={sidebarCollapsed ? "collapsed" : "expanded"}
+      variants={sidebarVariants}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
+      {sidebarCollapsed ? renderCollapsedContent() : renderExpandedContent()}
+    </motion.div>
   );
 };
 
