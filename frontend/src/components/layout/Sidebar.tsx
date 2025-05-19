@@ -3,8 +3,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  FileUp,
-  Palette,
+  // FileUp,
   ExternalLink,
 } from "lucide-react";
 import { FileUploadButton } from "@/components/common/FileUploadButton";
@@ -14,7 +13,9 @@ import useFileAccess from "@/hooks/useFileAccess";
 import { useDuckDBStore } from "@/store/duckDBStore";
 import useDirectFileImport from "@/hooks/useDirectFileImport";
 import { useAppStore } from "@/store/appStore";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+// import { Tooltip } from "@/components/ui/Tooltip";
+import usePopover from "@/hooks/usePopover";
 
 import useRemoteFileImport, {
   RemoteSourceProvider,
@@ -46,6 +47,9 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
+
+  // Use our custom hook for the upload popover
+  const uploadPopover = usePopover();
 
   // Local file import hooks
   const {
@@ -111,44 +115,110 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     collapsed: { width: "4rem" }, // mini sidebar width
   };
 
-  // Define what to show in collapsed mode - only icons
+  // File upload popup for collapsed mode
+  const renderFileUploadPopup = () => (
+    <div className="absolute left-16 top-0 z-10 bg-darkNav rounded-lg shadow-lg border border-white/10 p-3 w-64 z-50">
+      <div className="mb-3">
+        <h3 className="text-sm font-medium text-white mb-1">Upload File</h3>
+        <p className="text-xs text-white/70">
+          Import your data file for analysis
+        </p>
+      </div>
+
+      <FileUploadButton
+        onFileSelect={(file) => {
+          uploadPopover.close();
+          return onDataLoad ? processFile(file, onDataLoad) : processFile(file);
+        }}
+        isLoading={isProcessingLocalFile}
+        className="w-full"
+        supportLargeFiles={true}
+      />
+
+      {(isLoading || loadingStatus) && (
+        <div className="mt-3 bg-background/30 p-2 border border-white/5 rounded-md">
+          {loadingStatus && (
+            <div className="text-xs font-medium text-white text-opacity-80 mb-2 flex items-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></div>
+              {loadingStatus}
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="w-full bg-background rounded-full h-1.5 overflow-hidden">
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${Math.max(5, duckDBProgress * 100)}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // Define what to show in collapsed mode - only icons with functionality
   const renderCollapsedContent = () => (
     <>
-      <div className="p-4 flex justify-center">
+      <div className="p-4 flex justify-center border-b border-white/10">
+        {/* TODO: Figuring out what's wrong here? */}
+        {/* <Tooltip content="Expand sidebar"> */}
         <button
           onClick={toggleSidebar}
-          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer"
+          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer hover:bg-white/5 rounded"
           aria-label="Expand sidebar"
         >
           <ChevronRight size={18} />
         </button>
+        {/* </Tooltip> */}
       </div>
 
-      <div className="flex flex-col items-center gap-4 p-2">
-        <button
-          className="p-2 hover:bg-background hover:bg-opacity-30 rounded transition-custom text-white text-opacity-70"
-          title="Upload File"
-        >
-          <FileUp size={20} />
-        </button>
+      <div className="flex flex-col items-center gap-4 p-2 mt-2">
+        {/* File Upload Button with Dropdown */}
+        <div className="relative" ref={uploadPopover.ref}>
+          {/* <Tooltip content="Upload File">
+            <button
+              onClick={uploadPopover.toggle}
+              className="p-2 hover:bg-background hover:bg-opacity-30 rounded transition-custom text-white text-opacity-70 hover:text-primary"
+              aria-label="Upload File"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              ) : (
+                <FileUp size={20} />
+              )}
+            </button>
+          </Tooltip> */}
+
+          <AnimatePresence>
+            {uploadPopover.isOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -5 }}
+                transition={{ duration: 0.2 }}
+              >
+                <>{renderFileUploadPopup()}</>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="mt-auto p-4 flex flex-col items-center gap-4">
-        <Palette
-          size={18}
-          className="text-white text-opacity-50"
-          title="Theme Colors"
-        />
-
+      <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-white/10">
+        {/* External Links */}
+        {/* <Tooltip content="Made by Amin"> */}
         <a
           href="https://amin.contact"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:text-primary-foreground transition-custom"
-          title="WaveQuery"
+          className="text-primary hover:text-primary-foreground transition-custom p-2 hover:bg-background hover:bg-opacity-30 rounded"
+          aria-label="Visit WaveQuery"
         >
           <ExternalLink size={16} />
         </a>
+        {/* </Tooltip> */}
       </div>
     </>
   );
@@ -161,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         <h1 className="text-white font-heading font-medium text-lg">DataKit</h1>
         <button
           onClick={toggleSidebar}
-          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer"
+          className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer hover:bg-white/5 rounded"
           aria-label="Collapse sidebar"
         >
           <ChevronLeft size={18} />
@@ -263,7 +333,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
               return (
                 <li key={file.name + file.lastAccessed}>
                   <button
-                    // onClick={() => handleRecentFileSelect?.(file, onDataLoad)}
+                    onClick={() => handleRecentFileSelect?.(file, onDataLoad)}
                     disabled={isLoading}
                     className="w-full text-left flex items-center p-2 rounded text-xs text-white text-opacity-80 hover:bg-background hover:bg-opacity-30 transition-custom"
                   >
