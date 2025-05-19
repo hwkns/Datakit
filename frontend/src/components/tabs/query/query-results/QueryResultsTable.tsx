@@ -1,144 +1,160 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { FixedSizeList as List } from "react-window";
+import TableCell from "./TableCell";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-
-import { ensureSafeJSON } from '@/lib/duckdb/utils';
-
-import TableHeader from './TableHeader';
-import TableRow from './TableRow';
+import AutoSizer from "react-virtualized-auto-sizer";
 
 interface QueryResultsTableProps {
   results: any[];
   columns: string[];
 }
 
-const QueryResultsTable: React.FC<QueryResultsTableProps> = ({ 
-  results, 
-  columns 
+const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
+  results,
+  columns,
 }) => {
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
   const [totalTableWidth, setTotalTableWidth] = useState<number>(0);
-  const tableRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate column widths based on content
   useEffect(() => {
-    if (!columns || !results || results.length === 0) {
+    if (!columns?.length || !results?.length) {
       setColumnWidths([]);
       return;
     }
-    
+
     // Initial default widths
     const minWidth = 100;
     const maxWidth = 300;
-    
+
     // Sample a subset of rows for performance
     const sampleSize = Math.min(results.length, 100);
     const sampled = results.slice(0, sampleSize);
-    
+
     // Calculate widths based on content length
     const widths = columns.map((column, colIndex) => {
       // Start with column header length
       let maxLength = column.length;
-      
+
       // Check sample data
       for (const row of sampled) {
         const value = row[column];
         const valueStr = formatValueAsString(value);
         maxLength = Math.max(maxLength, valueStr.length);
       }
-      
+
       // Estimate width (characters × 8px per character)
       // with some padding and boundaries
       return Math.max(minWidth, Math.min(maxWidth, maxLength * 8 + 24));
     });
-    
+
     setColumnWidths(widths);
-    
+
     // Calculate total table width
     const totalWidth = widths.reduce((sum, width) => sum + width, 0);
-    setTotalTableWidth(totalWidth);
+    setTotalTableWidth(Math.max(totalWidth, 500));
   }, [columns, results]);
-  
-  // Handle horizontal scroll sync between header and body
-  useEffect(() => {
-    if (!scrollContainerRef.current || !tableRef.current) return;
-    
-    const handleTableScroll = (e: Event) => {
-      const target = e.target as HTMLDivElement;
-      if (tableRef.current) {
-        tableRef.current.scrollLeft = target.scrollLeft;
-      }
-    };
-    
-    const scrollContainer = scrollContainerRef.current;
-    scrollContainer.addEventListener('scroll', handleTableScroll);
-    
-    return () => {
-      scrollContainer.removeEventListener('scroll', handleTableScroll);
-    };
-  }, []);
 
   // Format a value as string for width calculation
   const formatValueAsString = (value: any): string => {
-    if (value === null || value === undefined) return 'null';
-    if (typeof value === 'object') {
+    if (value === null || value === undefined) return "null";
+    if (typeof value === "object") {
       try {
         return JSON.stringify(value);
       } catch (e) {
-        return 'Error formatting value';
+        return "Error formatting value";
       }
     }
     return String(value);
   };
 
   // Memoize the row renderer for better performance
-  const rowRenderer = useMemo(() => {
-    return ({ index, style }: { index: number; style: React.CSSProperties }) => (
-      <TableRow
-        index={index}
-        style={style}
-        row={results[index]}
-        columns={columns}
-        columnWidths={columnWidths}
-        totalWidth={Math.max(totalTableWidth, 500)}
-      />
+  const Row = useMemo(() => {
+    return React.memo(
+      ({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const row = results[index];
+        if (!row) return null;
+
+        return (
+          <div
+            style={{
+              ...style,
+              display: "flex",
+            }}
+            className={`${
+              index % 2 === 0 ? "bg-black/20" : ""
+            } hover:bg-white/5`}
+            role="row"
+          >
+            {columns.map((column, colIndex) => (
+              <TableCell
+                key={colIndex}
+                value={row[column]}
+                width={columnWidths[colIndex] || 150}
+              />
+            ))}
+          </div>
+        );
+      }
     );
-  }, [results, columns, columnWidths, totalTableWidth]);
+  }, [results, columns, columnWidths]);
+
+  // Early return for no data
+  if (!results?.length || !columns?.length) {
+    return <div className="p-4 text-white/70">No data to display</div>;
+  }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Table Header - Fixed */}
-      <TableHeader 
-        columns={columns} 
-        columnWidths={columnWidths} 
-        totalWidth={Math.max(totalTableWidth, 500)}
-        tableRef={tableRef}
-      />
-      
-      {/* Table Body - Virtualized */}
-      <div 
-        className="flex-1 overflow-auto"
-        ref={scrollContainerRef}
-      >
-        <AutoSizer>
-          {({ height, width }) => (
+    <div
+      className="h-full flex flex-col"
+      role="table"
+      aria-label="Query Results Table"
+      aria-rowcount={results.length}
+      aria-colcount={columns.length}
+    >
+      {/* Single scrollable container for both header and body */}
+      <div className="flex-1 overflow-auto">
+        <div style={{ width: totalTableWidth, minWidth: "100%" }}>
+          {/* Table Header - sticky positioning for vertical scrolling */}
+          <div
+            className="sticky top-0 bg-darkNav z-10 border-b border-white/10 shadow-sm"
+            role="rowgroup"
+          >
+            <div className="flex" role="row">
+              {columns.map((column, index) => (
+                <div
+                  key={index}
+                  className="text-left p-2 text-xs font-medium text-white/90 border-r border-white/10 whitespace-nowrap z-100 bg-black"
+                  style={{
+                    width: columnWidths[index] || 150,
+                    minWidth: columnWidths[index] || 150,
+                  }}
+                  title={column}
+                  role="columnheader"
+                >
+                  {column}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Table Body - virtualized list */}
+          <div className="flex-1">
             <List
-              height={height}
-              width={width}
+              height={500} // Fixed height for reliable rendering
+              width={totalTableWidth}
               itemCount={results.length}
-              itemSize={28} // Row height
+              itemSize={28}
               overscanCount={10}
               className="scrollbar"
             >
-              {rowRenderer}
+              {Row}
             </List>
-          )}
-        </AutoSizer>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default QueryResultsTable;
+export default React.memo(QueryResultsTable);

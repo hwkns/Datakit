@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -19,7 +19,6 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
   results,
   columns
 }) => {
-  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
   // Download results as CSV
   const downloadCSV = () => {

@@ -24,6 +24,16 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
       tooltipContainer.style.pointerEvents = 'none';
       document.body.appendChild(tooltipContainer);
     }
+    
+    return () => {
+      // Only clean up if this is the last TableCell being unmounted
+      if (document.querySelectorAll('[data-tablecell]').length <= 1) {
+        const container = document.getElementById('tooltip-container');
+        if (container) {
+          document.body.removeChild(container);
+        }
+      }
+    };
   }, []);
 
   // Check if content is truncated on mount and resize
@@ -38,12 +48,27 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
     // Use requestAnimationFrame to ensure the DOM has updated
     requestAnimationFrame(checkIfTruncated);
     
-    window.addEventListener('resize', checkIfTruncated);
+    const handleResize = () => {
+      requestAnimationFrame(checkIfTruncated);
+    };
+    
+    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener('resize', checkIfTruncated);
+      window.removeEventListener('resize', handleResize);
     };
   }, [value]);
 
+  // Handle mouse interactions with debouncing for better performance
+  const handleMouseEnter = () => {
+    if (isTruncated) {
+      setShowTooltip(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+  
   // Update tooltip position when mouse moves over the cell
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isTruncated) {
@@ -153,14 +178,17 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
   return (
     <div
       ref={cellRef}
+      data-tablecell="true"
       style={{
         width: width,
         minWidth: width,
       }}
       className={`p-2 text-xs border-b border-r border-white/10 ${valueStyle} truncate`}
-      onMouseEnter={() => isTruncated && setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
+      role="cell"
+      title={isTruncated ? valueString : undefined}
     >
       {formatValue(value)}
 
@@ -169,7 +197,7 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
         createPortal(
           <div
             ref={tooltipRef}
-            className="bg-black border-primary p-2 rounded shadow-lg text-white text-xs"
+            className="bg-black/90 border border-primary p-2 rounded shadow-lg text-white text-xs"
             style={{
               position: 'fixed',
               top: `${tooltipPosition.top}px`,
@@ -178,6 +206,7 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
               zIndex: 9999,
               pointerEvents: 'none'
             }}
+            role="tooltip"
           >
             {getFormattedTooltipContent()}
           </div>,
@@ -188,4 +217,4 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
   );
 };
 
-export default TableCell;
+export default React.memo(TableCell);

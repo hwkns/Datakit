@@ -35,26 +35,32 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   onPageChange,
   onRowsPerPageChange
 }) => {
-  console.log('error', error);
-  // Show loading, error, or empty states
+  // Show loading state
   if (isLoading) {
     return <QueryResultsEmptyState type="loading" />;
   }
 
+  // Show error state
   if (error) {
     return <QueryResultsEmptyState type="error" message={error} />;
   }
 
+  // Show empty state
   if (!results || !columns) {
     return <QueryResultsEmptyState type="empty" />;
   }
 
+  // Show no results state
   if (results.length === 0) {
     return <QueryResultsEmptyState type="no-results" />;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div 
+      className="flex flex-col h-full border border-white/10 rounded-md overflow-hidden"
+      aria-busy={isLoading}
+      aria-live="polite"
+    >
       {/* Header with row count and download options */}
       <QueryResultsHeader 
         totalRows={totalRows} 
@@ -87,4 +93,4 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   );
 };
 
-export default QueryResults;
+export default React.memo(QueryResults);
