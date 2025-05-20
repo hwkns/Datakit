@@ -27,8 +27,8 @@ export const FileUploadButton = ({
 
   const fileTypes = [
     { type: 'csv', icon: csv, color: 'bg-primary', label: 'CSV' },
-    { type: 'json', icon: json, color: 'bg-amber-100', label: 'JSON' },
     { type: 'excel', icon: xlsx, color: 'bg-green-700', label: 'EXCEL' },
+    { type: 'json', icon: json, color: 'bg-amber-100', label: 'JSON' },
     { type: 'parquet', icon: parquet, color: 'bg-sky-200', label: 'PARQUET' }
   ];
 
