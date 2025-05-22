@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   FileText,
   ChevronLeft,
@@ -19,7 +19,6 @@ import usePopover from "@/hooks/usePopover";
 import useRemoteFileImport, {
   RemoteSourceProvider,
 } from "@/hooks/useRemoteFileImport";
-import useGoogleSheetsImport from "@/hooks/useGoogleSheetsImport";
 
 import { ColumnType } from "@/types/csv";
 import { DataSourceType } from "@/types/json";
@@ -49,10 +48,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
 
-  // Use our custom hook for the upload popover
   const uploadPopover = usePopover();
 
-  // Local file import hooks
   const {
     handleRecentFileSelect,
     processFile,
@@ -61,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     processingError: localFileProcessingError,
   } = useDirectFileImport();
 
-  // Remote file import hooks
+  // TODO: NOT BEING USED FOR NOW: Remote file import hooks
   const {
     importFromURL,
     isImporting: isProcessingRemoteFile,
@@ -69,33 +66,20 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     error: remoteFileImportError,
   } = useRemoteFileImport();
 
-  // DuckDB store
   const {
     isLoading: duckDBLoading,
     processingProgress: duckDBProgress,
     error: duckDBError,
   } = useDuckDBStore();
 
-  // Add the Google Sheets import hook
-  const {
-    importFromGoogleSheets,
-    isImporting: isImportingGoogleSheet,
-    importStatus: googleSheetsImportStatus,
-    importProgress: googleSheetsImportProgress,
-    error: googleSheetsError,
-  } = useGoogleSheetsImport();
-
-  // Handle remote file import
   const handleURLSubmit = async (
-    url: string,
+    result: any,
     provider: RemoteSourceProvider
   ) => {
     if (!onDataLoad) return;
 
     try {
       if (provider === "google_sheets") {
-        // Use our Google Sheets import hook
-        const result = await importFromGoogleSheets(url);
         if (result) {
           onDataLoad(result);
         }
@@ -281,9 +265,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           <div className="flex-1">
             <GoogleSheetsImport
               onImport={(result) =>
-                handleURLSubmit(result.remoteURL!, "google_sheets")
+                handleURLSubmit(result!, "google_sheets")
               }
-              isLoading={isImportingGoogleSheet}
             />
           </div>
         </div>

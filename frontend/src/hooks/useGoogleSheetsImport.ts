@@ -207,6 +207,7 @@ export function useGoogleSheetsImport() {
         // Get a display name for the sheet
         const displayName = getDisplaySheetName(sheetInfo);
         
+      
         // Create the final result object
         const result: GoogleSheetsImportResult = {
           data: sampleData,
@@ -232,6 +233,7 @@ export function useGoogleSheetsImport() {
             importedAt: Date.now(),
           }
         };
+        console.log('result is:', result);
         
         setImportStatus('Import complete!');
         setImportProgress(1);

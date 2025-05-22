@@ -2,13 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  ExternalLink,
   AlertCircle,
   Check,
-  ArrowRight,
   FileSpreadsheet,
   Table,
-  Link,
   Loader2,
   ChevronRight,
 } from "lucide-react";
@@ -35,11 +32,11 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
-  
+
   // Google Sheets detection state
   const [isGoogleSheet, setIsGoogleSheet] = useState(false);
   const [googleSheetInfo, setGoogleSheetInfo] = useState<any>(null);
-  
+
   // Google Sheets import hook
   const {
     importFromGoogleSheets,
@@ -99,10 +96,12 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
 
       // Validate for Google Sheets URL
       if (!isGoogleSheet) {
-        setInputError("Please enter a valid Google Sheets URL that's published to the web");
+        setInputError(
+          "Please enter a valid Google Sheets URL that's published to the web"
+        );
         return false;
       }
-      
+
       return true;
     } catch (err) {
       setInputError("Please enter a valid URL");
@@ -143,7 +142,7 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -156,7 +155,7 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ delay: 0.1, duration: 0.2 }}
-              className="w-full max-w-md bg-darkNav border border-white/20 rounded-lg shadow-xl shadow-black/30 overflow-hidden"
+              className="w-full max-w-md bg-black border border-white/20 rounded-lg shadow-xl shadow-black/30 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -194,14 +193,16 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                         placeholder="https://docs.google.com/spreadsheets/d/e/2PACX..."
                         className={cn(
                           "w-full px-3 py-2 h-10 bg-black/30 border border-white/20 rounded text-white/90 text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/40",
-                          inputError && "border-destructive focus:ring-destructive",
-                          isGoogleSheet && "border-green-500 focus:ring-green-500"
+                          inputError &&
+                            "border-destructive focus:ring-destructive",
+                          isGoogleSheet &&
+                            "border-green-500 focus:ring-green-500"
                         )}
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         disabled={isImporting}
                       />
-                      
+
                       {/* Status indicator */}
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         {isImporting ? (
@@ -217,10 +218,10 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                         ) : null}
                       </div>
                     </div>
-                    
+
                     {/* Input feedback */}
                     {inputError && (
-                      <motion.p 
+                      <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-1 text-xs text-destructive flex items-center"
@@ -229,10 +230,10 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                         {inputError}
                       </motion.p>
                     )}
-                    
+
                     {/* Google Sheets info */}
                     {isGoogleSheet && googleSheetInfo && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         className="mt-3 overflow-hidden"
@@ -249,12 +250,10 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                               </span>
                             )}
                           </div>
-                          
+
                           <div className="flex mt-2 text-xs text-white/70">
                             <Table className="h-3.5 w-3.5 mr-1.5 text-white/50" />
-                            <span>
-                              Published sheet - ready to import
-                            </span>
+                            <span>Published sheet - ready to import</span>
                           </div>
                         </div>
                       </motion.div>
@@ -275,17 +274,18 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                       >
                         <div className="text-xs bg-green-500/10 border border-green-500/20 rounded p-3">
                           <div className="flex items-center">
-                            <div className="mr-2 h-4 w-4 rounded-full border-2 border-green-500 border-t-transparent animate-spin"></div>
                             <p className="text-green-500 font-medium">
                               {importStatus}
                             </p>
                           </div>
                           {/* Progress bar */}
                           <div className="w-full bg-black/30 h-1.5 mt-2 rounded-full overflow-hidden">
-                            <motion.div 
+                            <motion.div
                               className="bg-green-500 h-full rounded-full"
                               initial={{ width: "5%" }}
-                              animate={{ width: `${Math.max(5, importProgress * 100)}%` }}
+                              animate={{
+                                width: `${Math.max(5, importProgress * 100)}%`,
+                              }}
                               transition={{ duration: 0.3 }}
                             />
                           </div>
@@ -293,7 +293,7 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  
+
                   {/* Error message */}
                   <AnimatePresence>
                     {importError && (
@@ -328,14 +328,16 @@ export const GoogleSheetsImport: React.FC<GoogleSheetsImportProps> = ({
                   <Button
                     type="submit"
                     className={cn(
-                      isGoogleSheet ? "bg-green-600 hover:bg-green-700" : undefined
+                      isGoogleSheet
+                        ? "bg-green-600 hover:bg-green-700"
+                        : undefined
                     )}
                     disabled={isImporting || !url.trim() || !isGoogleSheet}
                   >
                     {isImporting ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                        Importing...
+                        Importing
                       </>
                     ) : (
                       <>
