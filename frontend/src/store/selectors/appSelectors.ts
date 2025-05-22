@@ -116,9 +116,6 @@ export const selectStatusText = (state: AppState) => {
       : "CSV data"
   }`;
 
-  const duckDBText = activeFile.loadedToDuckDB
-    ? ` | Loaded in DuckDB (table: ${activeFile.tableName})`
-    : "";
 
   const interactionText =
     activeFile.sourceType === DataSourceType.JSON &&
@@ -126,5 +123,5 @@ export const selectStatusText = (state: AppState) => {
       ? " | Explore the JSON structure."
       : " | Use SQL queries for analysis.";
 
-  return baseText + duckDBText + interactionText;
+  return baseText + interactionText;
 };
