@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { FileUploadButton } from "@/components/common/FileUploadButton";
 import { ThemeColorPicker } from "@/components/common/ThemeColorPicker";
-import { RemoteFileImport } from "@/components/common/RemoteFileImport";
 import useFileAccess from "@/hooks/useFileAccess";
 import { useDuckDBStore } from "@/store/duckDBStore";
 import useDirectFileImport from "@/hooks/useDirectFileImport";
@@ -23,6 +22,7 @@ import useRemoteFileImport, {
 
 import { ColumnType } from "@/types/csv";
 import { DataSourceType } from "@/types/json";
+import GoogleSheetsImport from "../common/import-modal/GoogleSheetsImportModal";
 
 export interface DataLoadWithDuckDBResult {
   data: string[][];
@@ -48,10 +48,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
 
-  // Use our custom hook for the upload popover
   const uploadPopover = usePopover();
 
-  // Local file import hooks
   const {
     handleRecentFileSelect,
     processFile,
@@ -60,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     processingError: localFileProcessingError,
   } = useDirectFileImport();
 
-  // Remote file import hooks
+  // TODO: NOT BEING USED FOR NOW: Remote file import hooks
   const {
     importFromURL,
     isImporting: isProcessingRemoteFile,
@@ -68,30 +66,34 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     error: remoteFileImportError,
   } = useRemoteFileImport();
 
-  // DuckDB store
   const {
     isLoading: duckDBLoading,
     processingProgress: duckDBProgress,
     error: duckDBError,
   } = useDuckDBStore();
 
-  // Handle remote file import
   const handleURLSubmit = async (
-    url: string,
+    result: any,
     provider: RemoteSourceProvider
   ) => {
     if (!onDataLoad) return;
 
     try {
-      const result = await importFromURL(url, provider);
+      if (provider === "google_sheets") {
+        if (result) {
+          onDataLoad(result);
+        }
+      } else {
+        const result = await importFromURL(url, provider);
 
-      if (result) {
-        onDataLoad({
-          ...result,
-          isRemote: true,
-          remoteURL: url,
-          remoteProvider: provider,
-        });
+        if (result) {
+          onDataLoad({
+            ...result,
+            isRemote: true,
+            remoteURL: url,
+            remoteProvider: provider,
+          });
+        }
       }
     } catch (error) {
       console.error("Error importing remote file:", error);
@@ -260,14 +262,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         />
 
         <div className="mt-2 mb-2 flex items-center">
-          <div className="w-8 text-center">
-            <span className="text-xs font-medium text-white/40">OR</span>
-          </div>
           <div className="flex-1">
-            <RemoteFileImport
-              disabled={true}
-              onURLSubmit={handleURLSubmit}
-              isLoading={isLoading}
+            <GoogleSheetsImport
+              onImport={(result) =>
+                handleURLSubmit(result!, "google_sheets")
+              }
             />
           </div>
         </div>
