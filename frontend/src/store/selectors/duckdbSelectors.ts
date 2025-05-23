@@ -126,8 +126,8 @@ export const selectDefaultQuery = (state: DuckDBState) => {
   
   // If user has uploaded tables, prioritize the first user table
   if (userTables.length > 0) {
-    const primaryTable = userTables[0];
-    cachedDefaultQuery = `-- Querying your data: ${primaryTable}
+    const primaryTable = userTables[userTables.length - 1];
+    cachedDefaultQuery = `-- Querying your data
 -- Write your SQL query here
 SELECT *
 FROM "${primaryTable}"

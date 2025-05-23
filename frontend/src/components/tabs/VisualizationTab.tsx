@@ -145,7 +145,7 @@ const ChartTypeRow: React.FC = () => {
  */
 const VisualizationTab: React.FC = () => {
   const hasFiles = useAppStore(selectHasFiles);
-  const { setActiveTab, files } = useAppStore();
+  const { setActiveTab, activeFileId, setActiveFile, files } = useAppStore();
   const {
     currentChart,
     createNewChart,
@@ -168,7 +168,7 @@ const VisualizationTab: React.FC = () => {
   useEffect(() => {
     if (!selectedDataSource && files.length > 0) {
       const firstFileWithData = files.find(
-        (file) => file.data && file.data.length > 1
+        (file) => file.id === activeFileId
       );
       if (firstFileWithData) {
         const source: DataSource = {
@@ -293,7 +293,10 @@ const VisualizationTab: React.FC = () => {
           {/* Data source selection */}
           <DataSourceDropdown
             selectedSource={selectedDataSource}
-            onSourceChange={setSelectedDataSource}
+            onSourceChange={(file) => {
+              setSelectedDataSource(file);
+              setActiveFile(file.fileId);
+            }}
           />
 
           {/* Chart type selection */}
