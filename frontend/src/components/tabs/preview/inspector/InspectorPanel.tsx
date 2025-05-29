@@ -3,20 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Download,
-  AlertCircle,
-  TrendingUp,
   Hash,
   Type,
   Calendar,
   FileText,
-  RefreshCw,
   ChevronDown,
   ChevronRight,
-  Info,
-  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Store imports
 import { useInspectorStore, InspectorMetrics } from "@/store/inspectorStore";
 import { useAppStore } from "@/store/appStore";
 import {
@@ -24,104 +20,86 @@ import {
   selectActiveFile,
 } from "@/store/selectors/appSelectors";
 
+import { useAutoAnalysis, QuickPreviewCard } from "./hooks/useAutoAnalysis";
+import { LoadingState } from "./components/LoadingStates";
 import {
-  ChartContainer,
-  NumericHistogram,
-  CategoricalBarChart,
-} from "./charts";
-import { ColumnSearch, FilterType } from "./ColumnSearch";
-import { useColumnFilter } from "./useColumnFilter";
-import { QuickOverview } from "./QuickOverview";
+  NoColumnsEmptyState,
+  ErrorEmptyState,
+} from "./components/EmptyStates";
+
+import { MiniChart } from "./components/charts";
+import { ColumnSearch, FilterType } from "./components/ColumnSearch";
+import { useColumnFilter } from "./hooks/useColumnFilter";
+import { useInitialQuery } from "@/hooks/query/useQueryInitialization";
 
 interface InspectorPanelProps {
   className?: string;
 }
 
-/**
- * Enhanced Mini Chart Component using Recharts
- */
-const MiniChart: React.FC<{
-  column: InspectorMetrics["columnMetrics"][0];
-  metrics: InspectorMetrics;
-}> = ({ column, metrics }) => {
-  const isNumeric = column.numericStats;
-  const frequentValues = metrics.frequentValues.find(
-    (fv) => fv.column === column.name
-  );
-
-  // Render histogram for numeric columns
-  if (isNumeric && column.histogramData && column.histogramData.length > 0) {
-    return (
-      <ChartContainer title="Distribution" height={140}>
-        <NumericHistogram
-          data={column.histogramData}
-          color="hsl(175, 100%, 36%)" // primary color
-        />
-      </ChartContainer>
-    );
-  }
-
-  // Render bar chart for categorical columns
-  if (frequentValues && frequentValues.values.length > 0) {
-    return (
-      <ChartContainer title="Top Values" height={140}>
-        <CategoricalBarChart
-          data={frequentValues.values.slice(0, 7)} // Top 7 values
-          colors={[
-            "red", // secondary
-            "hsl(175, 100%, 36%)", // primary
-            "hsl(167, 53%, 49%)", // tertiary
-            "hsl(271, 75%, 63%)", // secondary lighter
-            "hsl(175, 100%, 46%)", // primary lighter
-            "hsl(167, 53%, 59%)", // tertiary lighter
-            "hsl(271, 75%, 73%)", // secondary even lighter
-          ]}
-        />
-      </ChartContainer>
-    );
-  }
-
-  // Fallback stats display
-  if (isNumeric && column.numericStats) {
-    return (
-      <div className="mt-3 p-3 bg-card/20 rounded-lg">
-        <div className="text-xs text-white/60 mb-2">Statistics</div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-white/60">Min:</span>
-            <span className="text-white font-mono">
-              {column.numericStats.min.toLocaleString()}
-            </span>
+const QuickOverview: React.FC<{ metrics: InspectorMetrics }> = ({
+  metrics,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-4 border-b border-white/10"
+    >
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-card/20 rounded-lg"
+        >
+          <div className="text-2xl font-bold text-white mb-1">
+            {metrics.totalRows.toLocaleString()}
           </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Max:</span>
-            <span className="text-white font-mono">
-              {column.numericStats.max.toLocaleString()}
-            </span>
+          <div className="text-xs text-white/60">Rows</div>
+        </motion.div>
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-card/20 rounded-lg"
+        >
+          <div className="text-2xl font-bold text-white mb-1">
+            {metrics.totalColumns}
           </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Mean:</span>
-            <span className="text-white font-mono">
-              {column.numericStats.mean.toFixed(2)}
-            </span>
+          <div className="text-xs text-white/60">Columns</div>
+        </motion.div>
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-card/20 rounded-lg"
+        >
+          <div className="text-2xl font-bold text-red-400 mb-1">
+            {metrics.duplicateRows}
           </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Median:</span>
-            <span className="text-white font-mono">
-              {column.numericStats.median.toFixed(2)}
-            </span>
-          </div>
-        </div>
+          <div className="text-xs text-white/60">Duplicates</div>
+        </motion.div>
       </div>
-    );
-  }
 
-  return null;
+      {/* Top recommendations */}
+      {/* {metrics.recommendations && metrics.recommendations.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="bg-primary/5 border border-primary/20 rounded-lg p-3"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Key Insights</span>
+          </div>
+          <div className="text-xs text-white/80">
+            {metrics.recommendations[0]}
+          </div>
+          {metrics.recommendations.length > 1 && (
+            <div className="text-xs text-white/60 mt-1">
+              +{metrics.recommendations.length - 1} more recommendations
+            </div>
+          )}
+        </motion.div>
+      )} */}
+    </motion.div>
+  );
 };
 
-/**
- * Column Row Component (MotherDuck-inspired)
- */
 const ColumnRow: React.FC<{
   column: InspectorMetrics["columnMetrics"][0];
   metrics: InspectorMetrics;
@@ -158,12 +136,10 @@ const ColumnRow: React.FC<{
   };
 
   const generateSuggestedQueries = () => {
-    const tableName = metrics.activeTableName
-      ? `"${metrics.activeTableName}"`
-      : "table";
+    const tableName = "table_name"; // You might want to get this from metrics
     const queries = [];
 
-    // For columns with low cardinality
+    // Smart query suggestions based on column characteristics
     if (column.uniqueCount <= 10 && column.uniqueCount > 1) {
       queries.push({
         query: `SELECT DISTINCT "${column.name}" FROM ${tableName} ORDER BY "${column.name}"`,
@@ -171,21 +147,13 @@ const ColumnRow: React.FC<{
       });
     }
 
-    // For columns with nulls
     if (column.nullCount > 0) {
       queries.push({
         query: `SELECT * FROM ${tableName} WHERE "${column.name}" IS NOT NULL`,
         description: `Filter out ${column.nullCount} null values`,
       });
-
-      // Also add query to see null rows
-      queries.push({
-        query: `SELECT * FROM ${tableName} WHERE "${column.name}" IS NULL`,
-        description: `Show ${column.nullCount} rows with null values`,
-      });
     }
 
-    // For numeric columns
     if (column.numericStats) {
       const { mean, std } = column.numericStats;
       if (std > 0) {
@@ -197,15 +165,8 @@ const ColumnRow: React.FC<{
           description: `Find outliers (>${threshold.toFixed(2)})`,
         });
       }
-
-      // Add range query
-      queries.push({
-        query: `SELECT MIN("${column.name}") as min_val, MAX("${column.name}") as max_val, AVG("${column.name}") as avg_val FROM ${tableName}`,
-        description: `Get min/max/average statistics`,
-      });
     }
 
-    // For text columns
     if (column.textStats) {
       queries.push({
         query: `SELECT "${column.name}", LENGTH("${column.name}") as text_length FROM ${tableName} ORDER BY text_length DESC LIMIT 10`,
@@ -223,15 +184,22 @@ const ColumnRow: React.FC<{
   };
 
   return (
-    <div className="border-b border-white/5">
-      <button
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="border-b border-white/5"
+    >
+      <motion.button
+        whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
         onClick={onToggle}
-        className="w-full p-3 hover:bg-white/2 transition-colors flex items-center justify-between text-left"
+        className="w-full p-3 transition-colors flex items-center justify-between text-left"
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
           {getColumnIcon(column.type)}
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-white truncate">{column.name}</div>
+            <div className="font-medium text-white truncate flex items-center gap-2">
+              {column.name}
+            </div>
             <div className="text-xs text-white/60">{column.type}</div>
           </div>
           <div className="text-right">
@@ -241,12 +209,13 @@ const ColumnRow: React.FC<{
             </div>
           </div>
         </div>
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-white/50 ml-2" />
-        ) : (
+        <motion.div
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
           <ChevronRight className="h-4 w-4 text-white/50 ml-2" />
-        )}
-      </button>
+        </motion.div>
+      </motion.button>
 
       <AnimatePresence>
         {isExpanded && (
@@ -261,15 +230,19 @@ const ColumnRow: React.FC<{
               {/* Chart */}
               <MiniChart column={column} metrics={metrics} />
 
+              {/* TODO: Next phase */}
               {/* Suggested Queries */}
-              <div className="mt-3">
+              {/*   <div className="mt-3">
                 <div className="text-xs text-white/60 mb-2">
                   Suggested Queries
                 </div>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
+                
+              <div className="space-y-1 max-h-32 overflow-y-auto">
                   {generateSuggestedQueries().map((item, i) => (
-                    <button
+                    <motion.button
                       key={i}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() =>
                         onGenerateQuery(item.query, item.description)
                       }
@@ -277,21 +250,19 @@ const ColumnRow: React.FC<{
                     >
                       <Play className="h-3 w-3 text-primary flex-shrink-0" />
                       <span className="text-white/80">{item.description}</span>
-                    </button>
+                    </motion.button>
                   ))}
-                </div>
+                </div> 
               </div>
+              */}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
 
-/**
- * File Selector Component
- */
 const FileSelector: React.FC<{
   currentFileId: string | null;
   onFileChange: (fileId: string) => void;
@@ -305,9 +276,10 @@ const FileSelector: React.FC<{
 
   return (
     <div className="relative p-4 border-b border-white/10">
-      <button
+      <motion.button
+        whileHover={{ scale: 1.01 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-2 bg-card/30 hover:bg-card/50 rounded-lg border border-white/10 transition-colors"
+        className="w-full flex items-center justify-between p-3 bg-card/30 hover:bg-card/50 rounded-lg border border-white/10 transition-colors"
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <FileText className="h-4 w-4 text-white/60" />
@@ -315,13 +287,13 @@ const FileSelector: React.FC<{
             {currentFile?.fileName || "Select file..."}
           </span>
         </div>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 text-white/60 transition-transform",
-            isOpen && "rotate-180"
-          )}
-        />
-      </button>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="h-4 w-4 text-white/60" />
+        </motion.div>
+      </motion.button>
 
       <AnimatePresence>
         {isOpen && (
@@ -329,23 +301,24 @@ const FileSelector: React.FC<{
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-4 right-4 mt-1 bg-card/95 backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
+            className="absolute top-full left-4 right-4 mt-1 bg-card backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
           >
             {fileTabs.map((tab) => (
-              <button
+              <motion.button
                 key={tab.id}
+                whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
                 onClick={() => {
                   onFileChange(tab.id);
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-2 p-2 text-left hover:bg-white/10 transition-colors",
+                  "w-full flex items-center gap-2 p-3 text-left transition-colors cursor-pointer",
                   tab.id === currentFileId && "bg-primary/20 text-primary"
                 )}
               >
-                <FileText className="h-3 w-3" />
+                <FileText className="h-3 w-3 flex-shrink-0" />
                 <span className="text-sm truncate">{tab.fileName}</span>
-              </button>
+              </motion.button>
             ))}
           </motion.div>
         )}
@@ -354,71 +327,16 @@ const FileSelector: React.FC<{
   );
 };
 
-/**
- * Loading State Component
- */
-const LoadingState: React.FC<{ progress: number; status: string }> = ({
-  progress,
-  status,
-}) => (
-  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-    <div className="relative">
-      <RefreshCw className="h-8 w-8 text-primary animate-spin" />
-    </div>
-    <div className="text-center space-y-2">
-      <div className="text-sm font-medium text-white">{status}</div>
-      <div className="w-64 bg-white/10 rounded-full h-2">
-        <div
-          className="bg-primary h-2 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className="text-xs text-white/60">
-        {progress.toFixed(0)}% complete
-      </div>
-    </div>
-  </div>
-);
-
-/**
- * Error State Component
- */
-const ErrorState: React.FC<{ error: string; onRetry: () => void }> = ({
-  error,
-  onRetry,
-}) => (
-  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-    <AlertCircle className="h-8 w-8 text-red-400" />
-    <div className="text-center space-y-2">
-      <div className="text-sm font-medium text-white">Analysis Failed</div>
-      <div className="text-xs text-white/60 max-w-80 px-4">{error}</div>
-    </div>
-    <button
-      onClick={onRetry}
-      className="px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm font-medium transition-colors"
-    >
-      Retry Analysis
-    </button>
-  </div>
-);
-
-/**
- * Main Inspector Panel Component
- */
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
-  // All state comes from inspector store
+  // Store states
   const {
     isOpen,
     width,
     setWidth,
     closePanel,
-    isAnalyzing,
-    analysisProgress,
-    analysisStatus,
     activeFileId,
     results,
     error,
-    analyzeFile,
     switchAnalysisTarget,
     exportResults,
     resetError,
@@ -428,29 +346,44 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
   const fileTabs = useAppStore(selectFileTabs);
   const { setActiveTab } = useAppStore();
 
-  // Refs for panel management
+  const { setQuery } = useInitialQuery();
+
+  const {
+    quickPreview,
+    isGettingPreview,
+    shouldShowPreview,
+    isAnalyzing,
+    analysisProgress,
+    analysisStatus,
+    manualTrigger,
+  } = useAutoAnalysis({
+    autoAnalysisDelay: 1000,
+    autoOpenPanel: false,
+    showQuickPreview: true,
+  });
+
+  // UI state
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(
     new Set()
   );
-
-  // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const [analysisStartTime] = useState(Date.now());
 
   // Get current analysis results
   const currentResults = activeFileId ? results.get(activeFileId) : null;
 
-  // Filter columns based on search and filter type
+  // Filter columns
   const filteredColumns = useColumnFilter(
     currentResults?.columnMetrics || [],
     searchTerm,
     filterType
   );
 
-  // Toggle column expansion
+  // Handlers
   const toggleColumn = (columnName: string) => {
     const newExpanded = new Set(expandedColumns);
     if (newExpanded.has(columnName)) {
@@ -461,20 +394,43 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
     setExpandedColumns(newExpanded);
   };
 
-  // Handle query generation and navigation
   const handleGenerateQuery = (query: string, description: string) => {
-    // Copy to clipboard
     navigator.clipboard.writeText(query);
-
-    // Switch to query tab
     setActiveTab("query");
-
-    // Close inspector after generating query
+    setQuery(query);
     closePanel();
+  };
 
-    // TODO:
-    // You might want to also set the query in your Monaco editor
-    // This would depend on your query tab implementation
+  const handleFileChange = (fileId: string) => {
+    const file = fileTabs.find((tab) => tab.id === fileId);
+    if (file && file.fileName) {
+      const appFile = useAppStore.getState().files.find((f) => f.id === fileId);
+      const tableName = appFile?.tableName;
+
+      if (tableName) {
+        switchAnalysisTarget(fileId, tableName);
+      }
+    }
+  };
+
+  const handleExport = async () => {
+    if (!activeFileId) return;
+    try {
+      await exportResults(activeFileId);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  };
+
+  const handleRetry = () => {
+    if (!activeFile || !activeFileId) return;
+    resetError();
+    manualTrigger();
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilterType("all");
   };
 
   // Reset search when results change
@@ -484,7 +440,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
     setExpandedColumns(new Set());
   }, [activeFileId]);
 
-  // Resize handling
+  // Resize handling (same as before)
   useEffect(() => {
     let startX = 0;
     let startWidth = 0;
@@ -492,10 +448,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault();
       setIsResizing(true);
-
       startX = e.clientX;
       startWidth = width;
-
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.body.style.cursor = "col-resize";
@@ -519,7 +473,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
     const resizeHandle = resizeHandleRef.current;
     if (resizeHandle) {
       resizeHandle.addEventListener("mousedown", handleMouseDown);
-
       return () => {
         resizeHandle.removeEventListener("mousedown", handleMouseDown);
         document.removeEventListener("mousemove", handleMouseMove);
@@ -549,7 +502,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
       const timer = setTimeout(() => {
         document.addEventListener("mousedown", handleClickOutside);
       }, 100);
-
       return () => {
         clearTimeout(timer);
         document.removeEventListener("mousedown", handleClickOutside);
@@ -564,68 +516,28 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
         closePanel();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, closePanel]);
-
-  // Handle file switching in inspector
-  const handleFileChange = (fileId: string) => {
-    const file = fileTabs.find((tab) => tab.id === fileId);
-    if (file && file.fileName) {
-      const appFile = useAppStore.getState().files.find((f) => f.id === fileId);
-      const tableName = appFile?.tableName;
-
-      if (tableName) {
-        switchAnalysisTarget(fileId, tableName);
-      } else {
-        console.error("No table name found for file:", fileId);
-      }
-    }
-  };
-
-  // Handle export
-  const handleExport = async () => {
-    if (!activeFileId) return;
-
-    try {
-      await exportResults(activeFileId);
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
-  };
-
-  // Handle retry
-  const handleRetry = () => {
-    if (!activeFile || !activeFileId) return;
-
-    resetError();
-    const tableName = activeFile.tableName;
-
-    if (tableName) {
-      analyzeFile(activeFileId, tableName);
-    } else {
-      console.error("No table name found for retry");
-    }
-  };
 
   if (!isOpen) return null;
 
   return (
     <div className={cn("fixed inset-y-0 right-0 z-50", className)}>
       {/* Backdrop */}
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/20 backdrop-blur-sm"
         onClick={closePanel}
       />
 
-      {/* Panel - Now wider for charts */}
+      {/* Panel */}
       <motion.div
         ref={panelRef}
         className="relative h-full bg-background/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex"
-        style={{
-          width: `${Math.max(500, width)}px`, // Minimum 500px for charts
-        }}
+        style={{ width: `${Math.max(500, width)}px` }}
         initial={{ x: "100%" }}
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
@@ -644,28 +556,39 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
         {/* Panel Content */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between p-4 border-b border-white/10"
+          >
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-white">Date Inspector</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Data Inspector
+              </h2>
             </div>
             <div className="flex items-center gap-2">
-              {currentResults && (
-                <button
+              {/* TODO: To be revisited if this is needed? */}
+              {/* {currentResults && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleExport}
                   className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
                   title="Export results to CSV"
                 >
                   <Download className="h-4 w-4" />
-                </button>
-              )}
-              <button
+                </motion.button>
+              )} */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={closePanel}
-                className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
 
           {/* File Selector */}
           {fileTabs.length > 1 && (
@@ -677,19 +600,40 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            {error ? (
-              <ErrorState error={error} onRetry={handleRetry} />
-            ) : isAnalyzing ? (
+            {/* Error State */}
+            {error && !isAnalyzing && (
+              <ErrorEmptyState
+                error={error}
+                onRetry={handleRetry}
+                onReset={resetError}
+              />
+            )}
+
+            {/* Loading State */}
+            {isAnalyzing && (
               <LoadingState
                 progress={analysisProgress}
                 status={analysisStatus}
+                startTime={analysisStartTime}
+                preview={quickPreview}
+                estimatedTimeLeft={0} // Could calculate this based on progress
               />
-            ) : currentResults ? (
-              <>
-                {/* Quick Overview */}
-                <QuickOverview metrics={currentResults} />
+            )}
 
-                {/* Column Search and Filter */}
+            {/* Quick Preview (while getting preview or analyzing) */}
+            {shouldShowPreview && quickPreview && !currentResults && !error && (
+              <div className="p-4">
+                <QuickPreviewCard
+                  preview={quickPreview}
+                  isAnalyzing={isAnalyzing || isGettingPreview}
+                />
+              </div>
+            )}
+
+            {/* Analysis Results */}
+            {currentResults && !isAnalyzing && !error && (
+              <>
+                <QuickOverview metrics={currentResults} />
                 <ColumnSearch
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
@@ -699,43 +643,39 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ className }) => {
                   filteredCount={filteredColumns.length}
                 />
 
-                {/* Column List */}
                 <div className="flex-1">
                   {filteredColumns.length > 0 ? (
-                    filteredColumns.map((column) => (
-                      <ColumnRow
-                        key={column.name}
-                        column={column}
-                        metrics={currentResults}
-                        isExpanded={expandedColumns.has(column.name)}
-                        onToggle={() => toggleColumn(column.name)}
-                        onGenerateQuery={handleGenerateQuery}
-                      />
-                    ))
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      {filteredColumns.map((column, index) => (
+                        <motion.div
+                          key={column.name}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <ColumnRow
+                            column={column}
+                            metrics={currentResults}
+                            isExpanded={expandedColumns.has(column.name)}
+                            onToggle={() => toggleColumn(column.name)}
+                            onGenerateQuery={handleGenerateQuery}
+                          />
+                        </motion.div>
+                      ))}
+                    </motion.div>
                   ) : (
-                    <div className="p-8 text-center">
-                      <div className="text-sm text-white/70">
-                        No columns match your filter
-                      </div>
-                      <div className="text-xs text-white/50 mt-1">
-                        Try adjusting your search or filter
-                      </div>
-                    </div>
+                    <NoColumnsEmptyState
+                      searchTerm={searchTerm}
+                      filterType={filterType}
+                      onClearFilters={handleClearFilters}
+                      totalColumns={currentResults.columnMetrics.length}
+                    />
                   )}
                 </div>
               </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <Info className="h-8 w-8 text-white/40" />
-                <div className="text-center space-y-2">
-                  <div className="text-sm font-medium text-white/70">
-                    No Analysis Available
-                  </div>
-                  <div className="text-xs text-white/50">
-                    Select a file to start data quality analysis
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
