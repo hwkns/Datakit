@@ -79,7 +79,7 @@ export const ColumnSearch: React.FC<ColumnSearchProps> = ({
 
   return (
     <div className="p-4 border-b border-white/10">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-white/90">Columns</h3>
           <span className="text-xs text-white/50">
@@ -197,8 +197,8 @@ export const ColumnSearch: React.FC<ColumnSearchProps> = ({
         </motion.div>
       )}
 
-      <p className="text-xs text-white/60 mt-2">
-        Click columns to explore patterns and generate queries
+      <p className="text-xs text-white/60 mt-1">
+        Click columns to explore patterns
       </p>
     </div>
   );
