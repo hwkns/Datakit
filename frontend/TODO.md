@@ -29,3 +29,7 @@
 
 # self hosting
 0> 
+
+
+# privacy page
+0> privacy.datakit.page
