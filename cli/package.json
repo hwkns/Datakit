@@ -1,0 +1,51 @@
+{
+    "name": "datakit-cli",
+    "version": "0.1.0",
+    "description": "CLI tool to run DataKit locally - a modern web-based data analysis tool",
+    "main": "index.js",
+    "bin": {
+        "datakit": "./bin/datakit.js"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "prepublishOnly": "node scripts/copy-dist.js"
+    },
+    "keywords": [
+        "datakit",
+        "machine-learning",
+        "data-analysis",
+        "csv",
+        "json",
+        "sql",
+        "duckdb",
+        "cli",
+        "parquet",
+        "xlsx",
+        "data",
+        "inspection",
+        "local"
+    ],
+    "author": "Amin<https://amin.contact>",
+    "license": "MIT",
+    "dependencies": {
+        "chalk": "^4.1.2",
+        "commander": "^9.4.1",
+        "express": "^4.18.2",
+        "get-port": "^5.1.1",
+        "open": "^8.4.2"
+    },
+    "files": [
+        "bin/",
+        "lib/",
+        "dist/",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    
+    "homepage": "https://datakit.page",
+    "bugs": {
+        "url": "https://docs.datakit.page"
+    }
+}
