@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  datakit:
+    build: .
+    container_name: datakit-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Environment variables
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
+    
+    # Labels for metadata
+    labels:
+      - "com.datakit.description=DataKit - Modern web-based data analysis tool"
+      - "com.datakit.version=0.1.0"
+      - "com.datakit.url=https://datakit.page"
+
+networks:
+  default:
+    name: datakit-network
