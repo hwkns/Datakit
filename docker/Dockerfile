@@ -3,7 +3,7 @@ FROM nginx:alpine
 
 LABEL maintainer="DataKit Team <amin@wavequery.com>"
 LABEL description="DataKit - Modern web-based data analysis tool"
-LABEL version="0.1.0"
+LABEL version="0.1.1"
 
 RUN rm -rf /usr/share/nginx/html/*
 
