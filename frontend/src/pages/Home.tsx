@@ -19,6 +19,7 @@ import {
   selectJsonSchema,
 } from "@/store/selectors/appSelectors";
 import { DataSourceType } from "@/types/json";
+import { SEO } from "@/components/common/SEO";
 
 /**
  * Main application home page component
@@ -66,6 +67,13 @@ const Home = () => {
   };
 
   return (
+    <>
+    <SEO 
+        title="DataKit - Home"
+        description="Modern web-based data analysis tool - Process large files locally with complete privacy"
+        keywords="data analysis, sql, duckdb, charts, visualization, inspection, webassembley"
+      />
+
     <MainLayout onDataLoad={handleDataLoad}>
       <div className="p-6 h-full flex flex-col bg-background">
         <div className="mb-4 flex justify-between items-center">
@@ -134,6 +142,7 @@ const Home = () => {
         </div>
       </div>
     </MainLayout>
+    </>
   );
 };
 
