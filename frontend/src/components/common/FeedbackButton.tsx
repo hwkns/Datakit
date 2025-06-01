@@ -1,8 +1,10 @@
-import { FC } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { FC } from "react";
+import { MessageSquare } from "lucide-react";
 
-import { Button } from '@/components/ui/Button';
-import useFeedback from '@/hooks/feedback/useFeedback';
+import { Button } from "@/components/ui/Button";
+import Tooltip from "@components/ui/Tooltip";
+
+import useFeedback from "@/hooks/feedback/useFeedback";
 
 interface FeedbackButtonProps {
   /** Context to include with feedback */
@@ -10,9 +12,9 @@ interface FeedbackButtonProps {
   /** Custom API endpoint for feedback submission */
   apiEndpoint?: string;
   /** Custom size for the button (defaults to 'sm') */
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   /** Custom variant for the button (defaults to 'ghost') */
-  variant?: 'ghost' | 'primary' | 'secondary' | 'outline';
+  variant?: "ghost" | "primary" | "secondary" | "outline";
   /** Custom button text (defaults to 'Share Feedback') */
   text?: string;
   /** Additional CSS classes */
@@ -26,10 +28,10 @@ interface FeedbackButtonProps {
 const FeedbackButton: FC<FeedbackButtonProps> = ({
   context,
   apiEndpoint,
-  size = 'sm',
-  variant = 'primary',
-  text = 'Share Feedback?',
-  className = '',
+  size = "sm",
+  variant = "primary",
+  text = "Share Feedback?",
+  className = "",
 }) => {
   const {
     showFeedbackModal,
@@ -42,15 +44,16 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
     closeFeedbackModal,
     setFeedbackEmail,
     setFeedbackMessage,
-    handleSubmitFeedback
-  } = useFeedback({ 
+    handleSubmitFeedback,
+  } = useFeedback({
     context,
-    apiEndpoint 
+    apiEndpoint,
   });
 
   return (
     <>
       {/* Feedback Button */}
+      <Tooltip placement="bottom" content="Share feedback?">
       <Button
         variant={variant}
         size={size}
@@ -60,18 +63,32 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
         <MessageSquare size={14} className="mr-1.5 text-primary" />
         <span className="text-xs">{text}</span>
       </Button>
+      </Tooltip>
+
+      {/* Tooltip */}
+   
 
       {/* Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 backdrop-blur-sm bg-black/60 flex items-center justify-center z-50">
           <div className="bg-black p-4 rounded-lg shadow-lg w-96 border border-white/10">
             <h3 className="text-lg font-medium mb-4">Share Your Feedback</h3>
-            
+
             {feedbackSuccess ? (
               <div className="bg-primary/10 border border-primary/30 rounded p-3 mb-4 text-white text-sm">
                 <div className="flex items-center">
                   <div className="mr-2 bg-primary rounded-full p-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M20 6L9 17l-5-5"></path>
                     </svg>
                   </div>
@@ -85,9 +102,12 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
                     {feedbackError}
                   </div>
                 )}
-                
+
                 <div className="mb-4">
-                  <label htmlFor="feedback-email" className="block text-sm font-medium text-white/80 mb-1">
+                  <label
+                    htmlFor="feedback-email"
+                    className="block text-sm font-medium text-white/80 mb-1"
+                  >
                     Your Email (optional)
                   </label>
                   <input
@@ -99,9 +119,12 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
                     className="w-full px-3 py-2 bg-background border border-white/10 rounded-md focus:outline-none focus:border-primary text-sm"
                   />
                 </div>
-                
+
                 <div className="mb-4">
-                  <label htmlFor="feedback-message" className="block text-sm font-medium text-white/80 mb-1">
+                  <label
+                    htmlFor="feedback-message"
+                    className="block text-sm font-medium text-white/80 mb-1"
+                  >
                     Your Feedback
                   </label>
                   <textarea
@@ -113,7 +136,7 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
                     className="w-full px-3 py-2 bg-background border border-white/10 rounded-md focus:outline-none focus:border-primary text-sm"
                   />
                 </div>
-                
+
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="ghost"
@@ -131,9 +154,25 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
                   >
                     {isSubmitting ? (
                       <div className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         <span>Sending...</span>
                       </div>

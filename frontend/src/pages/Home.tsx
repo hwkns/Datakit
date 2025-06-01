@@ -3,10 +3,9 @@ import TabNavigation, { Tab } from "@/components/navigation/TabNavigation";
 import DataPreviewTab from "@/components/tabs/DataPreviewTab";
 import QueryTab from "@/components/tabs/QueryTab";
 import VisualizationTab from "@/components/tabs/VisualizationTab";
-import FeedbackButton from "@/components/common/FeedbackButton";
-import DiscordButton from "@/components/common/DiscordButton";
-import ProductHuntButton from "@/components/common/ProductHuntButton";
+
 import { DataLoadWithDuckDBResult } from "@/components/layout/Sidebar";
+import ActionButtons from "@/components/common/ActionButtons";
 
 import { Table, BarChart, Database } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,9 +77,7 @@ const Home = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <DiscordButton />
-            <FeedbackButton context={feedbackContext} />
-            <ProductHuntButton variant="primary" size="sm" text="Support us" />
+            <ActionButtons feedbackContext={feedbackContext} />
             {/* JSON View Mode Toggle (only show for JSON data) */}
             {sourceType === DataSourceType.JSON && jsonSchema?.isNested && (
               <div className="border border-white border-opacity-20 rounded overflow-hidden">
