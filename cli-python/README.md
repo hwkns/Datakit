@@ -8,7 +8,7 @@ Process CSV/JSON/XLSX/PARQUET files locally with complete privacy. No data ever 
 
 ```bash
 # Install DataKit
-pip install datakit-python
+pip install datakit-local
 
 # Start DataKit (opens browser automatically)
 datakit
@@ -34,7 +34,7 @@ datakit serve --no-open
 
 ### Install from PyPI
 ```bash
-pip install datakit
+pip install datakit-local
 ```
 
 ## Usage
