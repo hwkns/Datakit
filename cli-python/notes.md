@@ -180,8 +180,14 @@ echo "Run: twine upload dist/*"
 
 ```bash
 # Full update workflow
-rm -rf dist/ build/ *.egg-info/
+rm -rf dist/ build/ *.egg-info/ datakit_local/static/
+mkdir datakit_local/static
+cp -r ../frontend/dist/* datakit_local/static/
+
+pip install --upgrade build twine wheel
+
 python -m build
+
 twine check dist/*
 twine upload dist/*
 

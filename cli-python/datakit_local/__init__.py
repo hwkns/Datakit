@@ -13,7 +13,7 @@ Features:
 - Visualization capabilities
 """
 
-__version__ = "0.1.10"
+__version__ = "0.1.31"
 __author__ = "DataKit Team"
 __email__ = "amin@wavequery.com"
 __license__ = "MIT"
