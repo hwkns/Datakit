@@ -12,11 +12,19 @@ import {
   detectTableModifyingSQL,
 } from "@/lib/duckdb/ingestion/tables";
 import { analyzeTxtFile } from "@/lib/duckdb/ingestion/analyzeTextFile";
+import {
+  createCsvViewWithFallback,
+  importCsvWithFallback,
+} from "@/lib/duckdb/ingestion/csv/utils";
 
 import { PaginatedQueryResult } from "@/lib/duckdb/types";
 import { ColumnType } from "@/types/csv";
 
 import { SAMPLE_EMPLOYEES_DATA } from "./constants";
+import {
+  createJsonViewWithFallback,
+  importJsonWithFallback,
+} from "@/lib/duckdb/ingestion/json/utils";
 
 interface DuckDBState {
   // DB state
@@ -691,7 +699,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     fileName: string,
     fileSize: number
   ) => {
-    const { db, connection, isInitialized } = get();
+    const { connection, isInitialized } = get();
 
     if (!connection || !isInitialized) {
       await get().initialize();
@@ -700,6 +708,9 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       }
     }
 
+    const fileExt = fileName.split(".").pop()?.toLowerCase();
+    const fileSizeMB = fileSize / (1024 * 1024);
+
     try {
       set({
         isLoading: true,
@@ -707,9 +718,6 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         processingStatus: "Preparing to import file...",
         processingProgress: 0.1,
       });
-
-      const fileExt = fileName.split(".").pop()?.toLowerCase();
-      const fileSizeMB = fileSize / (1024 * 1024);
 
       console.log(
         `[DuckDBStore] Hybrid import: ${fileName} (${fileSizeMB.toFixed(2)}MB)`
@@ -1124,105 +1132,12 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
             });
             console.log(`[DuckDBStore] Creating CSV TABLE for files ≤500MB`);
 
-            // Try multiple approaches with increasing permissiveness
-            let success = false;
-            let createQuery = "";
-
-            // Approach 1: Standard auto-detection
-            try {
-              createQuery = `CREATE TABLE ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                header=true, 
-                auto_detect=true,
-                strict_mode=false
-              )`;
-
-              console.log(
-                `[DuckDBStore] Trying standard CSV import with auto-detection`
-              );
-              await conn.query(createQuery);
-              success = true;
-            } catch (err1) {
-              console.log(`[DuckDBStore] Standard approach failed:`, err1);
-
-              // Approach 2: Increase sample size for better type detection
-              try {
-                await get().connection!.query(
-                  `DROP TABLE IF EXISTS ${escapedTableName}`
-                );
-                createQuery = `CREATE TABLE ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                  header=true, 
-                  auto_detect=true,
-                  strict_mode=false,
-                  sample_size=-1,
-                  ignore_errors=true
-                )`;
-
-                console.log(
-                  `[DuckDBStore] Trying CSV import with full sample size`
-                );
-                await conn.query(createQuery);
-                success = true;
-              } catch (err2) {
-                console.log(`[DuckDBStore] Full sample approach failed:`, err2);
-
-                // Approach 3: Force all columns to VARCHAR
-                try {
-                  await get().connection!.query(
-                    `DROP TABLE IF EXISTS ${escapedTableName}`
-                  );
-                  createQuery = `CREATE TABLE ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                    header=true, 
-                    all_varchar=true,
-                    strict_mode=false,
-                    ignore_errors=true
-                  )`;
-
-                  console.log(
-                    `[DuckDBStore] Trying CSV import with all VARCHAR columns`
-                  );
-                  await conn.query(createQuery);
-                  success = true;
-                } catch (err3) {
-                  console.log(`[DuckDBStore] VARCHAR approach failed:`, err3);
-
-                  // Approach 4: Most permissive settings
-                  try {
-                    await get().connection!.query(
-                      `DROP TABLE IF EXISTS ${escapedTableName}`
-                    );
-                    createQuery = `CREATE TABLE ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                      header=true, 
-                      all_varchar=true,
-                      strict_mode=false,
-                      ignore_errors=true,
-                      max_line_size=1048576,
-                      normalize_names=true
-                    )`;
-
-                    console.log(
-                      `[DuckDBStore] Trying most permissive CSV import`
-                    );
-                    await conn.query(createQuery);
-                    success = true;
-                  } catch (err4) {
-                    console.log(
-                      `[DuckDBStore] All CSV import approaches failed`
-                    );
-                    throw new Error(
-                      `Failed to import CSV file. Last error: ${
-                        err4 instanceof Error ? err4.message : String(err4)
-                      }`
-                    );
-                  }
-                }
-              }
-            }
-
-            if (!success) {
-              throw new Error(
-                `Failed to import CSV file after trying multiple approaches`
-              );
-            }
+            await importCsvWithFallback(
+              conn,
+              escapedTableName,
+              registeredFileName,
+              true
+            );
           } else {
             set({
               processingStatus: `Creating instant CSV view (${fileSizeMB.toFixed(
@@ -1231,38 +1146,11 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
             });
             console.log(`[DuckDBStore] Creating CSV VIEW for files >500MB`);
 
-            // For views, also use progressive fallback
-            let success = false;
-            let createQuery = "";
-
-            try {
-              createQuery = `CREATE VIEW ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                header=true, 
-                auto_detect=true,
-                strict_mode=false
-              )`;
-              await conn.query(createQuery);
-              success = true;
-            } catch (err1) {
-              console.log(`[DuckDBStore] Standard view approach failed:`, err1);
-
-              try {
-                createQuery = `CREATE VIEW ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
-                  header=true, 
-                  all_varchar=true,
-                  strict_mode=false,
-                  ignore_errors=true
-                )`;
-                await conn.query(createQuery);
-                success = true;
-              } catch (err2) {
-                throw new Error(
-                  `Failed to create CSV view: ${
-                    err2 instanceof Error ? err2.message : String(err2)
-                  }`
-                );
-              }
-            }
+            await createCsvViewWithFallback(
+              conn,
+              escapedTableName,
+              registeredFileName
+            );
           }
         } else if (fileExt === "json") {
           if (useTableApproach) {
@@ -1272,7 +1160,13 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
               )}MB)...`,
             });
             console.log(`[DuckDBStore] Creating JSON TABLE for files ≤500MB`);
-            createQuery = `CREATE TABLE ${escapedTableName} AS SELECT * FROM read_json('${registeredFileName}')`;
+
+            await importJsonWithFallback(
+              conn,
+              escapedTableName,
+              registeredFileName,
+              true
+            );
           } else {
             set({
               processingStatus: `Creating instant JSON view (${fileSizeMB.toFixed(
@@ -1280,7 +1174,12 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
               )}MB)...`,
             });
             console.log(`[DuckDBStore] Creating JSON VIEW for files >500MB`);
-            createQuery = `CREATE VIEW ${escapedTableName} AS SELECT * FROM read_json('${registeredFileName}')`;
+
+            await createJsonViewWithFallback(
+              conn,
+              escapedTableName,
+              registeredFileName
+            );
           }
         } else if (fileExt === "parquet") {
           if (useTableApproach) {
@@ -1441,7 +1340,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
   },
 
   importFileDirectly: async (file: File) => {
-    const { db, connection, isInitialized } = get();
+    const { connection, isInitialized } = get();
 
     // Initialize if needed
     if (!connection || !isInitialized) {
@@ -1888,22 +1787,15 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         console.log(`[DuckDBStore] File registered with DuckDB as ${fileName}`);
 
         if (fileExt === "csv") {
-          const createTableQuery = `
-            CREATE TABLE ${escapedTableName} AS 
-            SELECT * FROM read_csv_auto('${fileName}', header=true, auto_detect=true)
-          `;
-
           set({ processingStatus: "Importing CSV file..." });
           console.log(`[DuckDBStore] Creating table from CSV file`);
-          await conn.query(createTableQuery);
+
+          await importCsvWithFallback(conn, escapedTableName, fileName, false);
         } else if (fileExt === "json") {
           set({ processingStatus: "Importing JSON file..." });
-          const createTableQuery = `
-            CREATE TABLE ${escapedTableName} AS 
-            SELECT * FROM read_json_auto('${fileName}')
-          `;
           console.log(`[DuckDBStore] Creating table from JSON file`);
-          await conn.query(createTableQuery);
+          
+          await importJsonWithFallback(conn, escapedTableName, fileName, false);
         } else if (fileExt === "parquet") {
           set({ processingStatus: "Importing Parquet file..." });
           const createTableQuery = `
