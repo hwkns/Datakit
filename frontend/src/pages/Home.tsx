@@ -48,8 +48,6 @@ const Home = () => {
    * @param result - Parsed data result including DuckDB information
    */
   const handleDataLoad = (result: DataLoadWithDuckDBResult) => {
-    // Use store action to load data
-
     addFile(result);
   };
 

@@ -64,6 +64,7 @@ const URLDatasetCard = ({ dataset, onImport, isImporting }) => {
 
       <Button
         size="sm"
+        variant="outline"
         onClick={() => onImport(dataset)}
         disabled={isImporting}
         className="w-full text-xs h-8"
@@ -94,6 +95,7 @@ const CustomURLPanel = ({ onImport }) => {
     loading: datasetsLoading,
     fetchDatasets,
   } = usePublicDatasets("custom-url");
+
   const { importFromURL, isImporting, importStatus, validateURL } =
     useCustomURLImport();
 
@@ -124,13 +126,8 @@ const CustomURLPanel = ({ onImport }) => {
     if (validateCustomURL(customUrl)) {
       try {
         const result = await importFromURL(customUrl);
-        const enhancedResult = {
-          ...result,
-          isRemote: true,
-          remoteProvider: "custom-url",
-          remoteURL: customUrl,
-        };
-        onImport(enhancedResult);
+        console.log("result", result);
+        onImport(result);
       } catch (error) {
         console.error("Failed to import custom URL:", error);
       }
@@ -140,21 +137,8 @@ const CustomURLPanel = ({ onImport }) => {
   const handleDatasetImport = async (dataset) => {
     try {
       const result = await importFromURL(dataset.url);
-
-      const enhancedResult = {
-        ...result,
-        isRemote: true,
-        remoteProvider: "custom-url",
-        remoteURL: dataset.url,
-        dataset: {
-          id: dataset.id,
-          name: dataset.name,
-          category: dataset.category,
-          provider: dataset.provider,
-        },
-      };
-
-      onImport(enhancedResult);
+      console.log("result", result);
+      onImport(result);
     } catch (error) {
       console.error("Failed to import URL dataset:", error);
     }
@@ -267,10 +251,11 @@ const CustomURLPanel = ({ onImport }) => {
           {/* Submit button */}
           <div className="flex justify-end">
             <Button
+              variant="outline"
               type="submit"
               className={cn(
                 "px-6 py-2.5",
-                isValidUrl ? "bg-green-600 hover:bg-green-700" : undefined
+                isValidUrl ? "border-green-700 hover:bg-green-700" : undefined
               )}
               disabled={isImporting || !customUrl.trim() || !isValidUrl}
             >
@@ -287,6 +272,23 @@ const CustomURLPanel = ({ onImport }) => {
               )}
             </Button>
           </div>
+          <AnimatePresence>
+            {isImporting && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 overflow-hidden"
+              >
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                  <div className="flex items-center text-sm">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
+                    <p className="text-primary font-medium">{importStatus}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </form>
 
         {/* Example Datasets */}
@@ -320,23 +322,6 @@ const CustomURLPanel = ({ onImport }) => {
         </div>
 
         {/* Loading/Status indicator */}
-        <AnimatePresence>
-          {isImporting && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 overflow-hidden"
-            >
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                <div className="flex items-center text-sm">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
-                  <p className="text-primary font-medium">{importStatus}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Footer Info */}

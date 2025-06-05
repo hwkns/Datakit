@@ -412,14 +412,6 @@ export default function useS3Import() {
 
         const file = new File([finalBlob], finalFileName, { type: mimeType });
 
-        console.log('🔧 S3 file import details:');
-        console.log('  S3 URL:', s3Url);
-        console.log('  Bucket:', bucket);
-        console.log('  Key:', key);
-        console.log('  Final filename:', finalFileName);
-        console.log('  MIME type:', mimeType);
-        console.log('  Access method:', method);
-
         // Import using DuckDB
         const importResult = await duckDB.importFileDirectly(file);
 

@@ -93,24 +93,24 @@ const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({ onImport }) => {
     if (validateURL(url)) {
       try {
         const result = await importFromGoogleSheets(url);
-        
+
         // Add remote source metadata
         const enhancedResult = {
           ...result,
           isRemote: true,
-          remoteProvider: 'google-sheets',
+          remoteProvider: "google-sheets",
           remoteURL: url,
           googleSheets: {
             url,
             sheetName: googleSheetInfo?.sheetName,
-            format: googleSheetInfo?.format
-          }
+            format: googleSheetInfo?.format,
+          },
         };
-        
+
         onImport(enhancedResult);
       } catch (error) {
         // Error handling is already done by the hook
-        console.error('Google Sheets import failed:', error);
+        console.error("Google Sheets import failed:", error);
       }
     }
   };
@@ -119,8 +119,6 @@ const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({ onImport }) => {
     <div className="h-full flex flex-col">
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6">
-   
-
         {/* URL Input Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -221,10 +219,11 @@ const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({ onImport }) => {
           <div className="flex justify-end">
             <Button
               type="submit"
+              variant="outline"
               className={cn(
                 "px-6 py-2.5",
                 isGoogleSheet
-                  ? "bg-green-600 hover:bg-green-700"
+                  ? "border-green-700 hover:border-green-700"
                   : undefined
               )}
               disabled={isImporting || !url.trim() || !isGoogleSheet}
@@ -242,6 +241,33 @@ const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({ onImport }) => {
               )}
             </Button>
           </div>
+          <AnimatePresence>
+            {isImporting && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 overflow-hidden"
+              >
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center text-sm">
+                    <p className="text-green-400 font-medium">{importStatus}</p>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-black/30 h-2 mt-3 rounded-full overflow-hidden">
+                    <motion.div
+                      className="bg-green-500 h-full rounded-full"
+                      initial={{ width: "5%" }}
+                      animate={{
+                        width: `${Math.max(5, importProgress * 100)}%`,
+                      }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </form>
 
         {/* Google Sheets Guide */}
@@ -250,36 +276,6 @@ const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({ onImport }) => {
         </div>
 
         {/* Loading/Status indicator */}
-        <AnimatePresence>
-          {isImporting && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 overflow-hidden"
-            >
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                <div className="flex items-center text-sm">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-green-500" />
-                  <p className="text-green-400 font-medium">
-                    {importStatus}
-                  </p>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full bg-black/30 h-2 mt-3 rounded-full overflow-hidden">
-                  <motion.div
-                    className="bg-green-500 h-full rounded-full"
-                    initial={{ width: "5%" }}
-                    animate={{
-                      width: `${Math.max(5, importProgress * 100)}%`,
-                    }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Error message */}
         <AnimatePresence>

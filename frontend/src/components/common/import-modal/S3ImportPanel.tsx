@@ -20,7 +20,7 @@ interface S3ImportPanelProps {
   onImport: (result: any) => void;
 }
 
-const SimplifiedS3DatasetCard = ({ dataset, onImport, isImporting }) => {
+const S3DatasetCard = ({ dataset, onImport, isImporting }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -252,11 +252,11 @@ const S3ImportPanel: FC<S3ImportPanelProps> = ({ onImport }) => {
           {/* Submit button */}
           <div className="flex justify-end">
             <Button
-              variant="default"
+              variant="outline"
               type="submit"
               className={cn(
                 "px-6 py-2.5",
-                isValidS3Url ? "bg-green-600 hover:bg-green-700" : undefined
+                isValidS3Url ? "border-green-700 hover:border-green-700" : undefined
               )}
               disabled={isImporting || !customS3Url.trim() || !isValidS3Url}
             >
@@ -273,6 +273,23 @@ const S3ImportPanel: FC<S3ImportPanelProps> = ({ onImport }) => {
               )}
             </Button>
           </div>
+          <AnimatePresence>
+          {isImporting && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 overflow-hidden"
+            >
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center text-sm">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
+                  <p className="text-primary font-medium">{importStatus}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         </form>
 
         {/* Example Datasets */}
@@ -294,7 +311,7 @@ const S3ImportPanel: FC<S3ImportPanelProps> = ({ onImport }) => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {datasets.map((dataset) => (
-                <SimplifiedS3DatasetCard
+                <S3DatasetCard
                   key={dataset.id}
                   dataset={dataset}
                   onImport={handleDatasetImport}
@@ -305,24 +322,7 @@ const S3ImportPanel: FC<S3ImportPanelProps> = ({ onImport }) => {
           )}
         </div>
 
-        {/* Loading/Status indicator */}
-        <AnimatePresence>
-          {isImporting && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 overflow-hidden"
-            >
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                <div className="flex items-center text-sm">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
-                  <p className="text-primary font-medium">{importStatus}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+    
       </div>
 
       {/* Footer Info */}

@@ -1,35 +1,22 @@
 import { useState, useCallback } from "react";
 
+import { DataLoadWithDuckDBResult } from "@/components/layout/Sidebar";
+
+import { useDuckDBStore } from "@/store/duckDBStore";
+
+import DataProcessingUtil from "@/lib/data/dataProcessingUtil";
+import { convertDuckDBColumnTypes } from "@/lib/duckdb/ingestion/convertDuckDBColumnTypes";
+
 /**
- * Type definitions to match your existing interfaces
+ * URL validation result interface
  */
-interface ColumnType {
-  name: string;
-  type: string;
-  nullable?: boolean;
-}
-
-type DataSourceType = 'file' | 'remote' | 'database';
-type RemoteSourceProvider = 'custom-url' | 's3' | 'google-sheets' | 'gcs';
-
-interface JsonSchema {
-  [key: string]: any;
-}
-
-interface DataLoadWithDuckDBResult {
-  data: string[][];
-  columnTypes: ColumnType[];
-  fileName: string;
-  rowCount: number;
-  columnCount: number;
-  sourceType?: DataSourceType;
-  rawData?: any;
-  schema?: JsonSchema;
-  loadedToDuckDB: boolean;
-  tableName?: string;
-  isRemote?: boolean;
-  remoteURL?: string;
-  remoteProvider?: RemoteSourceProvider;
+interface URLValidation {
+  isValid: boolean;
+  error?: string;
+  detectedFormat?: string;
+  source?: string;
+  filename?: string;
+  extension?: string;
 }
 
 /**
@@ -52,6 +39,30 @@ export default function useCustomURLImport() {
   const [importStatus, setImportStatus] = useState("");
   const [importProgress, setImportProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+
+  const {
+    importFileDirectly,
+    executeQuery,
+  } = useDuckDBStore();
+
+
+  const createSampleData = useCallback(
+    (schemaResult: any, sampleResult: any): string[][] => {
+      const headers = schemaResult.toArray().map((col: any) => col.name);
+      const sampleData = [
+        headers,
+        ...sampleResult.toArray().map((row: any) =>
+          headers.map((col: string) => {
+            if (row[col] === null || row[col] === undefined) return "";
+            return String(row[col]);
+          })
+        ),
+      ];
+      return sampleData;
+    },
+    []
+  );
 
   /**
    * Validate URL and detect format/source
@@ -146,9 +157,9 @@ export default function useCustomURLImport() {
   }, []);
 
   /**
-   * Import data from custom URL
+   * Import data from custom URL - follows same ideology as processFile
    */
-  const importFromURL = useCallback(async (url: string, customName?: string) => {
+  const importFromURL = useCallback(async (url: string, customName?: string): Promise<DataLoadWithDuckDBResult> => {
     try {
       setIsImporting(true);
       setError(null);
@@ -161,148 +172,131 @@ export default function useCustomURLImport() {
         throw new Error(validation.error || "Invalid URL");
       }
 
+      const filename = validation.filename || 'unknown_file';
+      const datasetName = customName || filename;
+
       setImportProgress(0.1);
       setImportStatus("Checking file accessibility...");
 
-      // Try to fetch file headers to check if accessible
-      let response: Response;
+      // Try to fetch file headers to check if accessible and get size
+      let contentLength: number | null = null;
       try {
-        // First try direct fetch
-        response = await fetch(url, { method: 'HEAD' });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (directError) {
-        setImportStatus("Direct access failed, trying with proxy...");
-        
-        // If direct fetch fails, you could try a CORS proxy here
-        // For now, we'll continue with the direct fetch for the actual data
-        try {
-          response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`Failed to access URL: ${response.status} ${response.statusText}`);
+        const headResponse = await fetch(url, { method: 'HEAD' });
+        if (headResponse.ok) {
+          const contentLengthHeader = headResponse.headers.get('content-length');
+          contentLength = contentLengthHeader ? parseInt(contentLengthHeader) : null;
+          
+          // Check if file is too large for browser processing
+          if (contentLength && DataProcessingUtil.isFileTooLarge(contentLength)) {
+            throw new Error(
+              `File is too large (${DataProcessingUtil.formatFileSize(contentLength)}). ` +
+              `Maximum supported size is 2GB for browser processing.`
+            );
           }
-        } catch (proxyError) {
-          throw new Error(`Unable to access URL. This may be due to CORS restrictions or the file being unavailable.`);
         }
+      } catch (headError) {
+        console.warn('HEAD request failed, proceeding with GET request');
       }
 
-      setImportProgress(0.3);
-      setImportStatus("Downloading file...");
+      setImportProgress(0.2);
+      
+      // Show appropriate status based on file size
+      if (contentLength) {
+        const sizeCategory = DataProcessingUtil.getFileSizeCategory(contentLength);
+        const formattedSize = DataProcessingUtil.formatFileSize(contentLength);
+        if (sizeCategory === 'large' || sizeCategory === 'huge') {
+          setImportStatus(`Downloading large file (${formattedSize})...`);
+        } else {
+          setImportStatus(`Downloading file (${formattedSize})...`);
+        }
+      } else {
+        setImportStatus("Downloading file...");
+      }
 
       // Get the actual file content
-      const fullResponse = await fetch(url);
-      if (!fullResponse.ok) {
-        throw new Error(`Failed to download file: ${fullResponse.status} ${fullResponse.statusText}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
       }
 
-      // Get content type and size info
-      const contentType = fullResponse.headers.get('content-type') || '';
-      const contentLength = fullResponse.headers.get('content-length');
-      const fileSize = contentLength ? parseInt(contentLength) : null;
+      setImportProgress(0.4);
+      setImportStatus("Creating virtual file...");
+
+      // Get content type and actual size
+      const contentType = response.headers.get('content-type') || '';
+      const actualContentLength = response.headers.get('content-length');
+      const fileSize = actualContentLength ? parseInt(actualContentLength) : null;
+
+      // Create a File object from the downloaded content (same as processFile expects)
+      const blob = await response.blob();
+      const virtualFile = new File([blob], filename, { 
+        type: contentType || 'application/octet-stream',
+        lastModified: Date.now() 
+      });
 
       setImportProgress(0.5);
-      setImportStatus("Processing file content...");
+      setImportStatus("Processing file with DuckDB...");
 
-      // Get file content
-      let fileContent: string | ArrayBuffer;
-      let detectedFormat = validation.detectedFormat;
+      // Use DataProcessingUtil for validation (same as processFile)
+      const fileValidation = DataProcessingUtil.validateFile(virtualFile.name, virtualFile.size);
+      const formattedSize = DataProcessingUtil.formatFileSize(virtualFile.size);
+      const sourceType = DataProcessingUtil.detectSourceType(virtualFile.name);
 
-      // Auto-detect format from content-type if not detected from extension
-      if (!detectedFormat) {
-        if (contentType.includes('csv') || contentType.includes('comma-separated')) {
-          detectedFormat = 'csv';
-        } else if (contentType.includes('json')) {
-          detectedFormat = 'json';
-        } else if (contentType.includes('excel') || contentType.includes('spreadsheet')) {
-          detectedFormat = 'excel';
-        }
+      // Show validation warnings
+      if (fileValidation.warnings.length > 0) {
+        console.warn(`[CustomURL] File warnings:`, fileValidation.warnings);
       }
 
-      // Handle binary formats
-      if (detectedFormat === 'excel' || detectedFormat === 'parquet' || url.includes('.gz')) {
-        fileContent = await fullResponse.arrayBuffer();
-      } else {
-        fileContent = await fullResponse.text();
-      }
+      console.log(`[CustomURL] Processing: ${filename} (${formattedSize})`);
+
+      // Import using DuckDB (same as processFile)
+      const importResult = await importFileDirectly(virtualFile);
 
       setImportProgress(0.8);
-      setImportStatus("Preparing data for import...");
+      setImportStatus("Fetching schema and sample data...");
 
-      // Generate a name for the dataset
-      const datasetName = customName || validation.filename || `url_import_${Date.now()}`;
+      // Get schema and sample data (same as processFile)
+      const schemaResult = await executeQuery(
+        `PRAGMA table_info("${importResult.tableName}")`
+      );
+      if (!schemaResult) {
+        throw new Error("Failed to get table schema");
+      }
+
+      const sampleResult = await executeQuery(
+        `SELECT * FROM "${importResult.tableName}" LIMIT 1000`
+      );
+      if (!sampleResult) {
+        throw new Error("Failed to get data sample");
+      }
 
       setImportProgress(0.9);
       setImportStatus("Finalizing import...");
 
-      // Simulate final processing
-      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const sampleData = createSampleData(schemaResult, sampleResult);
+      const columnTypes = convertDuckDBColumnTypes(schemaResult);
+      const headers = schemaResult.toArray().map((col: any) => col.name);
+
+      // Create final result (same structure as processFile)
+      const result: DataLoadWithDuckDBResult = {
+        data: sampleData,
+        columnTypes,
+        fileName: datasetName,
+        rowCount: importResult.rowCount,
+        columnCount: headers.length,
+        sourceType,
+        loadedToDuckDB: true, // URL data IS loaded to DuckDB (same as processFile)
+        tableName: importResult.tableName,
+        isRemote: true,
+        remoteURL: url,
+        remoteProvider: 'custom-url',
+        rawData: blob, // Store the blob as raw data
+      };
 
       setImportProgress(1);
       setImportStatus("Import completed successfully!");
 
-      // Parse the data based on format (simplified - you'd use your actual parsing logic)
-      let parsedData: string[][] = [];
-      let columnTypes: any[] = [];
-      let rowCount = 0;
-      let columnCount = 0;
-
-      // This is where you'd integrate with your actual data parsing logic
-      // For now, this is a simplified example
-      if (detectedFormat === 'csv' && typeof fileContent === 'string') {
-        // Simple CSV parsing (you'd use your actual CSV parser)
-        const lines = fileContent.split('\n').filter(line => line.trim());
-        parsedData = lines.map(line => line.split(',').map(cell => cell.trim()));
-        rowCount = parsedData.length - 1; // Minus header
-        columnCount = parsedData[0]?.length || 0;
-        
-        // Generate basic column types (you'd use your actual type detection)
-        columnTypes = parsedData[0]?.map((_, index) => ({
-          name: parsedData[0][index],
-          type: 'VARCHAR', // You'd detect actual types
-          nullable: true
-        })) || [];
-      } else if (detectedFormat === 'json' && typeof fileContent === 'string') {
-        try {
-          const jsonData = JSON.parse(fileContent);
-          // Convert JSON to tabular format (simplified)
-          if (Array.isArray(jsonData) && jsonData.length > 0) {
-            const keys = Object.keys(jsonData[0]);
-            parsedData = [
-              keys, // Header
-              ...jsonData.map(row => keys.map(key => String(row[key] || '')))
-            ];
-            rowCount = jsonData.length;
-            columnCount = keys.length;
-            columnTypes = keys.map(key => ({
-              name: key,
-              type: 'VARCHAR',
-              nullable: true
-            }));
-          }
-        } catch (e) {
-          throw new Error('Invalid JSON format');
-        }
-      }
-
-      // Return the result in DataLoadWithDuckDBResult format
-      const result: DataLoadWithDuckDBResult = {
-        data: parsedData,
-        columnTypes: columnTypes,
-        fileName: datasetName,
-        rowCount: rowCount,
-        columnCount: columnCount,
-        sourceType: 'remote' as DataSourceType,
-        rawData: fileContent,
-        loadedToDuckDB: false, // You'd set this based on your actual loading process
-        tableName: datasetName.replace(/[^a-zA-Z0-9_]/g, '_'),
-        isRemote: true,
-        remoteURL: url,
-        remoteProvider: 'custom-url' as RemoteSourceProvider,
-        // Add any additional metadata you need
-        schema: undefined // You'd generate this if needed
-      };
 
       // Reset state after successful import
       setTimeout(() => {
@@ -326,7 +320,7 @@ export default function useCustomURLImport() {
       
       throw err;
     }
-  }, [validateURL]);
+  }, [validateURL, importFileDirectly, executeQuery]);
 
   /**
    * Test URL accessibility without importing

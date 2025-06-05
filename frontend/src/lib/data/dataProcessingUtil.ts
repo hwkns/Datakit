@@ -11,8 +11,7 @@ export class DataProcessingUtil {
    * Detect data source type from file extension or content
    */
   static detectSourceType(
-    fileName: string,
-    contentType?: string
+    fileName: string
   ): DataSourceType {
     const ext = fileName.split(".").pop()?.toLowerCase();
 
@@ -79,136 +78,7 @@ export class DataProcessingUtil {
     });
   }
 
-  /**
-   * Parse CSV content into tabular data
-   */
-  static parseCSV(content: string, delimiter = ","): string[][] {
-    const lines = content.split("\n").filter((line) => line.trim());
-    return lines.map((line) => {
-      // Simple CSV parsing - you might want to use a more robust parser
-      const result = [];
-      let current = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === delimiter && !inQuotes) {
-          result.push(current.trim());
-          current = "";
-        } else {
-          current += char;
-        }
-      }
-
-      result.push(current.trim());
-      return result;
-    });
-  }
-
-  /**
-   * Parse JSON content into tabular data
-   */
-  static parseJSON(content: string): string[][] {
-    try {
-      const data = JSON.parse(content);
-
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("JSON must be an array of objects");
-      }
-
-      // Get all unique keys from all objects
-      const allKeys = new Set<string>();
-      data.forEach((item) => {
-        if (typeof item === "object" && item !== null) {
-          Object.keys(item).forEach((key) => allKeys.add(key));
-        }
-      });
-
-      const headers = Array.from(allKeys);
-      const rows = data.map((item) =>
-        headers.map((key) => {
-          const value = item[key];
-          if (value === null || value === undefined) return "";
-          if (typeof value === "object") return JSON.stringify(value);
-          return String(value);
-        })
-      );
-
-      return [headers, ...rows];
-    } catch (error) {
-      throw new Error(`Invalid JSON format: ${error.message}`);
-    }
-  }
-
-  /**
-   * Process different file formats into unified structure
-   */
-  static async processFileContent(
-    content: string | ArrayBuffer,
-    fileName: string,
-    contentType?: string
-  ): Promise<{
-    data: string[][];
-    columnTypes: ColumnType[];
-    sourceType: DataSourceType;
-    rowCount: number;
-    columnCount: number;
-  }> {
-    const sourceType = this.detectSourceType(fileName, contentType);
-    let data: string[][] = [];
-
-    // Convert ArrayBuffer to string for text formats
-    if (content instanceof ArrayBuffer) {
-      if (
-        sourceType === DataSourceType.XLSX ||
-        sourceType === DataSourceType.PARQUET
-      ) {
-        throw new Error(
-          `Binary format ${sourceType} requires specialized processing`
-        );
-      }
-      content = new TextDecoder().decode(content);
-    }
-
-    // Parse based on detected format
-    switch (sourceType) {
-      case DataSourceType.CSV:
-        data = this.parseCSV(content as string);
-        break;
-      case DataSourceType.TSV:
-        data = this.parseCSV(content as string, "\t");
-        break;
-      case DataSourceType.JSON:
-        data = this.parseJSON(content as string);
-        break;
-      case DataSourceType.TXT:
-        // Treat as CSV by default
-        data = this.parseCSV(content as string);
-        break;
-      default:
-        throw new Error(`Unsupported format: ${sourceType}`);
-    }
-
-    if (data.length === 0) {
-      throw new Error("No data found in file");
-    }
-
-    const headers = data[0] || [];
-    const columnTypes = this.detectColumnTypes(headers, data);
-    const rowCount = Math.max(0, data.length - 1); // Exclude header
-    const columnCount = headers.length;
-
-    return {
-      data,
-      columnTypes,
-      sourceType,
-      rowCount,
-      columnCount,
-    };
-  }
+  
 
   /**
    * Create DataLoadWithDuckDBResult from processed data
@@ -269,7 +139,7 @@ export class DataProcessingUtil {
    */
   static isFileTooLarge(fileSizeBytes: number): boolean {
     const sizeGB = fileSizeBytes / (1024 * 1024 * 1024);
-    const MAX_SIZE_GB = 2; // 2GB limit for browser
+    const MAX_SIZE_GB = 1; // 2GB limit for browser
     return sizeGB > MAX_SIZE_GB;
   }
 
@@ -317,7 +187,6 @@ export class DataProcessingUtil {
     const recommendations: string[] = [];
 
     const sizeCategory = this.getFileSizeCategory(fileSizeBytes);
-    const sizeMB = fileSizeBytes / (1024 * 1024);
 
     // Size validations
     if (this.isFileTooLarge(fileSizeBytes)) {

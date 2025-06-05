@@ -36,7 +36,9 @@ export interface DataLoadWithDuckDBResult {
   tableName?: string;
   isRemote?: boolean;
   remoteURL?: string;
+  isStreamingImport?: boolean;
   remoteProvider?: ImportProvider;
+  convertedFromExcel?: boolean;
 
 }
 
