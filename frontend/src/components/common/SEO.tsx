@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async'
-
+import image from '@/assets/datakit.png';
 interface SEOProps {
   title?: string
   description?: string
@@ -11,10 +11,9 @@ interface SEOProps {
 }
 
 export const SEO: React.FC<SEOProps> = ({
-    title = 'Your App Name',
-    description = 'Default description for your app',
-    keywords = 'react, vite, typescript',
-    image = '/og-image.jpg',
+    title = 'DataKit',
+    description = 'Data Toolkit',
+    keywords = 'data, visualization, sql',
     url = window.location.href,
     type = 'website',
     siteName = 'Your App Name'
