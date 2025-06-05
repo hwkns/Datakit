@@ -2,9 +2,8 @@ import { useState, useCallback } from "react";
 
 import { useDuckDBStore } from "@/store/duckDBStore";
 import useFileAccess from "@/hooks/useFileAccess";
-
-import { ColumnType } from "@/types/csv";
-import { DataSourceType } from "@/types/json";
+import DataProcessingUtil from "@/lib/data/dataProcessingUtil";
+import { convertDuckDBColumnTypes } from "@/lib/duckdb/ingestion/convertDuckDBColumnTypes";
 
 import { DataLoadWithDuckDBResult } from "@/components/layout/Sidebar";
 
@@ -23,6 +22,26 @@ export function useDirectFileImport() {
 
   const { addRecentFile } = useFileAccess();
 
+  /**
+   * Create UI-ready sample data from DuckDB query results
+   */
+  const createSampleData = useCallback(
+    (schemaResult: any, sampleResult: any): string[][] => {
+      const headers = schemaResult.toArray().map((col: any) => col.name);
+      const sampleData = [
+        headers,
+        ...sampleResult.toArray().map((row: any) =>
+          headers.map((col: string) => {
+            if (row[col] === null || row[col] === undefined) return "";
+            return String(row[col]);
+          })
+        ),
+      ];
+      return sampleData;
+    },
+    []
+  );
+
   const processFileStreaming = useCallback(
     async (
       fileHandle: FileSystemFileHandle,
@@ -32,29 +51,46 @@ export function useDirectFileImport() {
       try {
         setIsProcessing(true);
         setProcessingError(null);
-        setLoadingStatus(`Starting streaming import for: ${file.name}`);
 
-        // Get file info
-        const fileExt = file.name.split(".").pop()?.toLowerCase();
-        const fileSize = file.size / (1024 * 1024); // Size in MB
-        console.log(
-          `[DirectImport] Streaming processing: ${
-            file.name
-          } (${fileSize.toFixed(2)} MB)`
+        const sizeCategory = DataProcessingUtil.getFileSizeCategory(file.size);
+        const formattedSize = DataProcessingUtil.formatFileSize(file.size);
+        const shouldUseStreaming = DataProcessingUtil.shouldUseStreaming(
+          file.size
         );
 
-        // Determine if we should use streaming based on file size
-        const STREAMING_THRESHOLD = 10; // 10MB threshold
-        const shouldUseStreaming = fileSize > STREAMING_THRESHOLD;
+        setLoadingStatus(
+          `Starting ${shouldUseStreaming ? "streaming " : ""}import for: ${
+            file.name
+          } (${formattedSize})`
+        );
+
+        console.log(
+          `[DirectImport] Processing: ${file.name} (${formattedSize}, ${sizeCategory})`
+        );
 
         addRecentFile(file);
 
-        if (shouldUseStreaming) {
-          console.log(
-            `[DirectImport] Using streaming import for large file (${fileSize.toFixed(
-              2
-            )}MB)`
+        // Get file extension and detect source type
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
+        const sourceType = DataProcessingUtil.detectSourceType(file.name);
+        let isExcelConversion = false;
+
+        // Show appropriate status based on file type and size
+        if (fileExt === "xlsx" || fileExt === "xls") {
+          setLoadingStatus(
+            `Converting Excel file to CSV for reliable processing...`
           );
+          isExcelConversion = true;
+        } else if (fileExt === "parquet") {
+          setLoadingStatus(
+            `${shouldUseStreaming ? "Streaming " : ""}Parquet file import...`
+          );
+        } else if (shouldUseStreaming) {
+          setLoadingStatus(
+            `Streaming ${fileExt?.toUpperCase()} file import (large file detected)...`
+          );
+        } else {
+          setLoadingStatus(`Importing ${fileExt?.toUpperCase()} file...`);
         }
 
         // Start progress monitoring
@@ -64,22 +100,6 @@ export function useDirectFileImport() {
 
         try {
           let importResult;
-          let isExcelConversion = false;
-
-          if (fileExt === "xlsx" || fileExt === "xls") {
-            setLoadingStatus(
-              `Converting Excel file to CSV for reliable processing...`
-            );
-            isExcelConversion = true;
-          } else if (fileExt === "parquet") {
-            setLoadingStatus(`Streaming Parquet file import...`);
-          } else if (shouldUseStreaming) {
-            setLoadingStatus(
-              `Streaming ${fileExt?.toUpperCase()} file import (large file detected)...`
-            );
-          } else {
-            setLoadingStatus(`Importing ${fileExt?.toUpperCase()} file...`);
-          }
 
           // Use streaming import for large files or regular import for smaller ones
           if (shouldUseStreaming || fileExt === "parquet") {
@@ -93,7 +113,7 @@ export function useDirectFileImport() {
             importResult = await importFileDirectly(file);
           }
 
-          // Success message
+          // Success message with proper formatting
           if (isExcelConversion && importResult.convertedToCsv) {
             setLoadingStatus(
               `Successfully imported Excel data via CSV conversion (${importResult.rowCount.toLocaleString()} rows)`
@@ -103,8 +123,7 @@ export function useDirectFileImport() {
           } else {
             setLoadingStatus(`Successfully imported rows from ${file.name}`);
           }
-
-          // Now fetch schema and sample data for UI display
+          // Fetch schema and sample data for UI display
           const schemaResult = await executeQuery(
             `PRAGMA table_info("${importResult.tableName}")`
           );
@@ -112,7 +131,6 @@ export function useDirectFileImport() {
             throw new Error("Failed to get table schema");
           }
 
-          // Get data sample for display
           const sampleResult = await executeQuery(
             `SELECT * FROM "${importResult.tableName}" LIMIT 1000`
           );
@@ -120,64 +138,12 @@ export function useDirectFileImport() {
             throw new Error("Failed to get data sample");
           }
 
-          // Convert to expected format for UI
-          const headers = schemaResult.toArray().map((col) => col.name);
-          const sampleData = [
-            headers,
-            ...sampleResult.toArray().map((row) =>
-              headers.map((col) => {
-                if (row[col] === null || row[col] === undefined) return "";
-                return String(row[col]);
-              })
-            ),
-          ];
+          // Convert to expected format for UI using utility methods
+          const sampleData = createSampleData(schemaResult, sampleResult);
+          const columnTypes = convertDuckDBColumnTypes(schemaResult);
+          const headers = schemaResult.toArray().map((col: any) => col.name);
 
-          // Detect column types from schema
-          const columnTypes = schemaResult.toArray().map((col) => {
-            const type = col.type.toLowerCase();
-
-            if (
-              type.includes("int") ||
-              type.includes("float") ||
-              type.includes("double") ||
-              type.includes("decimal") ||
-              type.includes("number")
-            ) {
-              return ColumnType.Number;
-            } else if (type.includes("bool")) {
-              return ColumnType.Boolean;
-            } else if (
-              type.includes("date") ||
-              type.includes("time") ||
-              type.includes("timestamp")
-            ) {
-              return ColumnType.Date;
-            } else if (
-              type.includes("json") ||
-              type.includes("object") ||
-              type.includes("map")
-            ) {
-              return ColumnType.Object;
-            } else if (type.includes("array") || type.includes("list")) {
-              return ColumnType.Array;
-            } else {
-              return ColumnType.Text;
-            }
-          });
-
-          // Determine source type based on file extension
-          let sourceType = DataSourceType.CSV;
-          if (fileExt === "json") {
-            sourceType = DataSourceType.JSON;
-          } else if (fileExt === "xlsx" || fileExt === "xls") {
-            sourceType = DataSourceType.XLSX;
-          } else if (fileExt === "parquet") {
-            sourceType = DataSourceType.PARQUET;
-          } else if (fileExt === "txt") {
-            sourceType = DataSourceType.TXT;
-          }
-
-          // Create result object for the UI
+          // Create result object using DataProcessingUtil
           const result: DataLoadWithDuckDBResult = {
             data: sampleData,
             columnTypes,
@@ -192,11 +158,12 @@ export function useDirectFileImport() {
             isStreamingImport: shouldUseStreaming,
           };
 
+          console.log(
+            `[DirectImport] Format: ${result.sourceType}, Streaming: ${shouldUseStreaming}`
+          );
+
           // Call the callback with the result
           if (onDataLoad) {
-            console.log(
-              `[DirectImport] Calling onDataLoad callback with streaming result`
-            );
             onDataLoad(result);
           }
 
@@ -205,7 +172,7 @@ export function useDirectFileImport() {
           clearInterval(progressWatcher);
         }
       } catch (err) {
-        console.error(`[DirectImport] Error in streaming import:`, err);
+        console.error(`[DirectImport] Error in import:`, err);
 
         const errorMessage = err instanceof Error ? err.message : String(err);
 
@@ -232,6 +199,9 @@ export function useDirectFileImport() {
       importFileDirectlyStreaming,
       executeQuery,
       processingProgress,
+      addRecentFile,
+      convertDuckDBColumnTypes,
+      createSampleData,
     ]
   );
 
@@ -240,29 +210,47 @@ export function useDirectFileImport() {
       file: File,
       onDataLoad?: (result: DataLoadWithDuckDBResult) => void
     ) => {
-      // For legacy File object support, we'll create a mock handle approach
-      // This is mainly for backward compatibility
-      const fileSize = file.size / (1024 * 1024);
-      const STREAMING_THRESHOLD = 800;
-
-      if (fileSize > STREAMING_THRESHOLD) {
-        alert(
-          "Please use a modern browser (Chrome/Edge) with streaming support for large files."
-        );
-        throw new Error(
-          `File too large (${fileSize.toFixed(2)}MB) for legacy import. ` +
-            `Please use the file picker to enable streaming import for files over ${STREAMING_THRESHOLD}MB.`
-        );
-      }
-
-      // For smaller files, use the original method
       try {
         setIsProcessing(true);
         setProcessingError(null);
-        setLoadingStatus(`Starting import process for: ${file.name}`);
 
-        // Add to recent files (without handle for legacy support)
+        // Use DataProcessingUtil for validation and size checks
+        const fileValidation = DataProcessingUtil.validateFile(
+          file.name,
+          file.size
+        );
+        const formattedSize = DataProcessingUtil.formatFileSize(file.size);
+        const sizeCategory = DataProcessingUtil.getFileSizeCategory(file.size);
+
+        // threshold checking
+        const LEGACY_STREAMING_THRESHOLD = 800 * 1024 * 1024; // 800MB in bytes
+
+        if (file.size > LEGACY_STREAMING_THRESHOLD) {
+          const errorMsg = `File too large (${formattedSize}) for legacy import. Please use a modern browser (Chrome/Edge) with streaming support for files over 800MB.`;
+          alert(errorMsg);
+          throw new Error(errorMsg);
+        }
+
+        // Show validation warnings
+        if (fileValidation.warnings.length > 0) {
+          console.warn(
+            `[DirectImport] File warnings:`,
+            fileValidation.warnings
+          );
+        }
+
+        setLoadingStatus(
+          `Starting import process for: ${file.name} (${formattedSize})`
+        );
+        console.log(
+          `[DirectImport] Legacy processing: ${file.name} (${formattedSize}, ${sizeCategory})`
+        );
+
+        // Add to recent files
         addRecentFile(file);
+
+        // Get source type using utility
+        const sourceType = DataProcessingUtil.detectSourceType(file.name);
 
         const progressWatcher = setInterval(() => {
           setLoadingProgress(processingProgress * 100);
@@ -271,7 +259,7 @@ export function useDirectFileImport() {
         try {
           const importResult = await importFileDirectly(file);
 
-          // Continue with existing schema and sample logic...
+          // Continue with existing schema and sample logic using utility methods
           const schemaResult = await executeQuery(
             `PRAGMA table_info("${importResult.tableName}")`
           );
@@ -286,45 +274,10 @@ export function useDirectFileImport() {
             throw new Error("Failed to get data sample");
           }
 
-          const headers = schemaResult.toArray().map((col) => col.name);
-          const sampleData = [
-            headers,
-            ...sampleResult.toArray().map((row) =>
-              headers.map((col) => {
-                if (row[col] === null || row[col] === undefined) return "";
-                return String(row[col]);
-              })
-            ),
-          ];
-
-          const fileExt = file.name.split(".").pop()?.toLowerCase();
-          let sourceType = DataSourceType.CSV;
-          if (fileExt === "json") sourceType = DataSourceType.JSON;
-          else if (fileExt === "xlsx" || fileExt === "xls")
-            sourceType = DataSourceType.XLSX;
-          else if (fileExt === "parquet") sourceType = DataSourceType.PARQUET;
-          else if (fileExt === "txt") sourceType = DataSourceType.TXT;
-
-          const columnTypes = schemaResult.toArray().map((col) => {
-            const type = col.type.toLowerCase();
-            if (
-              type.includes("int") ||
-              type.includes("float") ||
-              type.includes("double")
-            ) {
-              return ColumnType.Number;
-            } else if (type.includes("bool")) {
-              return ColumnType.Boolean;
-            } else if (type.includes("date") || type.includes("time")) {
-              return ColumnType.Date;
-            } else if (type.includes("json") || type.includes("object")) {
-              return ColumnType.Object;
-            } else if (type.includes("array") || type.includes("list")) {
-              return ColumnType.Array;
-            } else {
-              return ColumnType.Text;
-            }
-          });
+          // Use utility methods for consistent data processing
+          const sampleData = createSampleData(schemaResult, sampleResult);
+          const columnTypes = convertDuckDBColumnTypes(schemaResult);
+          const headers = schemaResult.toArray().map((col: any) => col.name);
 
           const result: DataLoadWithDuckDBResult = {
             data: sampleData,
@@ -337,6 +290,17 @@ export function useDirectFileImport() {
             tableName: importResult.tableName,
           };
 
+          // Log import statistics
+          console.log(
+            `[DirectImport] Successfully processed (legacy): ${file.name}`
+          );
+          console.log(
+            `[DirectImport] Rows: ${result.rowCount.toLocaleString()}, Columns: ${
+              result.columnCount
+            }`
+          );
+          console.log(`[DirectImport] Format: ${result.sourceType}`);
+
           if (onDataLoad) {
             onDataLoad(result);
           }
@@ -348,14 +312,31 @@ export function useDirectFileImport() {
       } catch (err) {
         console.error(`[DirectImport] Error importing file:`, err);
         const errorMessage = err instanceof Error ? err.message : String(err);
-        setProcessingError(`Error: ${errorMessage}`);
+
+        if (DataProcessingUtil.isFileTooLarge(file.size)) {
+          setProcessingError(
+            `File too large (${DataProcessingUtil.formatFileSize(
+              file.size
+            )}). Maximum supported size is 2GB.`
+          );
+        } else {
+          setProcessingError(`Error: ${errorMessage}`);
+        }
+
         setLoadingStatus("Import failed");
         throw err;
       } finally {
         setIsProcessing(false);
       }
     },
-    [addRecentFile, importFileDirectly, executeQuery, processingProgress]
+    [
+      addRecentFile,
+      importFileDirectly,
+      executeQuery,
+      processingProgress,
+      convertDuckDBColumnTypes,
+      createSampleData,
+    ]
   );
 
   return {

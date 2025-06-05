@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-DataKit is a modern web-based data analysis tool that leverages WebAssembly and DuckDB to process large datasets (multi GBs) directly in the browser without requiring server-side processing. It provides a powerful, client-side SQL engine with visualization capabilities and data inspection panel, enabling users to work with CSV and JSON files efficiently.
+DataKit is a modern web-based data analysis tool that leverages WebAssembly and DuckDB to process large datasets (multi GBs) directly in the browser without requiring server-side processing. It provides a powerful, client-side SQL engine with visualization capabilities and data inspection panel, enabling users to work with CSV, XLSX, PARQUET JSON files efficiently.
 
 ## 2. Architecture Overview
 
