@@ -1,17 +1,19 @@
 import { useState, useCallback } from "react";
 
-import { S3_PUBLIC_DATASETS, GITHUB_PUBLIC_DATASETS } from '@/constants/public_datasets';
+import { S3_PUBLIC_DATASETS, GITHUB_PUBLIC_DATASETS, HUGGINGFACE_PUBLIC_DATASETS } from '@/constants/public_datasets';
 import { PublicDataset } from "@/types/remoteImport";
 
 // All datasets combined
-const ALL_DATASETS = [...S3_PUBLIC_DATASETS, ...GITHUB_PUBLIC_DATASETS];
+const ALL_DATASETS = [...S3_PUBLIC_DATASETS, ...GITHUB_PUBLIC_DATASETS, ...HUGGINGFACE_PUBLIC_DATASETS];
 
 /**
  * Hook for managing public datasets across multiple providers
  */
-export default function usePublicDatasets(provider?: "aws" | "github" | "custom-url" | "all") {
+export default function usePublicDatasets(provider?: "aws" | "github" | "custom-url" | "huggingface" | "all") {
   const [datasets, setDatasets] = useState<PublicDataset[]>([]);
+  const [searchResults, setSearchResults] = useState<PublicDataset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -38,6 +40,9 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
         case "custom-url":
           filteredDatasets = GITHUB_PUBLIC_DATASETS; // For now, show GitHub datasets as examples
           break;
+        case "huggingface": // New case for HuggingFace
+          filteredDatasets = HUGGINGFACE_PUBLIC_DATASETS;
+          break;
         case "all":
         default:
           filteredDatasets = ALL_DATASETS;
@@ -50,9 +55,9 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
         if (a.featured && !b.featured) return -1;
         if (!a.featured && b.featured) return 1;
 
-        // Provider (aws first, then github)
+        // Provider (huggingface first, then aws, then github)
         if (a.provider !== b.provider) {
-          const providerOrder = { aws: 0, github: 1, gcs: 2, direct: 3 };
+          const providerOrder = { huggingface: 0, aws: 1, github: 2, gcs: 3, direct: 4 };
           return providerOrder[a.provider] - providerOrder[b.provider];
         }
 
@@ -73,6 +78,51 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
   }, [provider]);
 
   /**
+   * Search datasets - for HuggingFace, this could call the real API in the future
+   */
+  const searchDatasets = useCallback(async (query: string) => {
+    try {
+      setIsSearching(true);
+      setError(null);
+
+      // For now, search in local datasets. In the future, we can call HF API here
+      if (provider === "huggingface") {
+        // Simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        
+        // Search in local HF datasets for now
+        const lowercaseQuery = query.toLowerCase();
+        const results = HUGGINGFACE_PUBLIC_DATASETS.filter(dataset =>
+          dataset.name.toLowerCase().includes(lowercaseQuery) ||
+          dataset.description.toLowerCase().includes(lowercaseQuery) ||
+          dataset.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery)) ||
+          (dataset.task && dataset.task.toLowerCase().includes(lowercaseQuery))
+        );
+        
+        setSearchResults(results);
+        console.log(`[PublicDatasets] Found ${results.length} HuggingFace datasets for query: ${query}`);
+      } else {
+        // Regular search for other providers
+        const lowercaseQuery = query.toLowerCase();
+        const currentDatasets = provider === "all" ? ALL_DATASETS : datasets;
+        const results = currentDatasets.filter(dataset =>
+          dataset.name.toLowerCase().includes(lowercaseQuery) ||
+          dataset.description.toLowerCase().includes(lowercaseQuery) ||
+          dataset.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery)) ||
+          (dataset.repository && dataset.repository.toLowerCase().includes(lowercaseQuery))
+        );
+        
+        setSearchResults(results);
+      }
+    } catch (err) {
+      console.error("[PublicDatasets] Search failed:", err);
+      setError("Search failed. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  }, [provider, datasets]);
+
+  /**
    * Get datasets by category
    */
   const getDatasetsByCategory = useCallback(
@@ -87,7 +137,7 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
    * Get datasets by provider
    */
   const getDatasetsByProvider = useCallback(
-    (providerType: "aws" | "github" | "gcs" | "direct") => {
+    (providerType: "aws" | "github" | "gcs" | "direct" | "huggingface") => {
       return datasets.filter((d) => d.provider === providerType);
     },
     [datasets]
@@ -118,9 +168,21 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
   );
 
   /**
-   * Search datasets by query
+   * Get datasets by task (useful for HuggingFace datasets)
    */
-  const searchDatasets = useCallback(
+  const getDatasetsByTask = useCallback(
+    (task: string) => {
+      return datasets.filter((d) => 
+        d.task && d.task.toLowerCase().includes(task.toLowerCase())
+      );
+    },
+    [datasets]
+  );
+
+  /**
+   * Search datasets by query (local search, not API)
+   */
+  const searchDatasetsLocal = useCallback(
     (query: string) => {
       if (!query.trim()) return datasets;
 
@@ -131,7 +193,8 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
           dataset.description.toLowerCase().includes(lowercaseQuery) ||
           dataset.tags.some((tag) => tag.toLowerCase().includes(lowercaseQuery)) ||
           dataset.provider.toLowerCase().includes(lowercaseQuery) ||
-          (dataset.repository && dataset.repository.toLowerCase().includes(lowercaseQuery))
+          (dataset.repository && dataset.repository.toLowerCase().includes(lowercaseQuery)) ||
+          (dataset.task && dataset.task.toLowerCase().includes(lowercaseQuery))
       );
     },
     [datasets]
@@ -230,6 +293,7 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
       formats: [...new Set(datasets.flatMap((d) => d.format))],
       featured: datasets.filter((d) => d.featured).length,
       byProvider: {
+        huggingface: datasets.filter((d) => d.provider === "huggingface").length,
         aws: datasets.filter((d) => d.provider === "aws").length,
         github: datasets.filter((d) => d.provider === "github").length,
         gcs: datasets.filter((d) => d.provider === "gcs").length,
@@ -251,15 +315,26 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
     return fetchDatasets();
   }, [fetchDatasets]);
 
+  /**
+   * Clear search results
+   */
+  const clearSearchResults = useCallback(() => {
+    setSearchResults([]);
+  }, []);
+
   return {
     // State
     datasets,
+    searchResults,
     loading,
+    isSearching,
     error,
 
     // Actions
     fetchDatasets,
     refreshDatasets,
+    searchDatasets, // API search for HuggingFace
+    clearSearchResults,
 
     // Computed data
     getDatasetsByCategory,
@@ -267,7 +342,8 @@ export default function usePublicDatasets(provider?: "aws" | "github" | "custom-
     getDatasetsByTag,
     getDatasetsByFormat,
     getDatasetsBySize,
-    searchDatasets,
+    getDatasetsByTask, // New for HF
+    searchDatasetsLocal, // Local search
     getFeaturedDatasets,
     getDatasetById,
     getCategories,

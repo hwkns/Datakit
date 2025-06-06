@@ -6,6 +6,7 @@ export type ImportProvider =
   | "gcs"
   | "google-drive"
   | "custom-url"
+  | "huggingface"
   | "google-sheets";
 
 /**

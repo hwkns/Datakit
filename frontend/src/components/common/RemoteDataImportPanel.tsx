@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import S3ImportPanel from "./import-modal/S3ImportPanel";
 import { CustomURLPanel } from "./import-modal/CustomURLPanel";
 import GoogleSheetsPanel from "./import-modal/GoogleSheetsPanel";
+import HuggingFacePanel from "./import-modal/HuggingFacePanel"; // New import
 
 import GCSImportPanel from "./import-modal/GCSImportPanel";
 import GoogleDrivePanel from "./import-modal/GoogleDrivePanel";
@@ -17,6 +18,7 @@ import GoogleDrivePanel from "./import-modal/GoogleDrivePanel";
 import S3 from "@/assets/s3.png";
 import GCS from "@/assets/gcs.svg";
 import Drive from "@/assets/drive.svg";
+import HuggingFace from "@/assets/huggingface.png"; // Add HF logo
 
 export interface RemoteDataImportModalProps {
   isOpen: boolean;
@@ -29,7 +31,8 @@ export type ImportProvider =
   | "gcs"
   | "google-drive"
   | "custom-url"
-  | "google-sheets";
+  | "google-sheets"
+  | "huggingface";
 
 interface ProviderTab {
   id: ImportProvider;
@@ -41,22 +44,28 @@ interface ProviderTab {
 
 const PROVIDER_TABS: ProviderTab[] = [
   {
+    id: "custom-url",
+    label: "Custom URL",
+    icon: <Link color="white" className="h-4 w-4" />,
+    description: "Import from any public URL",
+  },
+  {
     id: "s3",
     label: "Amazon S3",
     icon: <img src={S3} className="h-4 w-4" />,
     description: "Public S3 buckets",
   },
   {
+    id: "huggingface", // Add HF as first tab (featured)
+    label: "HuggingFace",
+    icon: <img src={HuggingFace} className="h-5 w-5" />,
+    description: "Public ML datasets",
+  },
+  {
     id: "google-sheets",
     label: "Google Sheets",
     icon: <GoogleSheetsIcon className="h-5 w-5" />,
     description: "Published Google Sheets",
-  },
-  {
-    id: "custom-url",
-    label: "Custom URL",
-    icon: <Link color="white" className="h-4 w-4" />,
-    description: "Import from any public URL",
   },
   {
     id: "gcs",
@@ -69,7 +78,7 @@ const PROVIDER_TABS: ProviderTab[] = [
     id: "google-drive",
     label: "Google Drive",
     icon: <img src={Drive} className="h-6 w-6" />,
-    description: "Fles from Google Drive",
+    description: "Files from Google Drive",
     comingSoon: true,
   },
 ];
@@ -79,7 +88,8 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
   onClose,
   onImport,
 }) => {
-  const [activeProvider, setActiveProvider] = useState<ImportProvider>("s3");
+  const [activeProvider, setActiveProvider] =
+    useState<ImportProvider>("huggingface"); // Default to HF
   const [lastUsedProvider, setLastUsedProvider] =
     useState<ImportProvider | null>(null);
 
@@ -108,16 +118,10 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
 
   const renderProviderPanel = () => {
     switch (activeProvider) {
+      case "huggingface": // Add HF case
+        return <HuggingFacePanel onImport={handleImportSuccess} />;
       case "s3":
         return <S3ImportPanel onImport={handleImportSuccess} />;
-      // TODO:
-      // Next iterations
-      //
-      // case 'gcs':
-      //   return <GCSImportPanel onImport={handleImportSuccess} />;
-      // case 'google-drive':
-      //   <></>
-      // return <GoogleDrivePanel onImport={handleImportSuccess} />;
       case "custom-url":
         return <CustomURLPanel onImport={handleImportSuccess} />;
       case "google-sheets":
@@ -175,7 +179,19 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
                       className={cn(
                         "w-full text-left p-3 rounded-lg mb-1 transition-all duration-200 group relative",
                         activeProvider === tab.id && !tab.comingSoon
-                          ? "bg-primary/20 border border-primary/30 text-white"
+                          ? tab.id === "huggingface"
+                            ? "bg-orange-500/20 border border-orange-500/30 text-white" // HF orange
+                            : tab.id === "s3"
+                            ? "bg-amber-600/20 border border-amber-600/30 text-white" // AWS amber/orange
+                            : tab.id === "google-sheets"
+                            ? "bg-green-500/20 border border-green-500/30 text-white" // Google green
+                            : tab.id === "custom-url"
+                            ? "bg-blue-500/20 border border-blue-500/30 text-white" // Generic blue
+                            : tab.id === "gcs"
+                            ? "bg-sky-500/20 border border-sky-500/30 text-white" // Google Cloud blue
+                            : tab.id === "google-drive"
+                            ? "bg-blue-600/20 border border-blue-600/30 text-white" // Drive blue
+                            : "bg-primary/20 border border-primary/30 text-white"
                           : tab.comingSoon
                           ? "text-white/40 cursor-not-allowed"
                           : "text-white/70 hover:text-white hover:bg-white/5 border border-transparent"
@@ -186,7 +202,19 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
                           className={cn(
                             "h-8 w-8 rounded-md flex items-center justify-center mr-3 border",
                             activeProvider === tab.id && !tab.comingSoon
-                              ? "bg-primary/30 border-primary/50 text-primary"
+                              ? tab.id === "huggingface"
+                                ? "bg-orange-500/30 border-orange-500/50 text-orange-500"
+                                : tab.id === "s3"
+                                ? "bg-amber-600/30 border-amber-600/50 text-amber-600"
+                                : tab.id === "google-sheets"
+                                ? "bg-green-500/30 border-green-500/50 text-green-500"
+                                : tab.id === "custom-url"
+                                ? "bg-blue-500/30 border-blue-500/50 text-blue-500"
+                                : tab.id === "gcs"
+                                ? "bg-sky-500/30 border-sky-500/50 text-sky-500"
+                                : tab.id === "google-drive"
+                                ? "bg-blue-600/30 border-blue-600/50 text-blue-600"
+                                : "bg-primary/30 border-primary/50 text-primary"
                               : tab.comingSoon
                               ? "bg-white/5 border-white/10 text-white/40"
                               : "bg-white/5 border-white/10 text-white/60 group-hover:border-white/20"
@@ -215,7 +243,22 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
                       {activeProvider === tab.id && !tab.comingSoon && (
                         <motion.div
                           layoutId="activeProvider"
-                          className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary rounded-r"
+                          className={cn(
+                            "absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 rounded-r",
+                            tab.id === "huggingface"
+                              ? "bg-orange-500"
+                              : tab.id === "s3"
+                              ? "bg-amber-600"
+                              : tab.id === "google-sheets"
+                              ? "bg-green-500"
+                              : tab.id === "custom-url"
+                              ? "bg-blue-500"
+                              : tab.id === "gcs"
+                              ? "bg-sky-500"
+                              : tab.id === "google-drive"
+                              ? "bg-blue-600"
+                              : "bg-primary"
+                          )}
                           transition={{
                             type: "spring",
                             stiffness: 300,
@@ -237,14 +280,18 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
                   <div
                     className={cn(
                       "h-8 w-8 rounded-md flex items-center justify-center mr-3 border",
-                      activeProvider === "s3"
+                      activeProvider === "huggingface"
                         ? "bg-orange-500/20 border-orange-500/30"
-                        : activeProvider === "gcs"
-                        ? "bg-blue-500/20 border-blue-500/30"
-                        : activeProvider === "google-drive"
-                        ? "bg-blue-600/20 border-blue-600/30"
+                        : activeProvider === "s3"
+                        ? "bg-amber-600/20 border-amber-600/30"
                         : activeProvider === "google-sheets"
                         ? "bg-green-500/20 border-green-500/30"
+                        : activeProvider === "custom-url"
+                        ? "bg-blue-500/20 border-blue-500/30"
+                        : activeProvider === "gcs"
+                        ? "bg-sky-500/20 border-sky-500/30"
+                        : activeProvider === "google-drive"
+                        ? "bg-blue-600/20 border-blue-600/30"
                         : "bg-primary/20 border-primary/30"
                     )}
                   >
