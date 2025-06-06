@@ -24,7 +24,7 @@ interface UnifiedActionButtonsProps {
  */
 const ActionButtons: React.FC<UnifiedActionButtonsProps> = ({
   feedbackContext,
-  discordInviteUrl = "https://discord.gg/grKvFZHh",
+  discordInviteUrl = "https://discord.gg/gZmXmhbBdP",
   docsUrl = "https://docs.datakit.page/",
   productHuntUrl = "https://www.producthunt.com/products/datakit",
 }) => {
