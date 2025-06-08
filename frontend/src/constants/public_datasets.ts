@@ -1,6 +1,5 @@
 import { PublicDataset } from "@/types/remoteImport";
 
-// AWS S3 Datasets
 const S3_PUBLIC_DATASETS: PublicDataset[] = [
   {
     id: "noaa-ghcn-stations",
@@ -71,7 +70,6 @@ const S3_PUBLIC_DATASETS: PublicDataset[] = [
   },
 ];
 
-// GitHub & Direct URL Datasets
 const GITHUB_PUBLIC_DATASETS: PublicDataset[] = [
   {
     id: "iris-dataset",
@@ -130,28 +128,6 @@ const GITHUB_PUBLIC_DATASETS: PublicDataset[] = [
     path: "titanic.csv",
   },
   {
-    id: "nyc-flights-sample",
-    name: "NYC Flights 2013 Sample",
-    description:
-      "Sample of flight departure data from NYC airports in 2013. Great for time series analysis.",
-    category: "transportation",
-    format: ["CSV"],
-    size: "2.8 MB",
-    lastUpdated: "2024-01-01",
-    url: "https://raw.githubusercontent.com/hadley/nycflights13/master/data-raw/flights.csv",
-    httpUrl:
-      "https://raw.githubusercontent.com/hadley/nycflights13/master/data-raw/flights.csv",
-    documentation: "https://github.com/hadley/nycflights13",
-    tags: ["transportation", "flights", "time-series", "nyc", "medium"],
-    featured: false,
-    provider: "github",
-    license: "CC0-1.0",
-    updateFrequency: "Static",
-    repository: "hadley/nycflights13",
-    branch: "master",
-    path: "data-raw/flights.csv",
-  },
-  {
     id: "covid-19-global",
     name: "COVID-19 Global Data",
     description:
@@ -196,28 +172,6 @@ const GITHUB_PUBLIC_DATASETS: PublicDataset[] = [
     path: "1962_2006_walmart_store_openings.csv",
   },
   {
-    id: "world-happiness-report",
-    name: "World Happiness Report",
-    description:
-      "Global happiness scores and factors by country from the UN World Happiness Report.",
-    category: "research",
-    format: ["CSV"],
-    size: "15 KB",
-    lastUpdated: "2024-01-01",
-    url: "https://raw.githubusercontent.com/datasets/world-happiness/master/data/2019.csv",
-    httpUrl:
-      "https://raw.githubusercontent.com/datasets/world-happiness/master/data/2019.csv",
-    documentation: "https://worldhappiness.report/",
-    tags: ["happiness", "global", "research", "wellbeing", "small"],
-    featured: false,
-    provider: "github",
-    license: "CC BY 4.0",
-    updateFrequency: "Yearly",
-    repository: "datasets/world-happiness",
-    branch: "master",
-    path: "data/2019.csv",
-  },
-  {
     id: "tesla-stock-data",
     name: "Tesla Stock Prices",
     description:
@@ -238,6 +192,181 @@ const GITHUB_PUBLIC_DATASETS: PublicDataset[] = [
     repository: "plotly/datasets",
     branch: "master",
     path: "tesla-stock-price.csv",
+  },
+];
+
+export const HUGGINGFACE_PUBLIC_DATASETS: PublicDataset[] = [
+  // Language/Text Datasets
+  {
+    id: "rajpurkar/squad",
+    name: "SQuAD",
+    description: "Stanford Question Answering Dataset - A reading comprehension dataset with 100k+ question-answer pairs",
+    provider: "huggingface",
+    category: "nlp",
+    size: "35.1MB",
+    format: ["parquet"],
+    tags: ["question-answering", "english", "text"],
+    featured: false,
+    downloads: 50000,
+    likes: 245,
+    task: "Question Answering",
+    gated: false,
+    lastModified: "2023-10-15",
+    repository: "rajpurkar/squad",
+    url: "https://huggingface.co/datasets/rajpurkar/squad"
+  },
+  {
+    id: "stanfordnlp/imdb",
+    name: "IMDB Movie Reviews",
+    description: "Large Movie Review Dataset for binary sentiment classification with 50k highly polar movie reviews",
+    provider: "huggingface",
+    category: "nlp",
+    size: "66.9MB",
+    format: ["parquet"],
+    tags: ["sentiment-analysis", "text-classification", "english"],
+    featured: false,
+    downloads: 75000,
+    likes: 312,
+    task: "Sentiment Analysis",
+    gated: false,
+    lastModified: "2023-11-20",
+    repository: "stanfordnlp/imdb",
+    url: "https://huggingface.co/datasets/stanfordnlp/imdb"
+  },
+  {
+    id: "alesforce/wikitext",
+    name: "WikiText-103",
+    description: "Collection of over 100 million tokens extracted from Wikipedia articles for language modeling",
+    provider: "huggingface",
+    category: "nlp",
+    size: "181MB",
+    format: ["parquet"],
+    tags: ["language-modeling", "text-generation", "english"],
+    featured: false,
+    downloads: 25000,
+    likes: 145,
+    task: "Language Modeling",
+    gated: false,
+    lastModified: "2023-09-12",
+    repository: "Salesforce/wikitext",
+    url: "https://huggingface.co/datasets/wikitext"
+  },
+  // Computer Vision Datasets
+  {
+    id: "uoft-cs/cifar10",
+    name: "CIFAR-10",
+    description: "60k 32x32 color images in 10 classes, with 6k images per class. Classic computer vision dataset",
+    provider: "huggingface",
+    category: "computer-vision",
+    size: "132MB",
+    format: ["parquet"],
+    tags: ["image-classification", "computer-vision", "10-classes"],
+    featured: false,
+    downloads: 45000,
+    likes: 278,
+    task: "Image Classification",
+    gated: false,
+    lastModified: "2023-10-05",
+    repository: "uoft-cs/cifar10",
+    url: "https://huggingface.co/datasets/cifar10"
+  },
+  {
+    id: "zalando-datasets/fashion_mnist",
+    name: "Fashion-MNIST",
+    description: "Drop-in replacement for MNIST with 70k grayscale images of fashion items in 10 categories",
+    provider: "huggingface",
+    category: "computer-vision",
+    size: "29.5MB",
+    format: ["parquet"],
+    tags: ["image-classification", "fashion", "mnist-alternative"],
+    featured: false,
+    downloads: 18000,
+    likes: 156,
+    task: "Image Classification",
+    gated: false,
+    lastModified: "2023-09-18",
+    repository: "zalando-datasets/fashion_mnist",
+    url: "https://huggingface.co/datasets/fashion_mnist"
+  },
+
+  // Structured/Tabular Datasets
+  {
+    id: "scikit-learn/iris",
+    name: "Iris Dataset",
+    description: "Classic dataset with 150 instances of iris flowers with 4 features each, perfect for ML beginners",
+    provider: "huggingface",
+    category: "tabular",
+    size: "4.8KB",
+    format: ["parquet"],
+    tags: ["classification", "tabular", "flowers", "classic"],
+    featured: false,
+    downloads: 15000,
+    likes: 95,
+    task: "Classification",
+    gated: false,
+    lastModified: "2023-07-22",
+    repository: "scikit-learn/iris",
+    url: "https://huggingface.co/datasets/scikit-learn/iris"
+  },
+
+  // Code Datasets
+  {
+    id: "sahil2801/CodeAlpaca-20k",
+    name: "Code Alpaca",
+    description: "20k instruction-following data for code generation, covering various programming tasks",
+    provider: "huggingface",
+    category: "code",
+    size: "11.2MB",
+    format: ["parquet"],
+    tags: ["code-generation", "instruction-following", "programming"],
+    featured: false,
+    downloads: 8900,
+    likes: 145,
+    task: "Code Generation",
+    gated: false,
+    lastModified: "2023-10-30",
+    repository: "sahil2801/CodeAlpaca-20k",
+    url: "https://huggingface.co/datasets/sahil2801/CodeAlpaca-20k"
+  },
+
+  // Multimodal Datasets
+  {
+    id: "google-research-datasets/conceptual_captions",
+    name: "Conceptual Captions",
+    description: "3.3M image-caption pairs extracted from billions of web pages for vision-language tasks",
+    provider: "huggingface",
+    category: "multimodal",
+    size: "450MB",
+    format: ["parquet"],
+    tags: ["image-captioning", "vision-language", "web-scraping"],
+    featured: false,
+    downloads: 6500,
+    likes: 123,
+    task: "Image Captioning",
+    gated: false,
+    lastModified: "2023-09-25",
+    repository: "google-research-datasets/conceptual_captions",
+    url: "https://huggingface.co/datasets/google-research-datasets/conceptual_captions"
+  },
+
+  // Science/Medical
+  {
+    id: "qiaojin/PubMedQA",
+    name: "PubMedQA",
+    description: "273k biomedical question-answer pairs derived from PubMed abstracts for medical QA",
+    provider: "huggingface",
+    category: "medical",
+    size: "156MB",
+    format: ["parquet"],
+    tags: ["question-answering", "medical", "biomedical"],
+    featured: false,
+    downloads: 3100,
+    likes: 89,
+    task: "Medical QA",
+    gated: false,
+    lastModified: "2023-08-20",
+    repository: "qiaojin/PubMedQA",
+    url: "https://huggingface.co/datasets/pubmed_qa"
   },
 ];
 

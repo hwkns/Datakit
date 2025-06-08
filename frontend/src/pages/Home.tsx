@@ -68,7 +68,7 @@ const Home = () => {
   return (
     <>
     <SEO 
-        title="DataKit - Home"
+        title="DataKit"
         description="Modern web-based data analysis tool - Process large files locally with complete privacy"
         keywords="data analysis, sql, duckdb, charts, visualization, inspection, webassembley"
       />

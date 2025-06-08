@@ -6,12 +6,9 @@ import {
   del,
 } from "idb-keyval";
 
-
 import { DataSourceType } from "@/types/json";
-import { 
-  DataFile, 
-  DataLoadWithDuckDBResult,
-} from "@/types/multiFile";
+import { DataFile, DataLoadWithDuckDBResult } from "@/types/multiFile";
+import { ImportProvider } from "@/types/remoteImport";
 
 /**
  * Interface for a saved or recent query
@@ -76,6 +73,8 @@ interface AppState {
   toggleSidebar: () => void;
   /** Set sidebar collapsed state */
   setSidebarCollapsed: (collapsed: boolean) => void;
+  isRemoteModalOpen: boolean;
+  activeProviderRemoteModal: ImportProvider;
 
   // Legacy actions (for backward compatibility)
   /** Set the data grid content (updates active file) */
@@ -93,6 +92,8 @@ interface AppState {
   /** Delete a query */
   deleteQuery: (id: string) => void;
   loadQueriesFromStorage: () => void;
+  setIsRemoteModalOpen: (val: boolean) => void;
+  setActiveProviderRemoteModal: (val: ImportProvider) => void;
 }
 
 // Initial state
@@ -109,6 +110,8 @@ const initialState = {
   // Query history state
   recentQueries: [],
   savedQueries: [],
+  isRemoteModalOpen: false,
+  activeProviderRemoteModal: 'huggingface' as ImportProvider
 };
 
 /**
@@ -131,9 +134,9 @@ const generateTableName = (fileName: string, fileId: string): string => {
     .replace(/\.[^/.]+$/, "") // Remove extension
     .replace(/[^a-zA-Z0-9_]/g, "_") // Replace non-alphanumeric with underscore
     .toLowerCase();
-  
+
   // Add file ID suffix to ensure uniqueness
-  const shortId = fileId.split('_').pop() || 'unknown';
+  const shortId = fileId.split("_").pop() || "unknown";
   return `${safeName}_${shortId}`;
 };
 
@@ -157,8 +160,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Multi-file actions
   addFile: (fileData: DataLoadWithDuckDBResult): string => {
     const fileId = generateFileId();
-    const tableName = fileData.tableName || generateTableName(fileData.fileName, fileId);
-    
+    const tableName =
+      fileData.tableName || generateTableName(fileData.fileName, fileId);
+
     const newFile: DataFile = {
       id: fileId,
       fileName: fileData.fileName,
@@ -179,7 +183,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       lastAccessedAt: Date.now(),
     };
 
-    set(state => ({
+    set((state) => ({
       files: [...state.files, newFile],
       activeFileId: fileId, // Auto-switch to new file
     }));
@@ -193,22 +197,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   removeFile: (fileId: string) => {
-    set(state => {
-      const newFiles = state.files.filter(f => f.id !== fileId);
+    set((state) => {
+      const newFiles = state.files.filter((f) => f.id !== fileId);
       let newActiveFileId = state.activeFileId;
-      
+
       // If we're removing the active file, switch to another file
       if (state.activeFileId === fileId) {
         if (newFiles.length > 0) {
           // Try to find the next file, or fallback to the first
-          const currentIndex = state.files.findIndex(f => f.id === fileId);
-          const nextFile = newFiles[Math.min(currentIndex, newFiles.length - 1)];
+          const currentIndex = state.files.findIndex((f) => f.id === fileId);
+          const nextFile =
+            newFiles[Math.min(currentIndex, newFiles.length - 1)];
           newActiveFileId = nextFile.id;
         } else {
           newActiveFileId = null;
         }
       }
-      
+
       return {
         files: newFiles,
         activeFileId: newActiveFileId,
@@ -217,14 +222,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveFile: (fileId: string) => {
-    set(state => {
+    set((state) => {
       // Update last accessed time
-      const updatedFiles = state.files.map(file => 
-        file.id === fileId 
-          ? { ...file, lastAccessedAt: Date.now() }
-          : file
+      const updatedFiles = state.files.map((file) =>
+        file.id === fileId ? { ...file, lastAccessedAt: Date.now() } : file
       );
-      
+
       return {
         files: updatedFiles,
         activeFileId: fileId,
@@ -237,16 +240,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   closeOthersFiles: (keepFileId: string) => {
-    set(state => ({
-      files: state.files.filter(f => f.id === keepFileId),
+    set((state) => ({
+      files: state.files.filter((f) => f.id === keepFileId),
       activeFileId: keepFileId,
     }));
   },
 
   updateFile: (fileId: string, updates: Partial<DataFile>) => {
-    set(state => ({
-      files: state.files.map(file => 
-        file.id === fileId 
+    set((state) => ({
+      files: state.files.map((file) =>
+        file.id === fileId
           ? { ...file, ...updates, lastAccessedAt: Date.now() }
           : file
       ),
@@ -273,7 +276,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setData: (data) => {
     // For backward compatibility, update active file if exists
     const state = get();
-    const activeFile = state.files.find(f => f.id === state.activeFileId);
+    const activeFile = state.files.find((f) => f.id === state.activeFileId);
     if (activeFile && data) {
       get().updateFile(activeFile.id, { data });
     }
@@ -286,9 +289,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Reset state
   resetState: () =>
-    set({ 
-      ...initialState, 
-      sidebarCollapsed: get().sidebarCollapsed 
+    set({
+      ...initialState,
+      sidebarCollapsed: get().sidebarCollapsed,
     }),
 
   // Query history actions (unchanged)
@@ -372,5 +375,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         recentQueries: state.recentQueries.filter((q) => q.id !== id),
       }));
     }
+  },
+
+  setIsRemoteModalOpen: (val) => {
+    set({ isRemoteModalOpen: val });
+  },
+  setActiveProviderRemoteModal: (val) => {
+    set({ activeProviderRemoteModal: val });
   },
 }));

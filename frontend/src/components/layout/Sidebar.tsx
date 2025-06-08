@@ -48,10 +48,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { recentFiles } = useFileAccess();
-  const { sidebarCollapsed, toggleSidebar } = useAppStore();
-
-
-  const [isRemoteModalOpen, setIsRemoteModalOpen] = useState(false);
+  const { sidebarCollapsed, toggleSidebar, isRemoteModalOpen, setIsRemoteModalOpen } = useAppStore();
 
   const uploadPopover = usePopover();
 
