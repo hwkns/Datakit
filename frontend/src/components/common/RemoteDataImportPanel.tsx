@@ -18,7 +18,8 @@ import GoogleDrivePanel from "./import-modal/GoogleDrivePanel";
 import S3 from "@/assets/s3.png";
 import GCS from "@/assets/gcs.svg";
 import Drive from "@/assets/drive.svg";
-import HuggingFace from "@/assets/huggingface.png"; // Add HF logo
+import HuggingFace from "@/assets/huggingface.png";
+import { useAppStore } from "@/store/appStore";
 
 export interface RemoteDataImportModalProps {
   isOpen: boolean;
@@ -88,16 +89,16 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
   onClose,
   onImport,
 }) => {
-  const [activeProvider, setActiveProvider] =
-    useState<ImportProvider>("huggingface"); // Default to HF
-  const [lastUsedProvider, setLastUsedProvider] =
-    useState<ImportProvider | null>(null);
+  const {
+    activeProviderRemoteModal: activeProvider,
+    setActiveProviderRemoteModal: setActiveProvider,
+  } = useAppStore();
+
 
   // Load last used provider from localStorage
   React.useEffect(() => {
     const saved = localStorage.getItem("datakit-last-import-provider");
     if (saved && PROVIDER_TABS.find((tab) => tab.id === saved)) {
-      setLastUsedProvider(saved as ImportProvider);
       setActiveProvider(saved as ImportProvider);
     }
   }, []);
@@ -180,15 +181,15 @@ const RemoteDataImportModal: React.FC<RemoteDataImportModalProps> = ({
                         "w-full text-left p-3 rounded-lg mb-1 transition-all duration-200 group relative",
                         activeProvider === tab.id && !tab.comingSoon
                           ? tab.id === "huggingface"
-                            ? "bg-orange-500/20 border border-orange-500/30 text-white" // HF orange
+                            ? "bg-orange-500/10 border border-orange-500/20 text-white" // HF orange
                             : tab.id === "s3"
-                            ? "bg-amber-600/20 border border-amber-600/30 text-white" // AWS amber/orange
+                            ? "bg-amber-600/10 border border-amber-600/20 text-white" // AWS amber/orange
                             : tab.id === "google-sheets"
-                            ? "bg-green-500/20 border border-green-500/30 text-white" // Google green
+                            ? "bg-green-500/15 border border-green-500/20 text-white" // Google green
                             : tab.id === "custom-url"
-                            ? "bg-blue-500/20 border border-blue-500/30 text-white" // Generic blue
+                            ? "bg-blue-500/15 border border-blue-500/20 text-white" // Generic blue
                             : tab.id === "gcs"
-                            ? "bg-sky-500/20 border border-sky-500/30 text-white" // Google Cloud blue
+                            ? "bg-sky-500/15 border border-sky-500/20 text-white" // Google Cloud blue
                             : tab.id === "google-drive"
                             ? "bg-blue-600/20 border border-blue-600/30 text-white" // Drive blue
                             : "bg-primary/20 border border-primary/30 text-white"

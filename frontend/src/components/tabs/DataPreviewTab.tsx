@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
-import { useAppStore } from '@/store/appStore';
-import { 
+import { useAppStore } from "@/store/appStore";
+import {
   selectActiveFile,
   selectFileTabs,
   selectHasFiles,
@@ -11,19 +11,20 @@ import {
   selectJsonSchema,
   selectRemoteURL,
   selectRemoteProvider,
-  selectGoogleSheets
-} from '@/store/selectors/appSelectors';
+  selectGoogleSheets,
+} from "@/store/selectors/appSelectors";
 
-import CSVGrid from '@/components/data-grid/CSVGrid';
-import JSONGrid from '@/components/data-grid/JSONGrid';
-import FileTabs from '@/components/data-grid/FileTabs';
-import EmptyDataState from '@/components/data-grid/EmptyDataState';
-import GoogleSheetsMetadata from '@/components/common/GoogleSheetsMetadata';
+import CSVGrid from "@/components/data-grid/CSVGrid";
+import JSONGrid from "@/components/data-grid/JSONGrid";
+import FileTabs from "@/components/data-grid/FileTabs";
+import EmptyDataState from "@/components/data-grid/EmptyDataState";
+import GoogleSheetsMetadata from "@/components/common/GoogleSheetsMetadata";
 
-import { DataSourceType } from '@/types/json';
+import { DataSourceType } from "@/types/json";
+import { ImportProvider } from "@/types/remoteImport";
 
 const DataPreviewTab: React.FC = () => {
-
+  const { setIsRemoteModalOpen, setActiveProviderRemoteModal } = useAppStore();
   const hasFiles = useAppStore(selectHasFiles);
   const activeFile = useAppStore(selectActiveFile);
   const fileTabs = useAppStore(selectFileTabs);
@@ -34,10 +35,14 @@ const DataPreviewTab: React.FC = () => {
   const remoteURL = useAppStore(selectRemoteURL);
   const remoteProvider = useAppStore(selectRemoteProvider);
   const googleSheets = useAppStore(selectGoogleSheets);
-  
-  // Get UI state
-  const { jsonViewMode, setActiveFile, removeFile, closeAllFiles, closeOthersFiles } = useAppStore();
 
+  const {
+    jsonViewMode,
+    setActiveFile,
+    removeFile,
+    closeAllFiles,
+    closeOthersFiles,
+  } = useAppStore();
 
   const handleTabClick = (fileId: string) => {
     setActiveFile(fileId);
@@ -55,18 +60,23 @@ const DataPreviewTab: React.FC = () => {
     closeOthersFiles(keepFileId);
   };
 
+  const handleImportOptionClick = (val: ImportProvider) => {
+      setIsRemoteModalOpen(true);
+      setActiveProviderRemoteModal(val)
+  };
+
   // Debug logging
-  console.log('DataPreviewTab state:', {
+  console.log("DataPreviewTab state:", {
     hasFiles,
     activeFile,
     fileTabs,
     data: data?.length || 0,
-    sourceType
+    sourceType,
   });
 
   // Show empty state if no files are loaded
   if (!hasFiles) {
-    return <EmptyDataState />;
+    return <EmptyDataState onImportOptionClick={handleImportOptionClick} />;
   }
 
   // Show file tabs and active file content
@@ -80,26 +90,26 @@ const DataPreviewTab: React.FC = () => {
         onCloseAll={handleCloseAll}
         onCloseOthers={handleCloseOthers}
       />
-      
+
       {/* Active File Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {activeFile && 
-         remoteProvider === 'google_sheets' && 
-         googleSheets && (
+        {activeFile && remoteProvider === "google_sheets" && googleSheets && (
           <div className="px-3 pt-3">
-            <GoogleSheetsMetadata 
+            <GoogleSheetsMetadata
               metadata={googleSheets}
-              url={remoteURL || ''}
+              url={remoteURL || ""}
               className="mb-0"
               compact={true}
             />
           </div>
         )}
-        
+
         {/* Data grid component based on source type */}
         <div className="flex-1 overflow-hidden">
           {activeFile ? (
-            sourceType === DataSourceType.JSON && jsonViewMode === 'tree' && rawData ? (
+            sourceType === DataSourceType.JSON &&
+            jsonViewMode === "tree" &&
+            rawData ? (
               <JSONGrid data={rawData} schema={jsonSchema} />
             ) : (
               <CSVGrid />
@@ -108,7 +118,9 @@ const DataPreviewTab: React.FC = () => {
             <div className="h-full flex items-center justify-center">
               <div className="text-center text-white/70">
                 <p className="text-lg mb-2">No data to preview</p>
-                <p className="text-sm">Select a file tab to view its contents</p>
+                <p className="text-sm">
+                  Select a file tab to view its contents
+                </p>
               </div>
             </div>
           )}

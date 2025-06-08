@@ -16,9 +16,9 @@ export const SEO: React.FC<SEOProps> = ({
     keywords = 'data, visualization, sql',
     url = window.location.href,
     type = 'website',
-    siteName = 'Your App Name'
+    siteName = 'DataKit, analyze your data'
   }) => {
-    const fullTitle = title.includes('Your App Name') ? title : `${title} | Your App Name`
+    const fullTitle = `${title} | Analyze your data`
   
     return (
       <Helmet>

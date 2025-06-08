@@ -82,7 +82,7 @@ const GoogleSheetsPublishGuide: React.FC<GoogleSheetsPublishGuideProps> = ({
               </p>
               <p className="text-white/60 text-xs flex items-center">
                 <span className="h-1.5 w-1.5 bg-white/40 rounded-full mr-1.5"></span>
-                Web page (.html), CSV (.csv), or Excel (.xlsx)
+                CSV (.csv), or Excel (.xlsx)
               </p>
             </div>
           </div>
