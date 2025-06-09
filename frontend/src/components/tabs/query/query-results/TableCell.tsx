@@ -188,7 +188,6 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
       role="cell"
-      title={isTruncated ? valueString : undefined}
     >
       {formatValue(value)}
 
