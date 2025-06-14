@@ -622,7 +622,7 @@ const QueryWorkspace: React.FC = () => {
           {ResultsToolbar()}
 
           {/* Large Dataset Warning */}
-          {showLargeDataWarning && totalRows > 10000 && (
+          {showLargeDataWarning && (
             <div className="bg-primary/10 border border-primary/30 rounded p-3 m-3 text-white text-sm">
               <div className="flex items-start">
                 <AlertTriangle

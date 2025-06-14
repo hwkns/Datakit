@@ -257,10 +257,10 @@ export const useQueryExecution = (
   
   // Update warning if result set is particularly large
   useEffect(() => {
-    if (totalRows > largeDatasetThreshold && !showLargeDataWarning) {
+    if (totalRows > largeDatasetThreshold) {
       setShowLargeDataWarning(true);
     }
-  }, [totalRows, largeDatasetThreshold, showLargeDataWarning]);
+  }, [totalRows, largeDatasetThreshold]);
   
   return {
     // Data
