@@ -1,5 +1,5 @@
 import React from "react";
-import { Book } from "lucide-react";
+import { Book, History } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -7,7 +7,7 @@ import FeedbackButton from "@/components/common/FeedbackButton";
 
 import discord from "@/assets/discord.png";
 
-export const DISCORD_URL =  "https://discord.gg/gZmXmhbBdP";
+export const DISCORD_URL = "https://discord.gg/gZmXmhbBdP";
 
 interface UnifiedActionButtonsProps {
   /** Context for feedback button */
@@ -69,8 +69,26 @@ const ActionButtons: React.FC<UnifiedActionButtonsProps> = ({
         iconOnly={true}
       />
 
+      <Tooltip placement="left" content="What's new">
+        <Button
+          variant="link"
+          size="sm"
+          className="!px-2 !py-1 min-w-0"
+          asChild
+        >
+          <a
+            href="https://datakit.canny.io/changelog"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View changelog"
+          >
+            <History size={14} />
+          </a>
+        </Button>
+      </Tooltip>
+
       {/* ProductHunt Button - Icon only with tooltip */}
-      <Tooltip placement="left" content="on ProductHunt">
+      {/* <Tooltip placement="left" content="on ProductHunt">
         <Button
           variant="link"
           size="sm"
@@ -86,7 +104,7 @@ const ActionButtons: React.FC<UnifiedActionButtonsProps> = ({
             <ProductHuntIcon size={14} />
           </a>
         </Button>
-      </Tooltip>
+      </Tooltip> */}
     </div>
   );
 };
