@@ -53,4 +53,10 @@ export default defineConfig({
       allow: ['..'], // Allow serving files from parent directories if needed
     },
   },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    }
+  }
 })
