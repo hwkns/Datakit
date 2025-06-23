@@ -20,7 +20,7 @@ export const useAnalytics = () => {
   const trackFileUpload = useCallback(
     (result: any) => {
       track({
-        name: "File Upload",
+        name: "file_upload",
         props: { ...result },
       });
     },
@@ -30,7 +30,7 @@ export const useAnalytics = () => {
   const trackQuery = useCallback(
     (queryType: string, executionTime?: number) => {
       track({
-        name: "Query Executed",
+        name: "query_executed",
         props: {
           query_type: queryType,
           execution_time_ms: executionTime,
@@ -43,7 +43,7 @@ export const useAnalytics = () => {
   const trackVisualization = useCallback(
     (chartType: string, dataPoints: number) => {
       track({
-        name: "Visualization Created",
+        name: "visualization_created",
         props: {
           chart_type: chartType,
           data_points: dataPoints,
@@ -56,7 +56,7 @@ export const useAnalytics = () => {
   const trackTabChange = useCallback(
     (fromTab: string, toTab: string) => {
       track({
-        name: "Tab Changed",
+        name: "tab_changed",
         props: {
           from_tab: fromTab,
           to_tab: toTab,
@@ -69,7 +69,7 @@ export const useAnalytics = () => {
   const trackFeatureUsage = useCallback(
     (feature: string, context?: string) => {
       track({
-        name: "Feature Used",
+        name: "feature_used",
         props: {
           feature_name: feature,
           context: context || "unknown",

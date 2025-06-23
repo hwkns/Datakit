@@ -179,7 +179,7 @@ export const useConsentManager = () => {
   // Utility function to track custom events (only if consent given)
   const trackEvent = (eventName: string, props?: Record<string, any>) => {
     if (analyticsEnabled) {
-      plausible.trackEvent(eventName, { props });
+      plausible.trackEvent(eventName, { ...props });
     }
   };
 
