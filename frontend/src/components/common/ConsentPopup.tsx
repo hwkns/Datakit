@@ -26,7 +26,7 @@ const ConsentPopup: React.FC<ConsentPopupProps> = ({ onAccept, onDecline, onClos
     <motion.div
       initial={{ opacity: 0, y: 50, x: 20 }}
       animate={{ opacity: 1, y: 0, x: 0 }}
-      exit={{ opacity: 0, y: 50, x: -20 }}
+      exit={{ opacity: 0, y: 50, x: 20 }}
       transition={{ 
         type: "spring", 
         stiffness: 400, 
