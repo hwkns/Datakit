@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import Plausible from 'plausible-tracker';
 
 interface ConsentPopupProps {
   onAccept: () => void;
@@ -120,9 +121,17 @@ const ConsentPopup: React.FC<ConsentPopupProps> = ({ onAccept, onDecline, onClos
   );
 };
 
+// Initialize Plausible instance (but don't enable tracking yet)
+const plausible = Plausible({
+  domain: 'datakit.page',
+  trackLocalhost: true, // Set to true if you want to track localhost
+  // apiHost: 'https://datakit.page', // Your Plausible instance URL
+});
+
 export const useConsentManager = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
 
   useEffect(() => {
     // Check if user has already made a choice
@@ -131,7 +140,9 @@ export const useConsentManager = () => {
     if (consent !== null) {
       setHasInteracted(true);
       if (consent === 'true') {
-        loadPlausible();
+        setAnalyticsEnabled(true);
+        // Enable tracking immediately if consent was previously given
+        plausible.enableAutoPageviews();
       }
       return;
     }
@@ -146,29 +157,17 @@ export const useConsentManager = () => {
     return () => clearTimeout(timer);
   }, [hasInteracted]);
 
-  const loadPlausible = () => {
-    // Load Plausible script dynamically
-    const script = document.querySelector('script[data-name="plausible"]') as HTMLScriptElement;
-    if (script && script.type === 'text/plain') {
-      script.type = 'text/javascript';
-      // Create a new script to reload it
-      const newScript = document.createElement('script');
-      newScript.defer = true;
-      newScript.setAttribute('data-domain', 'datakit.page');
-      newScript.src = 'https://datakit.page/js/script.js';
-      document.head.appendChild(newScript);   
-    }
-  };
-
   const handleAccept = () => {
     localStorage.setItem('datakit-analytics-consent', 'true');
-    loadPlausible();
+    setAnalyticsEnabled(true);
+    plausible.enableAutoPageviews();
     setShowPopup(false);
     setHasInteracted(true);
   };
 
   const handleDecline = () => {
     localStorage.setItem('datakit-analytics-consent', 'false');
+    setAnalyticsEnabled(false);
     setShowPopup(false);
     setHasInteracted(true);
   };
@@ -177,11 +176,28 @@ export const useConsentManager = () => {
     setShowPopup(false);
   };
 
+  // Utility function to track custom events (only if consent given)
+  const trackEvent = (eventName: string, props?: Record<string, any>) => {
+    if (analyticsEnabled) {
+      plausible.trackEvent(eventName, { props });
+    }
+  };
+
+  // Utility function to track page views manually (only if consent given)
+  const trackPageview = (path?: string) => {
+    if (analyticsEnabled) {
+      plausible.trackPageview({ url: path });
+    }
+  };
+
   return {
     showPopup,
+    analyticsEnabled,
     handleAccept,
     handleDecline,
     handleClose,
+    trackEvent,
+    trackPageview,
     ConsentPopup: () => (
       <AnimatePresence>
         {showPopup && (
