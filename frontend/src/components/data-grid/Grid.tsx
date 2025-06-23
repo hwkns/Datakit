@@ -1,8 +1,9 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState, useRef } from "react";
 import { VariableSizeGrid } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 import GridCell from "./GridCell";
+import ResizeHandle from "./ResizeHandle";
 
 import { GridProps, GridData } from "@/types/grid";
 
@@ -42,6 +43,27 @@ const Grid: React.FC<IGrid> = ({
   // Calculate dimensions
   const rowCount = data.length;
   const columnCount = data[0]?.length || 0;
+  
+  // Column width state
+  const [columnWidths, setColumnWidths] = useState<number[]>(() => {
+    const widths = new Array(columnCount).fill(estimatedColumnWidth);
+    if (widths.length > 0) widths[0] = 60; // Row number column
+    return widths;
+  });
+  
+  // Refs for resize handling
+  const gridRef = useRef<VariableSizeGrid>(null);
+  const resizeStateRef = useRef<{
+    isResizing: boolean;
+    columnIndex: number;
+    startX: number;
+    startWidth: number;
+  }>({
+    isResizing: false,
+    columnIndex: -1,
+    startX: 0,
+    startWidth: 0,
+  });
 
   console.log("PerformanceGrid render:", {
     rowCount,
@@ -89,13 +111,54 @@ const Grid: React.FC<IGrid> = ({
     [gridData]
   );
 
-  // Calculate column width based on content - NOW RETURNS NUMBER
+  // Resize handlers
+  const handleResizeStart = useCallback((columnIndex: number, startX: number) => {
+    resizeStateRef.current = {
+      isResizing: true,
+      columnIndex,
+      startX,
+      startWidth: columnWidths[columnIndex] || estimatedColumnWidth,
+    };
+    
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [columnWidths, estimatedColumnWidth]);
+  
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizeStateRef.current.isResizing) return;
+    
+    const { columnIndex, startX, startWidth } = resizeStateRef.current;
+    const deltaX = e.clientX - startX;
+    const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
+    
+    setColumnWidths(prev => {
+      const newWidths = [...prev];
+      newWidths[columnIndex] = newWidth;
+      return newWidths;
+    });
+    
+    // Reset column cache to trigger re-render
+    if (gridRef.current) {
+      gridRef.current.resetAfterColumnIndex(columnIndex);
+    }
+  }, []);
+  
+  const handleResizeEnd = useCallback(() => {
+    resizeStateRef.current.isResizing = false;
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', handleResizeEnd);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, [handleResizeMove]);
+
+  // Calculate column width based on stored widths
   const getColumnWidth = useCallback(
     (index: number): number => {
-      if (index === 0) return 60; // Row number column
-      return estimatedColumnWidth;
+      return columnWidths[index] || estimatedColumnWidth;
     },
-    [estimatedColumnWidth]
+    [columnWidths, estimatedColumnWidth]
   );
 
   // Row height function (all rows same height for now)
@@ -123,19 +186,40 @@ const Grid: React.FC<IGrid> = ({
         {({ height, width }) => {
           console.log("AutoSizer dimensions:", { height, width });
           return (
-            <VariableSizeGrid
-              height={height}
-              width={width}
-              rowCount={rowCount}
-              columnCount={columnCount}
-              rowHeight={getRowHeight}
-              columnWidth={getColumnWidth}
-              itemData={gridData}
-              overscanRowCount={5}
-              overscanColumnCount={2}
-            >
-              {CellRenderer}
-            </VariableSizeGrid>
+            <div className="relative">
+              <VariableSizeGrid
+                ref={gridRef}
+                height={height}
+                width={width}
+                rowCount={rowCount}
+                columnCount={columnCount}
+                rowHeight={getRowHeight}
+                columnWidth={getColumnWidth}
+                itemData={gridData}
+                overscanRowCount={5}
+                overscanColumnCount={2}
+              >
+                {CellRenderer}
+              </VariableSizeGrid>
+              
+              {/* Resize handles */}
+              <div className="absolute top-0 left-0 pointer-events-none">
+                {Array.from({ length: columnCount - 1 }, (_, i) => {
+                  const columnIndex = i;
+                  const leftOffset = columnWidths.slice(0, columnIndex + 1).reduce((sum, width) => sum + width, 0);
+                  
+                  return (
+                    <ResizeHandle
+                      key={columnIndex}
+                      columnIndex={columnIndex}
+                      left={leftOffset}
+                      height={height}
+                      onResizeStart={handleResizeStart}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           );
         }}
       </AutoSizer>
