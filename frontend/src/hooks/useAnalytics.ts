@@ -1,18 +1,5 @@
-// TODO: To be configuered properly
 import { useCallback } from "react";
-
-declare global {
-  interface Window {
-    plausible?: (
-      event: string,
-      options?: {
-        props?: Record<string, string | number | boolean>;
-        revenue?: { currency: string; amount: number };
-        callback?: () => void;
-      }
-    ) => void;
-  }
-}
+import { useConsentManager } from "@/components/common/ConsentPopup";
 
 interface AnalyticsEvent {
   name: string;
@@ -20,18 +7,14 @@ interface AnalyticsEvent {
 }
 
 export const useAnalytics = () => {
+  const { analyticsEnabled, trackEvent } = useConsentManager();
+
   const track = useCallback((event: AnalyticsEvent) => {
-    // Only track if user has consented and plausible is loaded
-    if (window.plausible && typeof window.plausible === "function") {
-      try {
-        window.plausible(event.name, {
-          props: event.props,
-        });
-      } catch (error) {
-        console.warn("Analytics tracking failed:", error);
-      }
+    // Only track if user has consented to analytics
+    if (analyticsEnabled) {
+      trackEvent(event.name, event.props);
     }
-  }, []);
+  }, [analyticsEnabled, trackEvent]);
 
   // Convenience methods for common events
   const trackFileUpload = useCallback(
