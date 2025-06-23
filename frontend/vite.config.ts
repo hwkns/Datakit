@@ -52,6 +52,7 @@ export default defineConfig({
     fs: {
       allow: ['..'], // Allow serving files from parent directories if needed
     },
+    historyApiFallback: true,
   },
   preview: {
     headers: {

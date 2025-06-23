@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import { useDuckDBStore } from "@/store/duckDBStore";
+import { useConsentManager } from "@/components/common/ConsentPopup";
 
 import Home from "@/pages/Home";
+import Privacy from "@/pages/Privacy";
 import { Button } from "@/components/ui/Button";
 import { SEO } from "@/components/common/SEO";
 
@@ -18,7 +21,7 @@ const MobileWarning = () => {
       <SEO
         title="DataKit"
         description="Modern web-based data analysis tool - Process large files locally with complete privacy"
-        keywords="data analysis, sql, duckdb, charts, visualization, inspection, webassembley"
+        keywords="data analysis, sql, duckdb, charts, visualization, inspection, webassembly"
       />
 
       <div className="flex flex-col bg-black items-center justify-center h-screen p-6 text-center">
@@ -49,9 +52,10 @@ const MobileWarning = () => {
   );
 };
 
-const App = () => {
+const AppContent = () => {
   const { initialize } = useDuckDBStore();
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const { ConsentPopup } = useConsentManager();
 
   useEffect(() => {
     initialize();
@@ -87,7 +91,29 @@ const App = () => {
     return <MobileWarning />;
   }
 
-  return <Home />;
+  return (
+    <>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <Home /> <ConsentPopup />{" "}
+            </>
+          }
+        />
+        <Route path="/privacy" element={<Privacy />} />
+      </Routes>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
 };
 
 export default App;
