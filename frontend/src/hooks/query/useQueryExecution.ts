@@ -134,8 +134,6 @@ export const useQueryExecution = (
       setCurrentPage(1);
       setIsChangingPage(false);
       
-      // Show warning for potentially large result set queries
-      setShowLargeDataWarning(isLargeDataQuery(query));
       
       console.log(`[useQueryExecution] Executing query (page: 1, size: ${rowsPerPage})`);
       const paginatedResult = await executePaginatedQuery(query, 1, rowsPerPage);

@@ -635,7 +635,7 @@ const QueryWorkspace: React.FC = () => {
                   </h4>
                   <p className="text-xs text-white/80 mb-2">
                     This query is returning a large dataset which may affect
-                    performance. Consider adding filters or LIMIT clause to
+                    performance. Consider adding filters or LIMIT clause with lower value to
                     reduce the result size.
                   </p>
                   <div className="flex justify-end space-x-2 mt-2">
