@@ -54,7 +54,7 @@ const SQLQueryCard: React.FC<SQLQueryCardProps> = ({ query, index, isPrimary = f
         <div className="flex items-center gap-2">
           <Code className="h-4 w-4 text-white/50" />
           <span className="text-xs font-medium text-white/70">
-            SQL Query {index + 1}
+            Query {index + 1}
             {isPrimary && (
               <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                 Primary

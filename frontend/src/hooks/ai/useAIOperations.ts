@@ -14,11 +14,9 @@ export const useAIOperations = () => {
     activeProvider,
     activeModel,
     apiKeys,
-    currentPrompt,
     autoExecuteSQL,
     setProcessing,
     addQueryToHistory,
-    setCurrentPrompt,
     currentResponse,
     streamingResponse,
     setCurrentResponse,
@@ -131,8 +129,11 @@ export const useAIOperations = () => {
           inQuery = true;
           currentQuery = [line];
         } else if (inQuery) {
-          // Continue collecting lines until we hit an empty line or end
-          if (line.trim() === '' || /^\d+\.|^[A-Z]/.test(line.trim())) {
+          // Continue collecting lines until we hit an empty line or a clear end marker
+          if (line.trim() === '' || 
+              /^This query|^The query|^This will|^The result/i.test(line.trim()) ||
+              /^\d+\./.test(line.trim()) ||
+              (line.trim().endsWith(';') && !line.includes('SELECT') && !line.includes('FROM'))) {
             if (currentQuery.length > 0) {
               const query = currentQuery.join('\n').trim();
               if (query.length > 10) {
@@ -407,21 +408,21 @@ ${sqlResult.warnings && sqlResult.warnings.length > 0 ?
     try {
       const result = await executePaginatedQuery(sql, 1, 100);
       
-      if (result.success && result.data) {
+      if (result.data && result.data.length >= 0) {
         // Update the AI store with results
         const { setQueryResults } = useAIStore.getState();
         
-        const columns = result.data.length > 0 ? Object.keys(result.data[0]) : [];
+        const columns = result.columns || (result.data.length > 0 ? Object.keys(result.data[0]) : []);
         const totalRows = result.totalRows || result.data.length;
-        const totalPages = Math.ceil(totalRows / 100);
+        const totalPages = result.totalPages || Math.ceil(totalRows / 100);
         
         setQueryResults({
           data: result.data,
           columns,
           totalRows,
           totalPages,
-          currentPage: 1,
-          rowsPerPage: 100,
+          currentPage: result.page || 1,
+          rowsPerPage: result.pageSize || 100,
           isLoading: false,
           error: null,
         });
@@ -435,7 +436,7 @@ ${sqlResult.warnings && sqlResult.warnings.length > 0 ?
           currentPage: 1,
           rowsPerPage: 100,
           isLoading: false,
-          error: result.error || 'Query execution failed',
+          error: 'No data returned from query',
         });
       }
     } catch (error) {

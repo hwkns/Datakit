@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";
-import { useDuckDBStore } from "@/store/duckDBStore";
-import { useAIOperations } from "@/hooks/ai/useAIOperations";
 
 import SchemaBrowser from "@/components/tabs/query/SchemaBrowser";
-import ModelSelector from "./ModelSelector";
 import ContextBar from "./ContextBar";
 import PromptPanel from "./PromptPanel";
 import ResponsePanel from "./ResponsePanel";
@@ -27,18 +24,16 @@ const AIWorkspace: React.FC = () => {
     autoExecuteSQL
   } = useAIStore();
   
-  const { getAvailableTables } = useDuckDBStore();
-  const { isLoading, canExecute } = useAIOperations();
   
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const resultsResizeRef = useRef<HTMLDivElement>(null);
   
   // Auto-expand results when query executes
   useEffect(() => {
-    if (queryResults && autoExecuteSQL && !resultsExpanded) {
+    if (queryResults && !resultsExpanded) {
       setResultsExpanded(true);
     }
-  }, [queryResults, autoExecuteSQL]);
+  }, [queryResults]);
   
   // Focus prompt on mount
   useEffect(() => {
@@ -133,7 +128,7 @@ const AIWorkspace: React.FC = () => {
             {/* Collapse Button */}
             <button
               onClick={() => setResultsExpanded(false)}
-              className="absolute top-2 right-2 p-1 rounded hover:bg-white/10 transition-colors"
+              className="absolute top-0 right-2 p-1 rounded bg-white/20 hover:bg-white/10 transition-colors"
             >
               <ChevronDown className="h-4 w-4 text-white/70" />
             </button>
@@ -147,7 +142,7 @@ const AIWorkspace: React.FC = () => {
       {!resultsExpanded && queryResults && (
         <button
           onClick={() => setResultsExpanded(true)}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-darkNav border border-white/10 rounded-t-lg px-4 py-1 hover:bg-white/5 transition-colors flex items-center gap-2"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black border border-white/10 rounded-t-lg px-4 py-1 hover:border-primary transition-colors flex items-center gap-2"
         >
           <ChevronUp className="h-4 w-4 text-white/70" />
           <span className="text-sm text-white/70">Show Results</span>

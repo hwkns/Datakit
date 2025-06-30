@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Cpu, Download } from "lucide-react";
+import { ChevronDown, Check, Cpu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAIStore } from "@/store/aiStore";
@@ -20,14 +20,12 @@ const PROVIDER_COLORS: Record<AIProvider, string> = {
   openai: 'blue',
   anthropic: 'blue', 
   local: 'blue',
-  custom: 'purple',
 };
 
 const PROVIDER_ICONS: Record<AIProvider, React.ReactNode> = {
   openai: <img src={OpenAILogo} className="h-4 w-4" />,
   anthropic: <img src={AnthropicLogo} className="h-4 w-4" />,
-  local: <Cpu className="h-4 w-4" />,
-  custom: <Download className="h-4 w-4" />,
+  local: <Cpu className="h-4 w-4" />
 };
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
@@ -120,45 +118,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
     }
   };
 
-  const ModelBadge = ({ model, provider }: { model: AIModel; provider: AIProvider }) => (
-    <div className={cn(
-      "flex items-center space-x-2 p-2 rounded-lg border",
-      hasApiKey(provider) 
-        ? `${getProviderColorClass(provider, 'bg')} ${getProviderColorClass(provider, 'border')}` 
-        : "bg-white/5 border-white/10 opacity-50"
-    )}>
-      <div className={cn(
-        "h-6 w-6 rounded-md flex items-center justify-center border",
-        hasApiKey(provider)
-          ? `${getProviderColorClass(provider, 'border')} ${getProviderColorClass(provider, 'text')}`
-          : "border-white/10 text-white/40"
-      )}>
-        {PROVIDER_ICONS[provider]}
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-white truncate">
-          {model.name}
-        </div>
-        {!compact && (
-          <div className="text-xs text-white/60 truncate">
-            {provider === 'local' ? 'Local' : provider.charAt(0).toUpperCase() + provider.slice(1)}
-            {model.costPer1kTokens && (
-              <span className="ml-2">
-                ${model.costPer1kTokens.input.toFixed(3)}/1K tokens
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {!hasApiKey(provider) && provider !== 'local' && (
-        <div className="text-xs bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded">
-          No Key
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -208,7 +167,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 mt-2 w-80 bg-darkNav border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-96 overflow-y-auto"
+            className="absolute top-full left-0 mt-2 w-80 bg-black border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-96 overflow-y-auto"
           >
             <div className="p-3">
               <div className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
@@ -270,7 +229,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                 ))}
 
                 {/* Local Models Section - Coming Soon */}
-                <div>
+                {/* <div>
                   <div className="text-xs font-medium text-white/50 mb-2 flex items-center">
                     <Cpu className="h-4 w-4" />
                     <span className="ml-2">Local Models</span>
@@ -287,7 +246,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                       Run AI models directly in your browser with complete privacy. No data leaves your device.
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </motion.div>
