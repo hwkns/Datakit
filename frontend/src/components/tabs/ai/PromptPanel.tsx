@@ -1,5 +1,5 @@
 import React, { useState, useEffect, RefObject } from "react";
-import { Send, Sparkles, Settings, ChevronRight } from "lucide-react";
+import { Send, Settings, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAIStore } from "@/store/aiStore";
@@ -90,9 +90,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-sm">
           <div className="mb-4 flex justify-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
+           
           </div>
           <h3 className="text-lg font-medium text-white mb-2">
             Configure API Keys

@@ -5,9 +5,7 @@ import {
   AIModel, 
   LocalModel, 
   AIQuery, 
-  MCPConnection,
-  APIKeyConfig,
-  QueryIntent
+  MCPConnection
 } from "@/types/ai";
 
 interface QueryResults {
@@ -108,45 +106,45 @@ interface AIState {
 const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
   ['openai', [
     {
-      id: 'gpt-4-turbo-preview',
-      name: 'GPT-4 Turbo',
+      id: 'gpt-4o',
+      name: 'GPT-4o',
       provider: 'openai',
       type: 'chat',
       contextWindow: 128000,
-      costPer1kTokens: { input: 0.01, output: 0.03 },
-      capabilities: [''],
+      costPer1kTokens: { input: 0.0025, output: 0.01 },
+      capabilities: [],
       requiresApiKey: true,
     },
     {
-      id: 'gpt-3.5-turbo',
-      name: 'GPT-3.5 Turbo',
+      id: 'gpt-4o-mini',
+      name: 'GPT-4o Mini',
       provider: 'openai',
       type: 'chat',
-      contextWindow: 16384,
-      costPer1kTokens: { input: 0.0005, output: 0.0015 },
-      capabilities: [''],
+      contextWindow: 128000,
+      costPer1kTokens: { input: 0.00015, output: 0.0006 },
+      capabilities: [],
       requiresApiKey: true,
     },
   ]],
   ['anthropic', [
     {
-      id: 'claude-3-opus-20240229',
-      name: 'Claude 3 Opus',
-      provider: 'anthropic',
-      type: 'chat',
-      contextWindow: 200000,
-      costPer1kTokens: { input: 0.015, output: 0.075 },
-      capabilities: [''],
-      requiresApiKey: true,
-    },
-    {
-      id: 'claude-3-sonnet-20240229',
-      name: 'Claude 3 Sonnet',
+      id: 'claude-3-5-sonnet-20241022',
+      name: 'Claude 3.5 Sonnet',
       provider: 'anthropic',
       type: 'chat',
       contextWindow: 200000,
       costPer1kTokens: { input: 0.003, output: 0.015 },
-      capabilities: [''],
+      capabilities: [],
+      requiresApiKey: true,
+    },
+    {
+      id: 'claude-3-5-haiku-20241022',
+      name: 'Claude 3.5 Haiku',
+      provider: 'anthropic',
+      type: 'chat',
+      contextWindow: 200000,
+      costPer1kTokens: { input: 0.0008, output: 0.004 },
+      capabilities: [],
       requiresApiKey: true,
     },
   ]],
