@@ -38,6 +38,7 @@ interface AIState {
   currentQueryId: string | null;
   queryResults: QueryResults | null;
   currentResponse: string | null;
+  streamingResponse: string;
   
   // MCP State
   mcpConnections: MCPConnection[];
@@ -70,6 +71,7 @@ interface AIState {
   setProcessing: (isProcessing: boolean) => void;
   setQueryResults: (results: QueryResults | null) => void;
   setCurrentResponse: (response: string | null) => void;
+  setStreamingResponse: (response: string) => void;
   
   // Model Actions
   downloadLocalModel: (modelId: string) => Promise<void>;
@@ -166,6 +168,7 @@ export const useAIStore = create<AIState>()(
       currentQueryId: null,
       queryResults: null,
       currentResponse: null,
+      streamingResponse: '',
       
       mcpConnections: [],
       activeMCPConnection: null,
@@ -224,6 +227,8 @@ export const useAIStore = create<AIState>()(
       setQueryResults: (results) => set({ queryResults: results }),
       
       setCurrentResponse: (response) => set({ currentResponse: response }),
+      
+      setStreamingResponse: (response) => set({ streamingResponse: response }),
       
       downloadLocalModel: async (modelId) => {
         try {

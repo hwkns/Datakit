@@ -7,12 +7,13 @@ import { useAIOperations } from "@/hooks/ai/useAIOperations";
 import SQLQueryCard from "./SQLQueryCard";
 
 const ResponsePanel: React.FC = () => {
-  const { isProcessing } = useAIStore();
-  const { currentResponse, streamingResponse, extractSQLQueries } = useAIOperations();
+  const { isProcessing, currentResponse, streamingResponse } = useAIStore();
+  const { extractSQLQueries } = useAIOperations();
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Use streaming response if available, otherwise use current response
   const displayResponse = streamingResponse || currentResponse;
+  
   
   // Auto-scroll to bottom when new content arrives
   useEffect(() => {
@@ -33,9 +34,10 @@ const ResponsePanel: React.FC = () => {
     
     // Remove SQL blocks from text to get clean text parts
     let cleanText = text;
-    const sqlBlockRegex = /```sql\n([\s\S]*?)\n```/gi;
+    const sqlBlockRegex = /```sql\s*\n([\s\S]*?)\n\s*```/gi;
     let lastIndex = 0;
     let match;
+    
     
     while ((match = sqlBlockRegex.exec(text)) !== null) {
       // Add text before SQL block
@@ -63,6 +65,7 @@ const ResponsePanel: React.FC = () => {
     if (parts.length === 0) {
       parts.push({ type: 'text', content: text });
     }
+    
     
     return parts;
   };

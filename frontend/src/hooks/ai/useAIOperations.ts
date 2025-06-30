@@ -9,8 +9,6 @@ import { AIQuery, QueryIntent } from "@/types/ai";
 
 export const useAIOperations = () => {
   const [isExecuting, setIsExecuting] = useState(false);
-  const [currentResponse, setCurrentResponse] = useState<string>("");
-  const [streamingResponse, setStreamingResponse] = useState<string>("");
   
   const {
     activeProvider,
@@ -21,6 +19,10 @@ export const useAIOperations = () => {
     setProcessing,
     addQueryToHistory,
     setCurrentPrompt,
+    currentResponse,
+    streamingResponse,
+    setCurrentResponse,
+    setStreamingResponse,
   } = useAIStore();
 
   const { executeQuery, executePaginatedQuery } = useDuckDBStore();
@@ -105,12 +107,14 @@ export const useAIOperations = () => {
   const extractSQLQueries = useCallback((response: string): string[] => {
     const queries: string[] = [];
     
-    // Look for SQL code blocks
-    const sqlBlockMatches = response.match(/```sql\n([\s\S]*?)\n```/gi);
+    // Look for SQL code blocks (with flexible whitespace)
+    const sqlBlockMatches = response.match(/```sql\s*\n([\s\S]*?)\n\s*```/gi) || 
+                          response.match(/```\s*\n([\s\S]*?)\n\s*```/gi); // Also check plain code blocks
     if (sqlBlockMatches) {
       sqlBlockMatches.forEach(match => {
-        const query = match.replace(/```sql\n?/gi, '').replace(/\n?```/gi, '').trim();
-        if (query) {
+        const query = match.replace(/```(?:sql)?\s*\n?/gi, '').replace(/\n?\s*```/gi, '').trim();
+        // Check if it looks like SQL
+        if (query && query.length > 10 && /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(query)) {
           queries.push(query);
         }
       });
@@ -119,12 +123,36 @@ export const useAIOperations = () => {
     // If no code blocks found, look for SQL-like statements
     if (queries.length === 0) {
       const lines = response.split('\n');
-      const sqlLines = lines.filter(line => 
-        /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(line.trim())
-      );
+      let inQuery = false;
+      let currentQuery: string[] = [];
       
-      if (sqlLines.length > 0) {
-        queries.push(sqlLines.join('\n').trim());
+      for (const line of lines) {
+        if (/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(line.trim())) {
+          inQuery = true;
+          currentQuery = [line];
+        } else if (inQuery) {
+          // Continue collecting lines until we hit an empty line or end
+          if (line.trim() === '' || /^\d+\.|^[A-Z]/.test(line.trim())) {
+            if (currentQuery.length > 0) {
+              const query = currentQuery.join('\n').trim();
+              if (query.length > 10) {
+                queries.push(query);
+              }
+            }
+            inQuery = false;
+            currentQuery = [];
+          } else {
+            currentQuery.push(line);
+          }
+        }
+      }
+      
+      // Don't forget the last query if still in progress
+      if (inQuery && currentQuery.length > 0) {
+        const query = currentQuery.join('\n').trim();
+        if (query.length > 10) {
+          queries.push(query);
+        }
       }
     }
     
@@ -164,7 +192,7 @@ export const useAIOperations = () => {
 
     setIsExecuting(true);
     setProcessing(true);
-    setCurrentResponse("");
+    setCurrentResponse(null);
     setStreamingResponse("");
 
     const startTime = Date.now();
@@ -319,6 +347,7 @@ ${sqlResult.warnings && sqlResult.warnings.length > 0 ?
 
             addQueryToHistory(query);
             setCurrentResponse(fullResponse);
+            setStreamingResponse(""); // Clear streaming response
             
             // Auto-execute SQL if enabled
             autoExecuteSQLQueries(fullResponse);
@@ -434,7 +463,14 @@ ${sqlResult.warnings && sqlResult.warnings.length > 0 ?
     
     // Auto-execute the first query
     const firstQuery = queries[0];
-    await handleRunSQL(firstQuery);
+    
+    // Validate the query before executing
+    if (firstQuery && firstQuery.length > 20 && !firstQuery.endsWith('SELECT')) {
+      console.log('[Auto-execute] Running query:', firstQuery.substring(0, 50) + '...');
+      await handleRunSQL(firstQuery);
+    } else {
+      console.log('[Auto-execute] Skipping invalid query:', firstQuery);
+    }
   }, [autoExecuteSQL, extractSQLQueries, handleRunSQL]);
 
   return {
@@ -459,7 +495,7 @@ ${sqlResult.warnings && sqlResult.warnings.length > 0 ?
     // Utilities
     extractSQLQueries,
     clearResponse: () => {
-      setCurrentResponse("");
+      setCurrentResponse(null);
       setStreamingResponse("");
     },
   };
