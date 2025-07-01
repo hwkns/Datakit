@@ -1,5 +1,6 @@
 import { OpenAIProvider } from "./providers/openai";
 import { AnthropicProvider } from "./providers/anthropic";
+import { GroqProvider } from "./providers/groq";
 import { WebLLMProvider } from "./providers/webllm";
 import { 
   AIProvider, 
@@ -40,6 +41,9 @@ export class AIService {
         break;
       case 'anthropic':
         this.providers.set(provider, new AnthropicProvider(apiKey, model));
+        break;
+      case 'groq':
+        this.providers.set(provider, new GroqProvider(apiKey, model));
         break;
       case 'local':
         // Local provider already initialized in constructor

@@ -98,7 +98,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
           <p className="text-white/60 text-sm mb-4">
             Add your API keys to start using AI features with your data.
           </p>
-          <Button onClick={onOpenApiKeyModal} variant="primary" size="sm">
+          <Button onClick={onOpenApiKeyModal} variant="outline" size="sm">
             <Settings className="w-4 h-4 mr-2" />
             Open Settings
           </Button>

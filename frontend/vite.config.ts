@@ -54,7 +54,6 @@ export default defineConfig({
     },
     historyApiFallback: true,
     proxy: {
-      // Proxy OpenAI API requests
       '/api/openai': {
         target: 'https://api.openai.com/v1',
         changeOrigin: true,
@@ -63,13 +62,20 @@ export default defineConfig({
           'Origin': 'https://api.openai.com',
         },
       },
-      // Proxy Anthropic API requests
       '/api/anthropic': {
         target: 'https://api.anthropic.com/v1',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
         headers: {
           'Origin': 'https://api.anthropic.com',
+        },
+      },
+      '/api/groq': {
+        target: 'https://api.groq.com/openai/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/groq/, ''),
+        headers: {
+          'Origin': 'https://api.groq.com',
         },
       },
     },

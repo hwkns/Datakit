@@ -18,6 +18,8 @@ export class SafeAPIProvider {
         this.baseUrl = '/api/openai';
       } else if (baseUrl.includes('api.anthropic.com')) {
         this.baseUrl = '/api/anthropic';
+      } else if (baseUrl.includes('api.groq.com')) {
+        this.baseUrl = '/api/groq';
       } else {
         this.baseUrl = baseUrl;
       }

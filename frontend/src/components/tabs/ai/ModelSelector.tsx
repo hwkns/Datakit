@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 import OpenAILogo from '@/assets/openai.webp';
 import AnthropicLogo  from '@/assets/anthropic.webp';
-
+import GroqLogo from '@/assets/groq.png';
 
 interface ModelSelectorProps {
   compact?: boolean;
@@ -18,13 +18,15 @@ interface ModelSelectorProps {
 
 const PROVIDER_COLORS: Record<AIProvider, string> = {
   openai: 'blue',
-  anthropic: 'blue', 
+  anthropic: 'blue',
+  groq: 'blue',
   local: 'blue',
 };
 
 const PROVIDER_ICONS: Record<AIProvider, React.ReactNode> = {
   openai: <img src={OpenAILogo} className="h-4 w-4" />,
   anthropic: <img src={AnthropicLogo} className="h-4 w-4" />,
+  groq: <img src={GroqLogo} className="h-4 w-4" />,
   local: <Cpu className="h-4 w-4" />
 };
 

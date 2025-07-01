@@ -21,7 +21,6 @@ const AIWorkspace: React.FC = () => {
     queryResults,
     activeProvider,
     apiKeys,
-    autoExecuteSQL
   } = useAIStore();
   
   
@@ -61,10 +60,8 @@ const AIWorkspace: React.FC = () => {
     document.addEventListener("mouseup", handleMouseUp);
     document.body.style.cursor = "ns-resize";
   };
-  
   const hasApiKey = apiKeys.has(activeProvider) && !!apiKeys.get(activeProvider);
   const showSetupPrompt = !hasApiKey && activeProvider !== "local";
-  
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Context Bar */}

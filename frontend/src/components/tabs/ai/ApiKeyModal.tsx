@@ -6,7 +6,6 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  AlertCircle,
   ExternalLink,
   Settings,
 } from "lucide-react";
@@ -19,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import OpenAILogo from "@/assets/openai.webp";
 import AnthropicLogo from "@/assets/anthropic.webp";
+import GroqLogo from '@/assets/groq.png';
 
 const PROVIDER_CONFIG = {
   openai: {
@@ -38,6 +38,15 @@ const PROVIDER_CONFIG = {
     websiteUrl: "https://console.anthropic.com/",
     helpText: "Get your API key from Anthropic Console (includes free credits for new users)",
     keyFormat: "sk-ant-...",
+  },
+  groq: {
+    name: "Groq",
+    icon: <img src={GroqLogo} className="h-4 w-4" />,
+    color: "blue",
+    description: "Llama 3.1 models with free tier and ultra-fast inference",
+    websiteUrl: "https://console.groq.com/keys",
+    helpText: "Get your free API key from Groq Console (generous free tier included)",
+    keyFormat: "gsk_...",
   },
   // local: {
   //   name: "Local Models",
@@ -61,20 +70,13 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
     new Map()
   );
   const [showKeys, setShowKeys] = useState<Map<AIProvider, boolean>>(new Map());
-  const [validatingKeys, setValidatingKeys] = useState<
-    Map<AIProvider, boolean>
-  >(new Map());
-  const [keyStatus, setKeyStatus] = useState<
-    Map<AIProvider, "valid" | "invalid" | null>
-  >(new Map());
 
   const {
     apiKeys,
+    setActiveProvider: setActiveProviderToStore,
     autoExecuteSQL,
     showCostEstimates,
-    maxHistoryItems,
     setApiKey,
-    validateApiKey,
     updateSettings,
   } = useAIStore();
 
@@ -89,41 +91,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
 
   const handleKeyChange = (provider: AIProvider, value: string) => {
     setKeyInputs(new Map(keyInputs.set(provider, value)));
-    // Clear validation status when key changes
-    setKeyStatus(new Map(keyStatus.set(provider, null)));
   };
 
   const handleToggleKeyVisibility = (provider: AIProvider) => {
     setShowKeys(new Map(showKeys.set(provider, !showKeys.get(provider))));
   };
 
-  const handleValidateKey = async (provider: AIProvider) => {
-    const key = keyInputs.get(provider);
-    if (!key) return;
-
-    setValidatingKeys(new Map(validatingKeys.set(provider, true)));
-
-    try {
-      // Set the key first
-      setApiKey(provider, key);
-
-      // Validate the key
-      const isValid = await validateApiKey(provider);
-      setKeyStatus(
-        new Map(keyStatus.set(provider, isValid ? "valid" : "invalid"))
-      );
-    } catch (error) {
-      setKeyStatus(new Map(keyStatus.set(provider, "invalid")));
-    } finally {
-      setValidatingKeys(new Map(validatingKeys.set(provider, false)));
-    }
-  };
 
   const handleSave = () => {
     // Save all keys
     for (const [provider, key] of keyInputs) {
       if (key.trim()) {
         setApiKey(provider, key.trim());
+        setActiveProviderToStore(provider);
       }
     }
     onClose();
@@ -346,46 +326,9 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                                   <Eye className="h-3 w-3" />
                                 )}
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleValidateKey(activeProvider)
-                                }
-                                disabled={
-                                  !keyInputs.get(activeProvider) ||
-                                  validatingKeys.get(activeProvider)
-                                }
-                                className="h-6 px-2"
-                              >
-                                {validatingKeys.get(activeProvider)
-                                  ? "Checking..."
-                                  : "Test"}
-                              </Button>
                             </div>
                           </div>
 
-                          {keyStatus.get(activeProvider) && (
-                            <div
-                              className={cn(
-                                "mt-2 flex items-center gap-2 text-sm",
-                                keyStatus.get(activeProvider) === "valid"
-                                  ? "text-green-400"
-                                  : "text-red-400"
-                              )}
-                            >
-                              {keyStatus.get(activeProvider) === "valid" ? (
-                                <CheckCircle className="h-4 w-4" />
-                              ) : (
-                                <AlertCircle className="h-4 w-4" />
-                              )}
-                              <span>
-                                {keyStatus.get(activeProvider) === "valid"
-                                  ? "API key is valid"
-                                  : "Invalid API key"}
-                              </span>
-                            </div>
-                          )}
                         </div>
 
                         {PROVIDER_CONFIG[activeProvider].websiteUrl && (
@@ -488,7 +431,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                           </button>
                         </div>
 
-                        <div>
+                        {/* <div>
                           <label className="block text-sm text-white/80 mb-2">
                             Query history limit
                           </label>
@@ -506,7 +449,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                             <option value={100}>100</option>
                             <option value={200}>200</option>
                           </select>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>
@@ -519,7 +462,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                   <Button variant="ghost" onClick={onClose}>
                     Cancel
                   </Button>
-                  <Button variant="primary" onClick={handleSave}>
+                  <Button variant="outline" onClick={handleSave}>
                     Save Configuration
                   </Button>
                 </div>

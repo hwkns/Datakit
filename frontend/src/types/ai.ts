@@ -1,4 +1,4 @@
-export type AIProvider = 'openai' | 'anthropic' | 'local';
+export type AIProvider = 'openai' | 'anthropic' | 'groq' | 'local';
 export type ModelType = 'chat' | 'completion' | 'embedding';
 
 export interface AIModel {

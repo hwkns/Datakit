@@ -21,7 +21,7 @@ interface QueryResults {
 
 interface AIState {
   // Model Management
-  activeProvider: AIProvider;
+  activeProvider?: AIProvider;
   activeModel: string | null;
   availableModels: Map<AIProvider, AIModel[]>;
   localModels: LocalModel[];
@@ -106,7 +106,7 @@ interface AIState {
 const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
   ['openai', [
     {
-      id: 'gpt-4o',
+      id: 'gpt-4o-2024-11-20',
       name: 'GPT-4o',
       provider: 'openai',
       type: 'chat',
@@ -148,13 +148,35 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
       requiresApiKey: true,
     },
   ]],
+  ['groq', [
+    {
+      id: 'llama-3.1-70b-versatile',
+      name: 'Llama 3.1 70B (Free)',
+      provider: 'groq',
+      type: 'chat',
+      contextWindow: 131072,
+      costPer1kTokens: { input: 0, output: 0 },
+      capabilities: [],
+      requiresApiKey: true,
+    },
+    {
+      id: 'llama-3.1-8b-instant',
+      name: 'Llama 3.1 8B (Free)',
+      provider: 'groq',
+      type: 'chat',
+      contextWindow: 131072,
+      costPer1kTokens: { input: 0, output: 0 },
+      capabilities: [],
+      requiresApiKey: true,
+    },
+  ]],
 ]);
 
 export const useAIStore = create<AIState>()(
   persist(
     (set, get) => ({
       // Initial state
-      activeProvider: 'openai',
+      activeProvider: undefined,
       activeModel: null,
       availableModels: DEFAULT_MODELS,
       localModels: [],
@@ -335,7 +357,7 @@ export const useAIStore = create<AIState>()(
       },
     }),
     {
-      name: 'datakit-ai-store',
+      name: 'ai-store',
       partialize: (state) => ({
         activeProvider: state.activeProvider,
         activeModel: state.activeModel,
