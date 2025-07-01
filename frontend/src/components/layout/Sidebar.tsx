@@ -15,6 +15,7 @@ import { useAppStore } from "@/store/appStore";
 import { motion, AnimatePresence } from "framer-motion";
 import usePopover from "@/hooks/usePopover";
 import { Button } from "@/components/ui/Button";
+import UserMenu from "@/components/auth/UserMenu";
 
 
 import RemoteDataImportModal from "@/components/common/RemoteDataImportPanel";
@@ -188,6 +189,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       </div>
 
       <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-white/10">
+        <UserMenu variant="sidebar" className="w-full" />
+        
         <a
           href="https://amin.contact"
           target="_blank"
@@ -332,24 +335,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         )}
       </div>
 
-      {/* Footer area with ThemeColorPicker and status */}
+      {/* Footer area with UserMenu */}
       <div className="border-t border-white border-opacity-10">
-        <div className="p-4 flex items-center justify-between">
-          <ThemeColorPicker />
+        <div className="p-4">
+          <UserMenu variant="sidebar" className="mb-4" />
+          
+          <div className="flex items-center justify-between">
+            <ThemeColorPicker />
 
-          <div className="h-6 w-px bg-white bg-opacity-10 mx-3"></div>
+            <div className="h-6 w-px bg-white bg-opacity-10 mx-3"></div>
 
-          <div className="flex items-center text-xs text-white text-opacity-60">
-            <span>DuckDB:</span>
-            {duckDBError ? (
-              <span className="ml-1.5 text-destructive">Error</span>
-            ) : duckDBLoading ? (
-              <span className="ml-1.5 text-secondary">
-                {Math.round(duckDBProgress * 100)}%
-              </span>
-            ) : (
-              <span className="ml-1.5 text-primary">Ready</span>
-            )}
+            <div className="flex items-center text-xs text-white text-opacity-60">
+              <span>DuckDB:</span>
+              {duckDBError ? (
+                <span className="ml-1.5 text-destructive">Error</span>
+              ) : duckDBLoading ? (
+                <span className="ml-1.5 text-secondary">
+                  {Math.round(duckDBProgress * 100)}%
+                </span>
+              ) : (
+                <span className="ml-1.5 text-primary">Ready</span>
+              )}
+            </div>
           </div>
         </div>
 

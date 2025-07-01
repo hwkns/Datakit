@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import { useDuckDBStore } from "@/store/duckDBStore";
+import { useAuthStore } from "@/store/authStore";
 import { useConsentManager } from "@/components/common/ConsentPopup";
 
 import Home from "@/pages/Home";
 import Privacy from "@/pages/Privacy";
+import Settings from "@/pages/Settings";
 import { Button } from "@/components/ui/Button";
 import { SEO } from "@/components/common/SEO";
 
@@ -54,12 +56,18 @@ const MobileWarning = () => {
 
 const AppContent = () => {
   const { initialize } = useDuckDBStore();
+  const { checkAuth } = useAuthStore();
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const { ConsentPopup } = useConsentManager();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Global auth check on app startup
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // Apply saved theme color
   useEffect(() => {
@@ -103,6 +111,7 @@ const AppContent = () => {
           }
         />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </>
   );
