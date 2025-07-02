@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { CreditsService } from './credits.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EstimateCreditsDto } from './dto/estimate-credits.dto';
 
 @Controller('credits')
 @UseGuards(JwtAuthGuard)
@@ -65,5 +66,21 @@ export class CreditsController {
   @Get('stats')
   async getUsageStats(@Request() req) {
     return this.creditsService.getUserUsageStats(req.user.id);
+  }
+
+  @Post('estimate')
+  async estimateCredits(@Body() estimateDto: EstimateCreditsDto) {
+    const estimated = await this.creditsService.estimateCredits(
+      estimateDto.modelId,
+      estimateDto.inputTokens,
+      estimateDto.outputTokens,
+    );
+    return { estimatedCredits: estimated };
+  }
+
+  @Get('remaining')
+  async getRemainingCredits(@Request() req) {
+    const remaining = await this.creditsService.getRemainingCredits(req.user.id);
+    return { creditsRemaining: remaining };
   }
 }

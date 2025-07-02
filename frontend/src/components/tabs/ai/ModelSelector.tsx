@@ -8,6 +8,7 @@ import { modelManager } from "@/lib/ai/modelManager";
 import { AIProvider, AIModel } from "@/types/ai";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 import OpenAILogo from '@/assets/openai.webp';
 import AnthropicLogo  from '@/assets/anthropic.webp';
@@ -41,6 +42,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   
   const {
     activeProvider,
@@ -61,16 +63,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
           id: 'datakit-smart',
           name: 'DataKit Smart',
           contextWindow: 32000,
-          capabilities: ['text', 'code', 'analysis'],
-          description: 'Advanced model optimized for data analysis and SQL generation',
+          capabilities: [],
+          description: '',
           costPer1kTokens: { input: 0.001, output: 0.002 }, // Competitive pricing
         },
         {
           id: 'datakit-fast',
           name: 'DataKit Fast',
           contextWindow: 16000,
-          capabilities: ['text', 'code'],
-          description: 'Fast and efficient model for quick queries',
+          capabilities: [],
+          description: '',
           costPer1kTokens: { input: 0.0005, output: 0.001 },
         },
       ];
@@ -126,6 +128,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
 
   // Handle model selection
   const handleModelSelect = async (provider: AIProvider | 'datakit', modelId: string) => {
+    // If trying to select DataKit AI without being authenticated, redirect to settings
+    if (provider === 'datakit' && !isAuthenticated) {
+      setIsOpen(false);
+      navigate('/settings#subscription');
+      return;
+    }
+
     setActiveProvider(provider as AIProvider);
     setActiveModel(modelId);
     setIsOpen(false);
@@ -150,6 +159,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
         // TODO: Show error notification
       }
     }
+  };
+
+  const handleSignInClick = () => {
+    setIsOpen(false);
+    navigate('/settings#ai');
   };
 
   // Get color class for provider
@@ -216,7 +230,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 mt-2 w-80 bg-black border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-96 overflow-y-auto"
+            className="absolute top-full left-0 mt-2 w-80 bg-black border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-100 overflow-y-auto"
           >
             <div className="p-3">
               <div className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
@@ -278,12 +292,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
 
                   {!isAuthenticated && (
                     <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                      <div className="text-sm text-white/70 mb-1">
+                      <div className="text-sm text-white/70 mb-2">
                         Sign in to use DataKit AI
                       </div>
-                      <div className="text-xs text-white/50">
+                      <div className="text-xs text-white/50 mb-3">
                         No API keys needed. Credits included with your account.
                       </div>
+                      <button
+                        onClick={handleSignInClick}
+                        className="w-full px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-sm font-medium text-primary transition-all duration-200"
+                      >
+                        Sign in to get started
+                      </button>
                     </div>
                   )}
 

@@ -20,6 +20,39 @@ export class AIController {
     private configService: ConfigService,
   ) {}
 
+  @Post('chat/completions/check')
+  async checkChatCompletions(
+    @Request() req,
+    @Body() body: any,
+    @Headers('x-ai-provider') provider: string,
+  ) {
+    const { model, messages } = body;
+
+    // Estimate tokens
+    const estimatedInputTokens = JSON.stringify(messages).length / 4;
+    const estimatedOutputTokens = 1000;
+    const estimatedCredits = this.creditsService.calculateCredits(
+      model,
+      estimatedInputTokens,
+      estimatedOutputTokens,
+    );
+
+    // Check if user has enough credits
+    const hasCredits = await this.creditsService.checkCredits(
+      req.user.id,
+      estimatedCredits,
+    );
+
+    const remainingCredits = await this.creditsService.getRemainingCredits(req.user.id);
+
+    return {
+      hasCredits,
+      estimatedCredits,
+      creditsRemaining: remainingCredits,
+      canProceed: hasCredits,
+    };
+  }
+
   @Post('chat/completions')
   async chatCompletions(
     @Request() req,
@@ -69,6 +102,11 @@ export class AIController {
           actualInputTokens = response.usage?.prompt_tokens || estimatedInputTokens;
           actualOutputTokens = response.usage?.completion_tokens || 0;
           break;
+        case 'datakit':
+          response = await this.callDatakitAI(body);
+          actualInputTokens = response.usage?.prompt_tokens || estimatedInputTokens;
+          actualOutputTokens = response.usage?.completion_tokens || 0;
+          break;
         default:
           throw new BadRequestException('Invalid AI provider');
       }
@@ -84,7 +122,16 @@ export class AIController {
         response.choices?.[0]?.message?.content || response.content?.[0]?.text,
       );
 
-      return response;
+      // Add credit information to response headers
+      const remainingCredits = await this.creditsService.getRemainingCredits(req.user.id);
+      
+      return {
+        ...response,
+        _datakit: {
+          creditsUsed: this.creditsService.calculateCredits(model, actualInputTokens, actualOutputTokens),
+          creditsRemaining: remainingCredits,
+        }
+      };
     } catch (error) {
       console.error('AI API Error:', error);
       throw new BadRequestException('AI API request failed');
@@ -166,5 +213,75 @@ export class AIController {
     }
 
     return response.json();
+  }
+
+  private async callDatakitAI(body: any) {
+    // For now, we'll proxy to OpenAI/Anthropic based on the model
+    // In the future, this could be our own AI infrastructure
+    const { model } = body;
+    
+    if (model === 'datakit-smart') {
+      // Use Claude 3.5 Sonnet as backend for DataKit Smart
+      const anthropicBody = {
+        model: 'claude-3-5-sonnet-20241022',
+        messages: body.messages,
+        max_tokens: body.max_tokens || 4096,
+      };
+
+      const apiKey = this.configService.get('ANTHROPIC_API_KEY');
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(anthropicBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`DataKit AI (Smart) error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Convert to OpenAI format
+      return {
+        choices: [{
+          message: {
+            role: 'assistant',
+            content: data.content[0].text,
+          },
+        }],
+        usage: {
+          prompt_tokens: data.usage.input_tokens,
+          completion_tokens: data.usage.output_tokens,
+        },
+      };
+    } else if (model === 'datakit-fast') {
+      // Use GPT-4o-mini as backend for DataKit Fast
+      const openaiBody = {
+        ...body,
+        model: 'gpt-4o-mini',
+      };
+
+      const apiKey = this.configService.get('OPENAI_API_KEY');
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(openaiBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`DataKit AI (Fast) error: ${response.statusText}`);
+      }
+
+      return response.json();
+    } else {
+      throw new Error(`Unknown DataKit AI model: ${model}`);
+    }
   }
 }

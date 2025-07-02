@@ -13,6 +13,9 @@ const CREDIT_COSTS = {
   'claude-3-5-haiku': { input: 0.8, output: 4 },
   'llama-3.1-70b': { input: 0, output: 0 }, // Free on Groq
   'llama-3.1-8b': { input: 0, output: 0 }, // Free on Groq
+  // DataKit AI models - competitive pricing
+  'datakit-smart': { input: 1.5, output: 6 }, // Slightly cheaper than Claude
+  'datakit-fast': { input: 0.8, output: 3.2 }, // Competitive with mid-tier models
 };
 
 @Injectable()
@@ -154,5 +157,28 @@ export class CreditsService {
     }
 
     return stats;
+  }
+
+  async estimateCredits(
+    modelId: string,
+    inputTokens: number,
+    outputTokens: number = 1000, // Default estimated output
+  ): Promise<number> {
+    return this.calculateCredits(modelId, inputTokens, outputTokens);
+  }
+
+  async getRemainingCredits(userId: string): Promise<number> {
+    const user = await this.usersService.findOne(userId);
+    
+    if (!user.currentWorkspaceId) {
+      // Fallback to user-based credits
+      return await this.subscriptionsService.getCreditsRemaining(userId);
+    }
+
+    // Get workspace credits
+    const subscription = await this.subscriptionsService.findByWorkspaceId(
+      user.currentWorkspaceId,
+    );
+    return subscription.creditsRemaining;
   }
 }

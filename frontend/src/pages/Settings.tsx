@@ -20,12 +20,23 @@ import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
 import AISettings from "@/components/settings/AISettings";
 import AppearanceSettings from "@/components/settings/AppearanceSettings";
 import { SEO } from "@/components/common/SEO";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Settings: React.FC = () => {
   const { user, updateProfile, updateSettings, settings, isLoading } =
     useAuth();
   const { currentWorkspace } = useAuthStore();
-  const [activeTab, setActiveTab] = useState("profile");
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get initial tab from URL hash or default to "profile"
+  const getInitialTab = () => {
+    const hash = location.hash.replace('#', '');
+    const validTabs = ['profile', 'workspace', 'ai', 'appearance', 'notifications', 'subscription'];
+    return validTabs.includes(hash) ? hash : 'profile';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -38,6 +49,23 @@ const Settings: React.FC = () => {
     emailNotifications: settings?.emailNotifications ?? true,
     usageAlerts: settings?.usageAlerts ?? true,
   });
+
+  // Handle URL hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newTab = getInitialTab();
+      setActiveTab(newTab);
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update URL when tab changes
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    navigate(`/settings#${tabId}`, { replace: true });
+  };
 
   useEffect(() => {
     if (user) {
@@ -122,7 +150,7 @@ const Settings: React.FC = () => {
         return <WorkspaceSettings />;
 
       case "ai":
-        return <AISettings />;
+        return <AISettings onTabChange={handleTabChange} />;
 
       case "appearance":
         return <AppearanceSettings />;
@@ -342,7 +370,7 @@ const Settings: React.FC = () => {
 
         <div className="flex h-screen bg-background overflow-hidden">
           {/* Settings Sidebar */}
-          <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+          <SettingsSidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
           {/* Main Content Area */}
           <div className="flex-1 h-full overflow-hidden flex items-center justify-center">

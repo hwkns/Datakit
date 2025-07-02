@@ -10,12 +10,16 @@ import {
   Settings as SettingsIcon,
   Shield,
   Zap,
-  Sparkles
+  Sparkles,
+  CreditCard,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { useAIStore } from '@/store/aiStore';
 import { AIProvider } from '@/types/ai';
+import { useCredits } from '@/hooks/useCredits';
+import { useNavigate } from 'react-router-dom';
 
 // Import provider logos
 import OpenAILogo from '@/assets/openai.webp';
@@ -24,13 +28,13 @@ import GroqLogo from '@/assets/groq.png';
 
 const PROVIDER_CONFIG = {
   datakit: {
-    name: 'DataKit AI',
+    name: 'DataKit Model',
     icon: <></>,
     color: 'primary',
     bgGradient: 'from-blue-500/20 to-purple-500/20',
     borderGradient: 'from-blue-500/40 to-purple-500/40',
     description: 'Optimized AI models for data analysis',
-    helpText: 'DataKit AI uses your workspace credits and provides optimized prompts for data analysis tasks.',
+    helpText: 'DataKit model uses your workspace credits and provides optimized prompts for data analysis tasks.',
     keyFormat: null,
     websiteUrl: null,
     models: ['DataKit Smart (Claude 3.5 Sonnet)', 'DataKit Fast (GPT-4o Mini)'],
@@ -77,7 +81,11 @@ const PROVIDER_CONFIG = {
   }
 } as const;
 
-const AISettings: React.FC = () => {
+interface AISettingsProps {
+  onTabChange?: (tabId: string) => void;
+}
+
+const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
   const { currentWorkspace } = useAuthStore();
   const { 
     apiKeys, 
@@ -87,6 +95,9 @@ const AISettings: React.FC = () => {
     setApiKey,
     updateSettings
   } = useAIStore();
+  
+  const { creditsRemaining, stats, isLoading: creditsLoading } = useCredits();
+  const navigate = useNavigate();
 
   const [keyInputs, setKeyInputs] = useState<Map<AIProvider, string>>(new Map());
   const [showKeys, setShowKeys] = useState<Map<AIProvider, boolean>>(new Map());
@@ -95,6 +106,30 @@ const AISettings: React.FC = () => {
 
   const isProOrTeam = currentWorkspace?.subscription?.planType === 'pro' || 
                      currentWorkspace?.subscription?.planType === 'team';
+
+  const handleUpgrade = () => {
+    if (onTabChange) {
+      // Use the passed tab change function if available
+      onTabChange('subscription');
+    } else {
+      // Fallback to navigation
+      navigate('/settings#subscription');
+    }
+  };
+
+  const formatCredits = (credits: number): string => {
+    if (credits === -1) return 'Unlimited';
+    return credits.toLocaleString();
+  };
+
+  const getCreditStatus = () => {
+    if (creditsRemaining === -1) return { color: 'text-green-400', label: 'Unlimited' };
+    if (creditsRemaining > 50) return { color: 'text-green-400', label: 'Good' };
+    if (creditsRemaining > 10) return { color: 'text-yellow-400', label: 'Low' };
+    return { color: 'text-red-400', label: 'Very Low' };
+  };
+
+  const creditStatus = getCreditStatus();
 
   // Initialize form with existing keys
   useEffect(() => {
@@ -203,28 +238,46 @@ const AISettings: React.FC = () => {
               </div>
             </div>
             {!isProOrTeam && (
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" onClick={handleUpgrade}>
                 Upgrade Plan
               </Button>
             )}
           </div>
 
-          {isProOrTeam && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="flex items-center gap-2 text-white/70">
-                <Sparkles className="h-3 w-3 text-blue-400" />
-                Optimized prompts
+          {/* Simple Credits Display */}
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-4 w-4 text-blue-400" />
+                <div>
+                  <div className="text-sm font-medium text-white">Credits Remaining</div>
+                  <div className="text-xs text-white/60">
+                    {!isProOrTeam ? 'Free: 100/month' : isProOrTeam && currentWorkspace?.subscription?.planType === 'team' ? 'Team: Unlimited' : 'Pro: 10,000/month'}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <Shield className="h-3 w-3 text-green-400" />
-                No API key needed
-              </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <Zap className="h-3 w-3 text-purple-400" />
-                Uses workspace credits
+              <div className="text-right">
+                <div className={`text-lg font-semibold ${creditStatus.color}`}>
+                  {creditsLoading ? (
+                    <div className="w-16 h-6 bg-white/10 rounded animate-pulse"></div>
+                  ) : (
+                    formatCredits(creditsRemaining)
+                  )}
+                </div>
+                {creditsRemaining !== -1 && creditsRemaining <= 10 && (
+                  <div className="text-xs text-yellow-400">Low credits</div>
+                )}
               </div>
             </div>
-          )}
+            
+            {/* Credits Explanation */}
+            <div className="text-xs text-white/50 leading-relaxed">
+              Each AI request consumes credits based on the model and response length. 
+              {!isProOrTeam && (
+                <span className="text-primary"> Upgrade to get more credits.</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
