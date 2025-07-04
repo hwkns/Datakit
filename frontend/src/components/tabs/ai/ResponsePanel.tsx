@@ -15,9 +15,9 @@ const ResponsePanel: React.FC = () => {
     streamingResponse,
     currentTokenUsage,
     activeProvider,
+    showCostEstimates,
     activeModel,
     availableModels,
-    showCostEstimates
   } = useAIStore();
   const { extractSQLQueries } = useAIOperations();
   const scrollRef = useRef<HTMLDivElement>(null);

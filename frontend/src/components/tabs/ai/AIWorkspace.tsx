@@ -73,6 +73,7 @@ const AIWorkspace: React.FC = () => {
   const hasApiKey =
     apiKeys.has(activeProvider) && !!apiKeys.get(activeProvider);
   const showSetupPrompt = !hasApiKey && activeProvider !== "local";
+  
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Context Bar */}

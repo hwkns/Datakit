@@ -14,6 +14,7 @@ import OpenAILogo from '@/assets/openai.webp';
 import AnthropicLogo  from '@/assets/anthropic.webp';
 import GroqLogo from '@/assets/groq.png';
 import DatakitLogo from '@/assets/datakit.png';
+import AuthModal from "@/components/auth/AuthModal";
 
 interface ModelSelectorProps {
   compact?: boolean;
@@ -41,6 +42,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
   const [datakitModels, setDatakitModels] = useState<AIModel[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
+    "signup"
+  );
+
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   
@@ -126,12 +132,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
     return apiKeys.has(provider as AIProvider) && !!apiKeys.get(provider as AIProvider);
   };
 
+
+  const handleOpenAuthModal = (mode: "login" | "signup") => {
+    setAuthModalMode(mode);
+    setShowAuthModal(true);
+  };
+
+
   // Handle model selection
   const handleModelSelect = async (provider: AIProvider | 'datakit', modelId: string) => {
     // If trying to select DataKit AI without being authenticated, redirect to settings
     if (provider === 'datakit' && !isAuthenticated) {
       setIsOpen(false);
-      navigate('/settings#subscription');
+      handleOpenAuthModal("signup");
       return;
     }
 
@@ -163,7 +176,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
 
   const handleSignInClick = () => {
     setIsOpen(false);
-    navigate('/settings#ai');
+    handleOpenAuthModal("signup");
   };
 
   // Get color class for provider
@@ -180,6 +193,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
         return '';
     }
   };
+
 
 
   return (
@@ -293,7 +307,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                   {!isAuthenticated && (
                     <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
                       <div className="text-sm text-white/70 mb-2">
-                        Sign in to use DataKit AI
+                        Sign up to use DataKit credits
                       </div>
                       <div className="text-xs text-white/50 mb-3">
                         No API keys needed. Credits included with your account.
@@ -302,7 +316,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                         onClick={handleSignInClick}
                         className="w-full px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-sm font-medium text-primary transition-all duration-200"
                       >
-                        Sign in to get started
+                        Sign up to get started
                       </button>
                     </div>
                   )}
@@ -393,6 +407,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultMode={authModalMode}
+      />
     </div>
   );
 };

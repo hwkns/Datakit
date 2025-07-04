@@ -69,9 +69,9 @@ export class OpenAIProvider {
       return {
         content: data.choices[0]?.message?.content || '',
         usage: data.usage ? {
-          promptTokens: data.usage.prompt_tokens,
-          completionTokens: data.usage.completion_tokens,
-          totalTokens: data.usage.total_tokens,
+          promptTokens: data.usage.prompt_tokens || 0,
+          completionTokens: data.usage.completion_tokens || 0,
+          totalTokens: data.usage.total_tokens || (data.usage.prompt_tokens || 0) + (data.usage.completion_tokens || 0),
         } : undefined,
         model: data.model,
         finishReason: data.choices[0]?.finish_reason,
@@ -102,6 +102,9 @@ export class OpenAIProvider {
           temperature: options?.temperature || 0.1,
           max_tokens: options?.maxTokens || 2000,
           stream: true,
+          stream_options: {
+            include_usage: true
+          }
         }),
       });
 
@@ -117,13 +120,14 @@ export class OpenAIProvider {
 
     const decoder = new TextDecoder();
     let content = '';
+    let usage: { promptTokens: number; completionTokens: number } | undefined;
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         
         if (done) {
-          onChunk({ content, done: true });
+          onChunk({ content, done: true, usage });
           break;
         }
 
@@ -134,7 +138,7 @@ export class OpenAIProvider {
           const data = line.replace('data: ', '');
           
           if (data === '[DONE]') {
-            onChunk({ content, done: true });
+            onChunk({ content, done: true, usage });
             return;
           }
 
@@ -145,6 +149,16 @@ export class OpenAIProvider {
             if (delta) {
               content += delta;
               onChunk({ content, done: false });
+            }
+
+            // Capture usage data from the stream
+            if (parsed.usage) {
+              
+              // OpenAI provides direct token counts (no caching like Anthropic)
+              usage = {
+                promptTokens: parsed.usage.prompt_tokens || 0,
+                completionTokens: parsed.usage.completion_tokens || 0,
+              };
             }
           } catch (parseError) {
             // Skip invalid JSON chunks

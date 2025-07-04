@@ -377,7 +377,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-white mb-1">
-                                  Skip the API keys with DataKit Model
+                                  Skip the API keys with DataKit credits
                                 </p>
                                 <p className="text-xs text-white/70 mb-3">
                                   Get instant access to powerful AI models

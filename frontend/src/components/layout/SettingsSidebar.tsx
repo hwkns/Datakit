@@ -169,7 +169,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         >
           <LogOut
             size={16}
-            className="mr-3 flex-shrink-0 text-red-400"
+            className="mr-1 flex-shrink-0 text-white/50"
           />
           <span className="font-medium">Sign Out</span>
         </Button>

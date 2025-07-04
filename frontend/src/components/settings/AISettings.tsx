@@ -1,84 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Database, 
-  Crown, 
-  Key, 
-  Eye, 
-  EyeOff, 
-  CheckCircle, 
-  ExternalLink, 
+import React, { useState, useEffect } from "react";
+import {
+  Crown,
+  Key,
+  CheckCircle,
+  ExternalLink,
   Settings as SettingsIcon,
-  Shield,
-  Zap,
-  Sparkles,
   CreditCard,
-  TrendingUp
-} from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { useAuthStore } from '@/store/authStore';
-import { useAIStore } from '@/store/aiStore';
-import { AIProvider } from '@/types/ai';
-import { useCredits } from '@/hooks/useCredits';
-import { useNavigate } from 'react-router-dom';
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/store/authStore";
+import { useAIStore } from "@/store/aiStore";
+import { AIProvider } from "@/types/ai";
+import { useCredits } from "@/hooks/useCredits";
+import { useNavigate } from "react-router-dom";
 
 // Import provider logos
-import OpenAILogo from '@/assets/openai.webp';
-import AnthropicLogo from '@/assets/anthropic.webp';
-import GroqLogo from '@/assets/groq.png';
+import OpenAILogo from "@/assets/openai.webp";
+import AnthropicLogo from "@/assets/anthropic.webp";
+import GroqLogo from "@/assets/groq.png";
 
 const PROVIDER_CONFIG = {
   datakit: {
-    name: 'DataKit Model',
+    name: "DataKit Model",
     icon: <></>,
-    color: 'primary',
-    bgGradient: 'from-blue-500/20 to-purple-500/20',
-    borderGradient: 'from-blue-500/40 to-purple-500/40',
-    description: 'Optimized AI models for data analysis',
-    helpText: 'DataKit model uses your workspace credits and provides optimized prompts for data analysis tasks.',
+    color: "primary",
+    bgGradient: "from-blue-500/20 to-purple-500/20",
+    borderGradient: "from-blue-500/40 to-purple-500/40",
+    description: "Optimized AI models for data analysis",
+    helpText:
+      "DataKit model uses your credits and provides optimized prompts for data analysis tasks.",
     keyFormat: null,
     websiteUrl: null,
-    models: ['DataKit Smart (Claude 3.5 Sonnet)', 'DataKit Fast (GPT-4o Mini)'],
-    features: ['Optimized for data analysis', 'No API key required', 'Uses workspace credits']
+    models: ["DataKit Smart (Claude 3.5 Sonnet)", "DataKit Fast (GPT-4o Mini)"],
+    features: [
+      "Optimized for data analysis",
+      "No API key required",
+      "Uses workspace credits",
+    ],
   },
   openai: {
-    name: 'OpenAI',
+    name: "OpenAI",
     icon: <img src={OpenAILogo} className="h-5 w-5" alt="OpenAI" />,
-    color: 'green',
-    bgGradient: 'from-green-500/20 to-emerald-500/20',
-    borderGradient: 'from-green-500/40 to-emerald-500/40',
-    description: 'GPT-4o and GPT-4o Mini models',
-    helpText: 'Most capable models for complex reasoning and analysis. New users get $5 free credits.',
-    keyFormat: 'sk-...',
-    websiteUrl: 'https://platform.openai.com/api-keys',
-    models: ['GPT-4o', 'GPT-4o Mini'],
-    features: ['Advanced reasoning', 'Large context window', '$5 free credits']
+    color: "green",
+    bgGradient: "from-green-500/20 to-emerald-500/20",
+    borderGradient: "from-green-500/40 to-emerald-500/40",
+    description: "GPT-4o and GPT-4o Mini models",
+    helpText:
+      "Most capable models for complex reasoning and analysis. New users get $5 free credits.",
+    keyFormat: "sk-...",
+    websiteUrl: "https://platform.openai.com/api-keys",
+    models: ["GPT-4o", "GPT-4o Mini"],
+    features: ["Advanced reasoning", "Large context window", "$5 free credits"],
   },
   anthropic: {
-    name: 'Anthropic',
+    name: "Anthropic",
     icon: <img src={AnthropicLogo} className="h-4 w-4" alt="Anthropic" />,
-    color: 'orange',
-    bgGradient: 'from-orange-500/20 to-amber-500/20',
-    borderGradient: 'from-orange-500/40 to-amber-500/40',
-    description: 'Claude 3.5 Sonnet and Haiku models',
-    helpText: 'Excellent for detailed analysis and explanations. Free credits for new users.',
-    keyFormat: 'sk-ant-...',
-    websiteUrl: 'https://console.anthropic.com/',
-    models: ['Claude 3.5 Sonnet', 'Claude 3.5 Haiku'],
-    features: ['Detailed explanations', 'Safety focused', 'Free trial credits']
+    color: "orange",
+    bgGradient: "from-orange-500/20 to-amber-500/20",
+    borderGradient: "from-orange-500/40 to-amber-500/40",
+    description: "Claude 3.5 Sonnet and Haiku models",
+    helpText:
+      "Excellent for detailed analysis and explanations. Free credits for new users.",
+    keyFormat: "sk-ant-...",
+    websiteUrl: "https://console.anthropic.com/",
+    models: ["Claude 3.5 Sonnet", "Claude 3.5 Haiku"],
+    features: ["Detailed explanations", "Safety focused", "Free trial credits"],
   },
   groq: {
-    name: 'Groq',
+    name: "Groq",
     icon: <img src={GroqLogo} className="h-4 w-4" alt="Groq" />,
-    color: 'purple',
-    bgGradient: 'from-purple-500/20 to-violet-500/20',
-    borderGradient: 'from-purple-500/40 to-violet-500/40',
-    description: 'Ultra-fast Llama 3.1 models',
-    helpText: 'Fastest inference speed, perfect for trying AI features. Completely free to start.',
-    keyFormat: 'gsk_...',
-    websiteUrl: 'https://console.groq.com/keys',
-    models: ['Llama 3.1 70B', 'Llama 3.1 8B'],
-    features: ['Ultra-fast inference', 'Open source models', 'Completely free']
-  }
+    color: "purple",
+    bgGradient: "from-purple-500/20 to-violet-500/20",
+    borderGradient: "from-purple-500/40 to-violet-500/40",
+    description: "Ultra-fast Llama 3.1 models",
+    helpText:
+      "Fastest inference speed, perfect for trying AI features. Completely free to start.",
+    keyFormat: "gsk_...",
+    websiteUrl: "https://console.groq.com/keys",
+    models: ["Llama 3.1 70B", "Llama 3.1 8B"],
+    features: ["Ultra-fast inference", "Open source models", "Completely free"],
+  },
 } as const;
 
 interface AISettingsProps {
@@ -87,46 +88,56 @@ interface AISettingsProps {
 
 const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
   const { currentWorkspace } = useAuthStore();
-  const { 
-    apiKeys, 
+  const {
+    apiKeys,
     activeProvider,
     autoExecuteSQL,
     setActiveProvider: setActiveProviderToStore,
     setApiKey,
-    updateSettings
+    updateSettings,
   } = useAIStore();
-  
+
   const { creditsRemaining, stats, isLoading: creditsLoading } = useCredits();
   const navigate = useNavigate();
 
-  const [keyInputs, setKeyInputs] = useState<Map<AIProvider, string>>(new Map());
+  const [keyInputs, setKeyInputs] = useState<Map<AIProvider, string>>(
+    new Map()
+  );
   const [showKeys, setShowKeys] = useState<Map<AIProvider, boolean>>(new Map());
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(activeProvider || 'openai');
-  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(
+    activeProvider || "openai"
+  );
+  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(
+    null
+  );
 
-  const isProOrTeam = currentWorkspace?.subscription?.planType === 'pro' || 
-                     currentWorkspace?.subscription?.planType === 'team';
+  const isProOrTeam =
+    currentWorkspace?.subscription?.planType === "pro" ||
+    currentWorkspace?.subscription?.planType === "team";
 
   const handleUpgrade = () => {
     if (onTabChange) {
       // Use the passed tab change function if available
-      onTabChange('subscription');
+      onTabChange("subscription");
     } else {
       // Fallback to navigation
-      navigate('/settings#subscription');
+      navigate("/settings#subscription");
     }
   };
 
   const formatCredits = (credits: number): string => {
-    if (credits === -1) return 'Unlimited';
+    if (credits === -1) return "Unlimited";
     return credits.toLocaleString();
   };
 
   const getCreditStatus = () => {
-    if (creditsRemaining === -1) return { color: 'text-green-400', label: 'Unlimited' };
-    if (creditsRemaining > 50) return { color: 'text-green-400', label: 'Good' };
-    if (creditsRemaining > 10) return { color: 'text-yellow-400', label: 'Low' };
-    return { color: 'text-red-400', label: 'Very Low' };
+    if (creditsRemaining === -1)
+      return { color: "text-green-400", label: "Unlimited" };
+    if (creditsRemaining > 50)
+      return { color: "text-green-400", label: "Good" };
+    if (creditsRemaining > 10)
+      return { color: "text-yellow-400", label: "Low" };
+    return { color: "text-red-400", label: "Very Low" };
   };
 
   const creditStatus = getCreditStatus();
@@ -157,28 +168,28 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
   };
 
   const maskApiKey = (key: string) => {
-    if (key.length <= 12) return '•'.repeat(key.length);
+    if (key.length <= 12) return "•".repeat(key.length);
     // Always show first 6 chars + 20 dots + last 4 chars for consistency
-    return key.slice(0, 6) + '•'.repeat(20) + key.slice(-4);
+    return key.slice(0, 6) + "•".repeat(20) + key.slice(-4);
   };
 
   const getProviderStatus = (provider: AIProvider) => {
-    if (provider === 'datakit') {
-      return isProOrTeam ? 'available' : 'upgrade';
+    if (provider === "datakit") {
+      return isProOrTeam ? "available" : "upgrade";
     }
     const hasKey = apiKeys.has(provider) && !!apiKeys.get(provider);
-    return hasKey ? 'configured' : 'setup';
+    return hasKey ? "configured" : "setup";
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'available':
+      case "available":
         return <CheckCircle className="h-4 w-4 text-green-400" />;
-      case 'configured':
+      case "configured":
         return <CheckCircle className="h-4 w-4 text-green-400" />;
-      case 'upgrade':
+      case "upgrade":
         return <Crown className="h-4 w-4 text-amber-400" />;
-      case 'setup':
+      case "setup":
         return <Key className="h-4 w-4 text-gray-400" />;
       default:
         return null;
@@ -187,16 +198,16 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'available':
-        return 'Available';
-      case 'configured':
-        return 'Configured';
-      case 'upgrade':
-        return 'Pro/Team Required';
-      case 'setup':
-        return 'Setup Required';
+      case "available":
+        return "Available";
+      case "configured":
+        return "Configured";
+      case "upgrade":
+        return "Pro/Team Required";
+      case "setup":
+        return "Setup Required";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -204,18 +215,22 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-medium text-white mb-2">AI Configuration</h3>
+        <h3 className="text-lg font-medium text-white mb-2">
+          AI Configuration
+        </h3>
         <p className="text-sm text-white/60">
           Configure your AI providers and manage API keys for data analysis
         </p>
       </div>
 
       {/* DataKit AI Status Card */}
-      <div className={`relative overflow-hidden rounded-xl border ${
-        isProOrTeam 
-          ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30' 
-          : 'bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-500/30'
-      }`}>
+      <div
+        className={`relative overflow-hidden rounded-xl border ${
+          isProOrTeam
+            ? "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30"
+            : "bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-500/30"
+        }`}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
         <div className="relative px-6 py-4">
           <div className="flex items-center justify-between mb-4">
@@ -230,10 +245,9 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                   )}
                 </h4>
                 <p className="text-sm text-white/60">
-                  {isProOrTeam 
-                    ? 'Optimized AI models with curated prompts for data analysis'
-                    : 'Upgrade to Pro or Team to access DataKit AI'
-                  }
+                  {isProOrTeam
+                    ? "Optimized AI models with curated prompts for data analysis"
+                    : "Upgrade to Pro or Team to access DataKit AI"}
                 </p>
               </div>
             </div>
@@ -250,9 +264,16 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
               <div className="flex items-center gap-3">
                 <CreditCard className="h-4 w-4 text-blue-400" />
                 <div>
-                  <div className="text-sm font-medium text-white">Credits Remaining</div>
+                  <div className="text-sm font-medium text-white">
+                    Credits Remaining
+                  </div>
                   <div className="text-xs text-white/60">
-                    {!isProOrTeam ? 'Free: 100/month' : isProOrTeam && currentWorkspace?.subscription?.planType === 'team' ? 'Team: Unlimited' : 'Pro: 10,000/month'}
+                    {!isProOrTeam
+                      ? "Free: 100/month"
+                      : isProOrTeam &&
+                        currentWorkspace?.subscription?.planType === "team"
+                      ? "Team: Unlimited"
+                      : "Pro: 10,000/month"}
                   </div>
                 </div>
               </div>
@@ -269,12 +290,16 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                 )}
               </div>
             </div>
-            
+
             {/* Credits Explanation */}
             <div className="text-xs text-white/50 leading-relaxed">
-              Each AI request consumes credits based on the model and response length. 
+              Each AI request consumes credits based on the model and response
+              length.
               {!isProOrTeam && (
-                <span className="text-primary"> Upgrade to get more credits.</span>
+                <span className="text-primary">
+                  {" "}
+                  Upgrade to get more credits.
+                </span>
               )}
             </div>
           </div>
@@ -288,7 +313,7 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
           Third-Party Providers
         </h4>
         <div className="space-y-2">
-          {(['openai', 'anthropic', 'groq'] as AIProvider[]).map((provider) => {
+          {(["openai", "anthropic", "groq"] as AIProvider[]).map((provider) => {
             const config = PROVIDER_CONFIG[provider];
             const status = getProviderStatus(provider);
             const isActive = activeProvider === provider;
@@ -297,7 +322,9 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
 
             const handleUpdateKey = () => {
               setEditingProvider(provider);
-              setKeyInputs(new Map(keyInputs.set(provider, apiKeys.get(provider) || '')));
+              setKeyInputs(
+                new Map(keyInputs.set(provider, apiKeys.get(provider) || ""))
+              );
             };
 
             const handleSaveUpdate = () => {
@@ -310,7 +337,9 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
             };
 
             const handleCancelUpdate = () => {
-              setKeyInputs(new Map(keyInputs.set(provider, apiKeys.get(provider) || '')));
+              setKeyInputs(
+                new Map(keyInputs.set(provider, apiKeys.get(provider) || ""))
+              );
               setEditingProvider(null);
             };
 
@@ -319,8 +348,8 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                 key={provider}
                 className={`rounded-lg border p-3 transition-all duration-200 ${
                   isActive
-                    ? 'bg-white/10 border-primary/50'
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                    ? "bg-white/10 border-primary/50"
+                    : "bg-white/5 border-white/10 hover:border-white/20"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -331,20 +360,24 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h5 className="text-sm font-medium text-white truncate">{config.name}</h5>
+                        <h5 className="text-sm font-medium text-white truncate">
+                          {config.name}
+                        </h5>
                         {getStatusIcon(status)}
                       </div>
                       {hasKey && !isEditing && (
                         <div className="text-xs font-mono text-white/60 mt-1">
-                          {maskApiKey(apiKeys.get(provider) || '')}
+                          {maskApiKey(apiKeys.get(provider) || "")}
                         </div>
                       )}
                       {isEditing && (
                         <div className="flex gap-2 mt-2">
                           <input
                             type="password"
-                            value={keyInputs.get(provider) || ''}
-                            onChange={(e) => handleKeyChange(provider, e.target.value)}
+                            value={keyInputs.get(provider) || ""}
+                            onChange={(e) =>
+                              handleKeyChange(provider, e.target.value)
+                            }
                             placeholder={`Enter ${config.name} API key`}
                             className="flex-1 px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
                             autoFocus
@@ -367,8 +400,10 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                         <div className="flex gap-2 mt-2">
                           <input
                             type="password"
-                            value={keyInputs.get(provider) || ''}
-                            onChange={(e) => handleKeyChange(provider, e.target.value)}
+                            value={keyInputs.get(provider) || ""}
+                            onChange={(e) =>
+                              handleKeyChange(provider, e.target.value)
+                            }
                             placeholder={`Enter ${config.name} API key`}
                             className="flex-1 px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
                           />
@@ -396,7 +431,9 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                     )}
                     {config.websiteUrl && (
                       <button
-                        onClick={() => window.open(config.websiteUrl!, '_blank')}
+                        onClick={() =>
+                          window.open(config.websiteUrl!, "_blank")
+                        }
                         className="p-1 text-white/40 hover:text-white/80 rounded"
                         title="Get API key"
                       >
@@ -429,14 +466,16 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
               </p>
             </div>
             <button
-              onClick={() => updateSettings({ autoExecuteSQL: !autoExecuteSQL })}
+              onClick={() =>
+                updateSettings({ autoExecuteSQL: !autoExecuteSQL })
+              }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                autoExecuteSQL ? 'bg-primary' : 'bg-white/20'
+                autoExecuteSQL ? "bg-primary" : "bg-white/20"
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  autoExecuteSQL ? 'translate-x-6' : 'translate-x-1'
+                  autoExecuteSQL ? "translate-x-6" : "translate-x-1"
                 }`}
               />
             </button>
