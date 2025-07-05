@@ -13,8 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/auth/useAuth";
-import { apiClient } from "@/lib/api/apiClient";
-import { debounce } from "lodash-es";
+import { PasswordValidator } from "@/lib/utils/passwordValidator";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -65,57 +64,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
     useState<PasswordStrength | null>(null);
   const [passwordRequirements, setPasswordRequirements] =
     useState<PasswordRequirements | null>(null);
-  const [isCheckingPassword, setIsCheckingPassword] = useState(false);
 
   const { login, signup, isLoading, error, clearError } = useAuth();
 
-  // Fetch password requirements on component mount
+  // Load password requirements from frontend validator (no API call needed)
   useEffect(() => {
-    const fetchPasswordRequirements = async () => {
-      try {
-        const requirements = await apiClient.request<PasswordRequirements>(
-          "/auth/password-requirements"
-        );
-        setPasswordRequirements(requirements);
-      } catch (error) {
-        console.error("Failed to fetch password requirements:", error);
-      }
-    };
-
     if (isOpen) {
-      fetchPasswordRequirements();
+      setPasswordRequirements(PasswordValidator.getPasswordRequirements());
     }
   }, [isOpen]);
 
-  // Debounced password strength checker
-  const checkPasswordStrength = useCallback(
-    debounce(async (password: string) => {
-      if (!password || password.length < 1) {
-        setPasswordStrength(null);
-        setIsCheckingPassword(false);
-        return;
-      }
+  // Instant password strength checker using frontend validator
+  const checkPasswordStrength = useCallback((password: string) => {
+    if (!password || password.length < 1) {
+      setPasswordStrength(null);
+      return;
+    }
 
-      setIsCheckingPassword(true);
-      try {
-        const result = await apiClient.request<PasswordStrength>(
-          "/auth/check-password-strength",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password }),
-          }
-        );
-        setPasswordStrength(result);
-      } catch (error) {
-        console.error("Failed to check password strength:", error);
-        setPasswordStrength(null);
-      } finally {
-        setIsCheckingPassword(false);
-      }
-    }, 300),
-    []
-  );
+    // Use frontend validator for instant feedback
+    const result = PasswordValidator.validatePasswordWithPersonalInfo(password, {
+      email: formData.email,
+      name: formData.name,
+    });
+
+    setPasswordStrength(result);
+  }, [formData.email, formData.name]);
 
   useEffect(() => {
     if (mode === "signup" && formData.password) {
@@ -166,19 +139,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setPasswordStrength(null);
   };
 
-  const getStrengthColor = (score: number) => {
-    const level = passwordRequirements?.strengthLevels.find(
-      (l) => l.score === score
-    );
-    return level?.color || "#666";
-  };
-
-  const getStrengthLabel = (score: number) => {
-    const level = passwordRequirements?.strengthLevels.find(
-      (l) => l.score === score
-    );
-    return level?.label || "Unknown";
-  };
 
   const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
     <motion.div
@@ -371,12 +331,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         </div>
                       )}
 
-                      {isCheckingPassword && (
-                        <div className="text-xs text-white/50 flex items-center gap-2">
-                          <div className="animate-spin w-3 h-3 border border-white/30 border-t-white rounded-full"></div>
-                          Checking password strength...
-                        </div>
-                      )}
                     </motion.div>
                   )}
                 </div>
