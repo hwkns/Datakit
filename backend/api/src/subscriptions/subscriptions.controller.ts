@@ -23,7 +23,9 @@ export class SubscriptionsController {
 
   @Get('credits')
   async getCredits(@Request() req) {
-    const credits = await this.subscriptionsService.getCreditsRemaining(req.user.id);
+    const credits = await this.subscriptionsService.getCreditsRemaining(
+      req.user.id,
+    );
     return { credits };
   }
 
@@ -40,7 +42,8 @@ export class SubscriptionsController {
   @Patch('update-plan')
   async updatePlan(
     @Request() req,
-    @Body() body: { 
+    @Body()
+    body: {
       planType: SubscriptionPlan;
       stripeSubscriptionId?: string;
       stripePriceId?: string;
