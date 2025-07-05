@@ -40,6 +40,7 @@ lerna-debug.log*
 .env.local
 .env.development
 .env.production
+.env.staging
 
 # TypeORM
 ormconfig.json
