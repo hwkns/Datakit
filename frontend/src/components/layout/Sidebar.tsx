@@ -273,22 +273,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       </div>
 
       {/* Divider */}
-      <div className="px-5">
+      {/* <div className="px-5">
         <div className="border-t border-white border-opacity-10"></div>
-      </div>
+      </div> */}
 
+      {/* UPDATE 06/07/2025: MOST RECENT FILES section just commented out */}
       {/* Recent Files section */}
       <div className="px-5 py-3 flex-1 overflow-auto">
-        <h3 className="text-xs font-medium text-white text-opacity-50 tracking-wider mb-3">
+        {/* <h3 className="text-xs font-medium text-white text-opacity-50 tracking-wider mb-3">
           <span className="flex items-center">
             <span className="uppercase">Loaded Files</span>
             <span className="text-[10px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded ml-1.5">
               from localStorage
             </span>
           </span>
-        </h3>
+        </h3> */}
 
-        {recentFiles.length > 0 ? (
+        {/* {recentFiles.length > 0 ? (
           <ul className="space-y-1">
             {recentFiles.slice(0, 5).map((file) => {
               // Determine file type styling
@@ -322,7 +323,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           <div className="text-xs text-white text-opacity-60 p-3 text-center bg-background bg-opacity-20 rounded">
             No recent files
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Footer area with UserMenu */}
