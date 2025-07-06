@@ -65,7 +65,7 @@ const SQLQueryCard: React.FC<SQLQueryCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`group relative bg-white/5 border rounded-lg overflow-hidden transition-all hover:bg-white/[0.07] ${
+      className={`group relative bg-white/5 border rounded-lg transition-all hover:bg-white/[0.07] w-full ${
         isPrimary ? "border-primary/30" : "border-white/10"
       }`}
     >
@@ -125,8 +125,8 @@ const SQLQueryCard: React.FC<SQLQueryCardProps> = ({
       </div>
 
       {/* SQL Content */}
-      <div className="p-4">
-        <pre className="text-sm overflow-x-auto">
+      <div className="p-4 overflow-hidden">
+        <pre className="text-sm overflow-x-auto whitespace-pre">
           <code
             className="language-sql text-white/80"
             dangerouslySetInnerHTML={{ __html: getHighlightedSQL() }}

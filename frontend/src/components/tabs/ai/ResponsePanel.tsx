@@ -158,7 +158,7 @@ const ResponsePanel: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 w-full max-w-full min-w-0">
         {!displayResponse && !isProcessing ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -188,16 +188,16 @@ const ResponsePanel: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className="space-y-4 w-full max-w-full min-w-0"
               >
                 {responseParts?.map((part, index) => {
                   if (part.type === "text") {
                     return (
                       <div
                         key={index}
-                        className="prose prose-invert max-w-none"
+                        className="prose prose-invert w-full max-w-full min-w-0"
                       >
-                        <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap break-words w-full max-w-full">
                           {part.content}
                         </p>
                       </div>

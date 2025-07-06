@@ -110,9 +110,9 @@ const AIWorkspace: React.FC = () => {
         </AnimatePresence>
 
         {/* Chat/Response Area */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           {/* Left: Prompt Panel */}
-          <div className="w-[40%] border-r border-white/10">
+          <div className="w-[40%] border-r border-white/10 min-w-0">
             <PromptPanel
               inputRef={promptInputRef}
               showSetupPrompt={showSetupPrompt}
@@ -124,7 +124,7 @@ const AIWorkspace: React.FC = () => {
           </div>
 
           {/* Right: Response Panel */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 overflow-hidden">
             <ResponsePanel />
           </div>
         </div>
