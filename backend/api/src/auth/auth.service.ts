@@ -148,4 +148,17 @@ export class AuthService {
   async logoutAllDevices(userId: string) {
     await this.refreshTokenService.revokeAllUserTokens(userId);
   }
+
+  verifyAccessToken(token: string): any {
+    return this.jwtService.verify(token, {
+      secret:
+        this.configService.get('JWT_ACCESS_SECRET') ||
+        this.configService.get('JWT_SECRET'),
+    });
+  }
+
+  async isRefreshTokenValid(token: string): Promise<boolean> {
+    const tokenEntity = await this.refreshTokenService.validateRefreshToken(token);
+    return !!tokenEntity;
+  }
 }

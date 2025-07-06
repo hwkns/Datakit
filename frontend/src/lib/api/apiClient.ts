@@ -4,10 +4,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.datakit.p
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
+  _retryCount?: number;
 }
 
 class ApiClient {
   private baseURL: string;
+  private isRefreshing: boolean = false;
+  private refreshPromise: Promise<void> | null = null;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
@@ -20,12 +23,71 @@ class ApiClient {
     return {};
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+  private async refreshToken(): Promise<void> {
+    if (this.isRefreshing) {
+      // If already refreshing, wait for the current refresh to complete
+      if (this.refreshPromise) {
+        return this.refreshPromise;
+      }
+      return;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.performTokenRefresh();
+
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+    }
+  }
+
+  private async performTokenRefresh(): Promise<void> {
+    const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
     if (!response.ok) {
-      if (response.status === 401) {
-        // Don't auto-logout - let the calling code handle 401 errors
-        // This prevents infinite loops
-        throw new Error('Unauthorized');
+      throw new Error('Token refresh failed');
+    }
+  }
+
+  private async handleResponse<T>(response: Response, originalRequest?: { endpoint: string; options: RequestOptions }): Promise<T> {
+    if (!response.ok) {
+      if (response.status === 401 && originalRequest && !originalRequest.options.skipAuth) {
+        const retryCount = originalRequest.options._retryCount || 0;
+        
+        // Prevent infinite loops - only retry once
+        if (retryCount >= 1) {
+          // Already retried once, redirect to login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
+          throw new Error('Session expired. Please log in again.');
+        }
+
+        try {
+          // Attempt to refresh the token
+          await this.refreshToken();
+          
+          // Retry the original request with incremented retry count
+          const retryOptions = {
+            ...originalRequest.options,
+            _retryCount: retryCount + 1
+          };
+          return this.request<T>(originalRequest.endpoint, retryOptions);
+        } catch (refreshError) {
+          // Token refresh failed, redirect to login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
+          throw new Error('Session expired. Please log in again.');
+        }
       }
 
       let errorMessage = `Request failed with status ${response.status}`;
@@ -74,7 +136,7 @@ class ApiClient {
         credentials: 'include', // Important: Include cookies in requests
       });
 
-      const result = await this.handleResponse<T>(response);
+      const result = await this.handleResponse<T>(response, { endpoint, options });
       logApiResponse(url, result);
       return result;
     } catch (error) {

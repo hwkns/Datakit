@@ -133,21 +133,37 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         
         try {
-          const user = await authService.getCurrentUser();
+          // First do a lightweight auth check
+          const isAuthenticated = await authService.checkAuthStatus();
           
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            hasInitialized: true,
-          });
-          
-          // Load current workspace after auth check
-          try {
-            await get().loadCurrentWorkspace();
-          } catch (workspaceError) {
-            console.warn('Failed to load workspace:', workspaceError);
+          if (isAuthenticated) {
+            // If authenticated, get full user data
+            const user = await authService.getCurrentUser();
+            
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              hasInitialized: true,
+            });
+            
+            // Load current workspace after auth check
+            try {
+              await get().loadCurrentWorkspace();
+            } catch (workspaceError) {
+              console.warn('Failed to load workspace:', workspaceError);
+            }
+          } else {
+            // Not authenticated
+            set({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: null,
+              settings: null,
+              hasInitialized: true,
+            });
           }
         } catch (error) {
           // If auth check fails, user is not logged in

@@ -95,6 +95,41 @@ export class AuthController {
     return req.user;
   }
 
+  @Get('status')
+  @HttpCode(HttpStatus.OK)
+  async getAuthStatus(@Request() req) {
+    try {
+      // Check for access token in cookies
+      const accessToken = req.cookies?.access_token;
+      const refreshToken = req.cookies?.refresh_token;
+
+      if (!accessToken && !refreshToken) {
+        return { authenticated: false };
+      }
+
+      // If we have access token, try to verify it
+      if (accessToken) {
+        try {
+          this.authService.verifyAccessToken(accessToken);
+          return { authenticated: true };
+        } catch {
+          // Access token invalid, check refresh token
+        }
+      }
+
+      // If we only have refresh token, check if it's valid
+      if (refreshToken) {
+        const isValid =
+          await this.authService.isRefreshTokenValid(refreshToken);
+        return { authenticated: isValid };
+      }
+
+      return { authenticated: false };
+    } catch (error) {
+      return { authenticated: false };
+    }
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Request() req, @Response() res) {
