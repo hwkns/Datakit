@@ -64,10 +64,6 @@ class ApiClient {
         
         // Prevent infinite loops - only retry once
         if (retryCount >= 1) {
-          // Already retried once, redirect to login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/';
-          }
           throw new Error('Session expired. Please log in again.');
         }
 
@@ -82,10 +78,6 @@ class ApiClient {
           };
           return this.request<T>(originalRequest.endpoint, retryOptions);
         } catch (refreshError) {
-          // Token refresh failed, redirect to login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/';
-          }
           throw new Error('Session expired. Please log in again.');
         }
       }

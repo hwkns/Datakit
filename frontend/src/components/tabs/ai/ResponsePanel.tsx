@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-
 import { useAIStore } from "@/store/aiStore";
 import { useAIOperations } from "@/hooks/ai/useAIOperations";
 import { aiService } from "@/lib/ai/aiService";
@@ -9,15 +8,13 @@ import SQLQueryCard from "./SQLQueryCard";
 import { Coins } from "lucide-react";
 
 const ResponsePanel: React.FC = () => {
-  const { 
-    isProcessing, 
-    currentResponse, 
+  const {
+    isProcessing,
+    currentResponse,
     streamingResponse,
     currentTokenUsage,
     activeProvider,
-    showCostEstimates,
-    activeModel,
-    availableModels,
+    showCostEstimates
   } = useAIStore();
   const { extractSQLQueries } = useAIOperations();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -111,21 +108,23 @@ const ResponsePanel: React.FC = () => {
   };
 
   const responseParts = renderResponse();
-  
+
   // Calculate cost
   const calculateCost = () => {
     if (!currentTokenUsage || !activeProvider) return null;
-    
+
     const cost = aiService.calculateCost(activeProvider, {
       promptTokens: currentTokenUsage.input,
       completionTokens: currentTokenUsage.output,
     });
-    
+
     return cost;
   };
-  
+
   const cost = calculateCost();
-  const totalTokens = currentTokenUsage ? currentTokenUsage.input + currentTokenUsage.output : 0;
+  const totalTokens = currentTokenUsage
+    ? currentTokenUsage.input + currentTokenUsage.output
+    : 0;
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -142,14 +141,16 @@ const ResponsePanel: React.FC = () => {
                 {totalTokens.toLocaleString()}
               </span>
               <span className="text-white/40">
-                ({currentTokenUsage.input.toLocaleString()} + {currentTokenUsage.output.toLocaleString()})
+                ({currentTokenUsage.input.toLocaleString()} +{" "}
+                {currentTokenUsage.output.toLocaleString()})
               </span>
             </div>
             {cost !== null && cost > 0 && (
               <div className="flex items-center gap-1">
                 <Coins className="h-3 w-3" />
                 <span className="text-white/80 font-mono">
-                  ${cost.toFixed(4)}
+                  {/* cost is in credits - so turning to dollars for user */}$
+                  {(cost * 0.01).toFixed(4)}
                 </span>
               </div>
             )}
@@ -158,7 +159,10 @@ const ResponsePanel: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 w-full max-w-full min-w-0">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 w-full max-w-full min-w-0"
+      >
         {!displayResponse && !isProcessing ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
