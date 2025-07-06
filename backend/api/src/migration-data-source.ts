@@ -3,7 +3,9 @@ import { config } from 'dotenv';
 
 config();
 
-export const AppDataSource = new DataSource({
+// Migration-specific data source with explicit entity imports
+// This ensures TypeORM can auto-generate migrations from entity changes
+export const MigrationDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || undefined,
   host: process.env.DATABASE_HOST || 'localhost',

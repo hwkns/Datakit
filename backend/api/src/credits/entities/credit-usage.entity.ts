@@ -7,8 +7,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 
-import { User } from 'src/users/entities/user.entity';
-import { Workspace } from 'src/workspaces/entities/workspace.entity';
+import { User } from '../../users/entities/user.entity';
+import { Workspace } from '../../workspaces/entities/workspace.entity';
 
 @Entity('credit_usage')
 export class CreditUsage {

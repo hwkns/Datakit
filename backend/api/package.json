@@ -28,9 +28,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/data-source.ts",
-    "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts"
+    "migration:generate": "npm run typeorm -- migration:generate -d src/migration-data-source.ts",
+    "migration:run": "npm run typeorm -- migration:run -d src/migration-data-source.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/migration-data-source.ts",
+    "migration:show": "npm run typeorm -- migration:show -d src/migration-data-source.ts",
+    "migration:create": "npm run typeorm -- migration:create"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
