@@ -24,6 +24,10 @@ export const getDatabaseConfig = (
         connectionLimit: isProduction ? 20 : 5,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 15000,
+        // Add stricter isolation settings
+        isolationLevel: 'READ COMMITTED',
+        query_timeout: 10000,
+        statement_timeout: 10000,
       },
     };
   } else {
@@ -48,6 +52,9 @@ export const getDatabaseConfig = (
         connectionLimit: isProduction ? 20 : 5,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 15000,
+        isolationLevel: 'READ COMMITTED',
+        query_timeout: 10000,
+        statement_timeout: 10000,
       },
     };
   }

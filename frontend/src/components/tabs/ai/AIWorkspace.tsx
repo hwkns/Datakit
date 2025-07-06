@@ -74,7 +74,6 @@ const AIWorkspace: React.FC = () => {
 
   // Check if current provider is ready to use
   const isProviderReady = () => {
-    console.log('isProviderReady', activeProvider, isAuthenticated);
     if (activeProvider === 'datakit') {
       return isAuthenticated; // DataKit requires authentication
     }

@@ -3,8 +3,6 @@ import { useAuthStore } from '@/store/authStore';
 export const useAuth = () => {
   const auth = useAuthStore();
 
-  // No need for auth checking here - it's handled globally in App.tsx
-
   return {
     // State
     user: auth.user,

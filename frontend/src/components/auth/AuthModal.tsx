@@ -148,6 +148,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             duration: 6000
           }
         );
+        onLoginSuccess?.();
       }
       onClose();
     } catch (error) {

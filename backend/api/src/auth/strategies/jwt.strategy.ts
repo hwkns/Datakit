@@ -10,6 +10,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   type: 'access' | 'refresh';
+  iat: number;
 }
 
 @Injectable()
@@ -40,10 +41,26 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token type');
     }
 
+    // Add extra validation for payload integrity
+    if (!payload.sub || typeof payload.sub !== 'string') {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
+    // Add timestamp validation to prevent token reuse
+    if (payload.iat && Date.now() / 1000 - payload.iat > 24 * 60 * 60) {
+      throw new UnauthorizedException('Token too old');
+    }
+
     const user = await this.usersService.findOne(payload.sub);
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('User not found');
     }
+
+    // Add extra user validation
+    if (!user.id || user.id !== payload.sub) {
+      throw new UnauthorizedException('Token user mismatch');
+    }
+
     return user;
   }
 }

@@ -75,6 +75,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
             isOpen={showAuthModal}
             onClose={() => setShowAuthModal(false)}
             defaultMode="login"
+            onLoginSuccess={() => setActiveProvider('datakit')}
           />
         </>
       );
