@@ -21,21 +21,24 @@ export class PasswordService {
    */
   checkPasswordStrengthWithPersonalInfo(
     password: string,
-    personalInfo: { email?: string; name?: string },
+    // personalInfo: { email?: string; name?: string },
   ): PasswordStrengthResult {
     const result = this.passwordValidator.validatePassword(password);
 
+    // TODO:
+    // Future refrences this might be good to have in place!
+    //
     // Check against personal information
-    const personalInfoCheck = this.validateAgainstPersonalInfo(
-      password,
-      personalInfo,
-    );
-    result.requirements.noPersonalInfo = personalInfoCheck.isValid;
+    // const personalInfoCheck = this.validateAgainstPersonalInfo(
+    //   password,
+    //   personalInfo,
+    // );
+    // result.requirements.noPersonalInfo = personalInfoCheck.isValid;
 
-    if (!personalInfoCheck.isValid) {
-      result.feedback.push(...personalInfoCheck.feedback);
-      result.isValid = false;
-    }
+    // if (!personalInfoCheck.isValid) {
+    //   result.feedback.push(...personalInfoCheck.feedback);
+    //   result.isValid = false;
+    // }
 
     // Check against common passwords
     if (this.isCommonPassword(password)) {

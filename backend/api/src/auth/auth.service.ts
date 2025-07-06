@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -63,10 +67,11 @@ export class AuthService {
     const { email, password, name } = signupDto;
 
     // Additional password validation with personal information
-    const passwordValidation = this.passwordService.checkPasswordStrengthWithPersonalInfo(
-      password,
-      { email, name }
-    );
+    const passwordValidation =
+      this.passwordService.checkPasswordStrengthWithPersonalInfo(
+        password,
+        // { email, name }
+      );
 
     if (!passwordValidation.isValid) {
       throw new BadRequestException({

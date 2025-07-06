@@ -31,7 +31,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
     if (error.includes('file') || error.includes('table') || error.includes('data')) {
       return {
         title: "No Data Available",
-        message: "Please upload a file or load data to ask questions about it.",
+        message: "Please load a file to ask questions about it.",
         type: "warning" as const
       };
     }
