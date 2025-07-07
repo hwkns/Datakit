@@ -102,7 +102,21 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Validate and rotate refresh token
+    // First validate the OLD refresh token to get the user
+    const oldTokenEntity =
+      await this.refreshTokenService.validateRefreshToken(refreshToken);
+
+    if (!oldTokenEntity || !oldTokenEntity.userId) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Load the user explicitly by ID
+    const user = await this.usersService.findOne(oldTokenEntity.userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Now rotate to get new refresh token
     const newRefreshToken = await this.refreshTokenService.rotateRefreshToken(
       refreshToken,
       ipAddress,
@@ -110,17 +124,9 @@ export class AuthService {
     );
 
     if (!newRefreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Failed to rotate refresh token');
     }
 
-    // Get the token entity to find the user
-    const tokenEntity =
-      await this.refreshTokenService.validateRefreshToken(newRefreshToken);
-    if (!tokenEntity) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const user = tokenEntity.user;
     const payload = {
       email: user.email,
       sub: user.id,
@@ -158,7 +164,8 @@ export class AuthService {
   }
 
   async isRefreshTokenValid(token: string): Promise<boolean> {
-    const tokenEntity = await this.refreshTokenService.validateRefreshToken(token);
+    const tokenEntity =
+      await this.refreshTokenService.validateRefreshToken(token);
     return !!tokenEntity;
   }
 }

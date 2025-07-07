@@ -23,7 +23,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromExtractors([
         // Try to extract from cookies first
         (request: Request) => {
-          return request?.cookies?.access_token;
+          const token = request?.cookies?.access_token;
+          return token;
         },
         // Fallback to Authorization header for backward compatibility
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -36,6 +37,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // Check if payload exists
+    if (!payload) {
+      throw new UnauthorizedException('No token payload');
+    }
+
     // Only allow access tokens for authentication
     if (payload.type !== 'access') {
       throw new UnauthorizedException('Invalid token type');

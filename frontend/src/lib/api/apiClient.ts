@@ -187,7 +187,7 @@ class ApiClient {
     data?: any,
     options?: RequestOptions
   ): Promise<Response> {
-    const { skipAuth = false, headers = {}, ...restOptions } = options || {};
+    const { skipAuth = false, headers = {}, _retryCount = 0, ...restOptions } = options || {};
     
     const authHeaders = skipAuth ? {} : await this.getAuthHeaders();
     
@@ -202,6 +202,8 @@ class ApiClient {
     // Log API call in development
     logApiCall('POST', url, data);
 
+    console.log(`[ApiClient] POST ${endpoint} (stream) - skipAuth: ${skipAuth}, retryCount: ${_retryCount}`);
+
     try {
       const response = await fetch(url, {
         ...restOptions,
@@ -212,6 +214,29 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        if (response.status === 401 && !skipAuth) {
+          
+          // Prevent infinite loops - only retry once
+          if (_retryCount >= 1) {
+            throw new Error('Session expired. Please log in again.');
+          }
+
+          try {
+            // Attempt to refresh the token
+            await this.refreshToken();
+            
+            // Retry the stream request with incremented retry count
+            const retryOptions = {
+              ...options,
+              _retryCount: _retryCount + 1
+            };
+            return this.stream(endpoint, data, retryOptions);
+          } catch (refreshError) {
+            console.log('[ApiClient] Token refresh failed:', refreshError);
+            throw new Error('Session expired. Please log in again.');
+          }
+        }
+
         let errorMessage = `Request failed with status ${response.status}`;
         try {
           const errorData = await response.json();

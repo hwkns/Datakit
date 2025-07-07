@@ -75,6 +75,14 @@ export class RefreshTokenService {
         return null;
       }
 
+      // Since user is lazy, we need to explicitly load it
+      if (
+        tokenEntity.user &&
+        typeof (tokenEntity.user as any).then === 'function'
+      ) {
+        tokenEntity.user = await (tokenEntity.user as any);
+      }
+
       return tokenEntity;
     } catch (error) {
       return null;
@@ -82,10 +90,7 @@ export class RefreshTokenService {
   }
 
   async revokeToken(token: string): Promise<void> {
-    await this.refreshTokenRepository.update(
-      { token },
-      { isRevoked: true },
-    );
+    await this.refreshTokenRepository.update({ token }, { isRevoked: true });
   }
 
   async revokeAllUserTokens(userId: string): Promise<void> {
@@ -101,7 +106,7 @@ export class RefreshTokenService {
     userAgent?: string,
   ): Promise<string | null> {
     const tokenEntity = await this.validateRefreshToken(oldToken);
-    
+
     if (!tokenEntity) {
       return null;
     }
@@ -110,11 +115,7 @@ export class RefreshTokenService {
     await this.revokeToken(oldToken);
 
     // Generate new token
-    return this.generateRefreshToken(
-      tokenEntity.userId,
-      ipAddress,
-      userAgent,
-    );
+    return this.generateRefreshToken(tokenEntity.userId, ipAddress, userAgent);
   }
 
   async cleanupExpiredTokens(): Promise<void> {
