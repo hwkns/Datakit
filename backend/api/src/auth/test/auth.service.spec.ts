@@ -402,7 +402,7 @@ describe('AuthService', () => {
         new Error('Subscription creation failed'),
       );
 
-      await expect(service.signup(signupDto)).rejects.toThrow(
+      await expect(service.signup(signupDto, '192.168.1.1', 'Mozilla/5.0')).rejects.toThrow(
         'Subscription creation failed',
       );
 

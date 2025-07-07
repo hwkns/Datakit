@@ -117,7 +117,7 @@ describe('JwtAuthGuard', () => {
 
     it('should handle missing user in handleRequest', () => {
       expect(() => {
-        guard.handleRequest(null, null, null, mockExecutionContext);
+        guard.handleRequest(null, null, null);
       }).toThrow(UnauthorizedException);
     });
 
@@ -125,7 +125,7 @@ describe('JwtAuthGuard', () => {
       const error = new Error('Authentication failed');
 
       expect(() => {
-        guard.handleRequest(error, null, null, mockExecutionContext);
+        guard.handleRequest(error, null, null);
       }).toThrow('Authentication failed');
     });
 
@@ -136,7 +136,6 @@ describe('JwtAuthGuard', () => {
         null,
         mockUser,
         null,
-        mockExecutionContext,
       );
 
       expect(result).toEqual(mockUser);
@@ -238,7 +237,7 @@ describe('JwtAuthGuard', () => {
 
       testCases.forEach(({ error, user, expectedMessage }) => {
         expect(() => {
-          guard.handleRequest(error, user, null, mockExecutionContext);
+          guard.handleRequest(error, user, null);
         }).toThrow(expectedMessage);
       });
     });

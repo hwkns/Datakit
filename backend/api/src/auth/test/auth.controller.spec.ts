@@ -408,8 +408,16 @@ describe('AuthController', () => {
       expect(mockAuthService.logout).toHaveBeenCalledWith(
         'valid-refresh-token',
       );
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token');
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token');
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: 'Logged out successfully',
       });
@@ -426,8 +434,16 @@ describe('AuthController', () => {
       await controller.logout(requestWithoutRefreshToken, mockResponse);
 
       expect(mockAuthService.logout).not.toHaveBeenCalled();
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token');
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token');
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: 'Logged out successfully',
       });
@@ -456,8 +472,16 @@ describe('AuthController', () => {
       await controller.logout(requestWithoutCookies, mockResponse);
 
       expect(mockAuthService.logout).not.toHaveBeenCalled();
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token');
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token');
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      });
     });
   });
 
@@ -482,7 +506,7 @@ describe('AuthController', () => {
         expect.any(String),
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'strict',
+          sameSite: 'lax',
           maxAge: 15 * 60 * 1000, // Exactly 15 minutes
         }),
       );
@@ -502,7 +526,7 @@ describe('AuthController', () => {
         expect.any(String),
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'strict',
+          sameSite: 'lax',
           maxAge: 7 * 24 * 60 * 60 * 1000, // Exactly 7 days
         }),
       );
@@ -512,14 +536,14 @@ describe('AuthController', () => {
       const expectedAccessTokenConfig = {
         httpOnly: true,
         secure: false,
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 15 * 60 * 1000,
       };
 
       const expectedRefreshTokenConfig = {
         httpOnly: true,
         secure: false,
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       };
 

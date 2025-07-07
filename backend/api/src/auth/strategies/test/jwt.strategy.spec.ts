@@ -67,6 +67,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'access',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(mockUser);
@@ -82,6 +83,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'refresh',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
@@ -95,6 +97,7 @@ describe('JwtStrategy', () => {
         sub: 'non-existent-user',
         email: 'test@example.com',
         type: 'access',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(null);
@@ -109,6 +112,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'access',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockRejectedValue(new Error('Database error'));
@@ -134,6 +138,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'access',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(undefined);
@@ -146,6 +151,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'access',
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(false as any);
@@ -219,6 +225,7 @@ describe('JwtStrategy', () => {
         sub: 'user-123',
         email: 'test@example.com',
         type: 'ACCESS' as any, // Wrong case
+        iat: Math.floor(Date.now() / 1000),
       };
 
       await expect(strategy.validate(payloadWithWrongCase)).rejects.toThrow(
@@ -248,6 +255,7 @@ describe('JwtStrategy', () => {
         sub: 123 as any, // Numeric instead of string
         email: 'test@example.com',
         type: 'access' as const,
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(mockUser);
@@ -263,6 +271,7 @@ describe('JwtStrategy', () => {
         sub: '',
         email: 'test@example.com',
         type: 'access' as const,
+        iat: Math.floor(Date.now() / 1000),
       };
 
       mockUsersService.findOne.mockResolvedValue(null);
@@ -280,6 +289,7 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         email: 'test@example.com',
+        iat: Math.floor(Date.now() / 1000),
         type: 'access',
       };
 
