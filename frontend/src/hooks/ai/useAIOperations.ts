@@ -26,6 +26,7 @@ export const useAIOperations = () => {
     setCurrentResponse,
     setStreamingResponse,
     setCurrentTokenUsage,
+    setVisualizationTokenUsage,
     setCurrentError,
   } = useAIStore();
 
@@ -215,6 +216,7 @@ export const useAIOperations = () => {
     setProcessing(true);
     setStreamingResponse("");
     setCurrentTokenUsage(null);
+    setVisualizationTokenUsage(null);
     setCurrentError(null);
 
     const startTime = Date.now();

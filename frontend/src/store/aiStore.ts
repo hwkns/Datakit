@@ -39,11 +39,21 @@ interface AIState {
   currentResponse: string | null;
   streamingResponse: string;
   currentTokenUsage: { input: number; output: number } | null;
+  visualizationTokenUsage: { input: number; output: number } | null;
   currentError: string | null;
   
   // Conversation State
   currentConversation: AIMessage[];
   conversationId: string | null;
+  
+  // Data Context
+  context: {
+    tableName: string;
+    schema: Array<{ name: string; type: string }>;
+    sampleData?: any[];
+    rowCount?: number;
+    description?: string;
+  } | null;
   
   // MCP State
   mcpConnections: MCPConnection[];
@@ -69,6 +79,9 @@ interface AIState {
   setApiKey: (provider: AIProvider, key: string) => void;
   validateApiKey: (provider: AIProvider) => Promise<boolean>;
   
+  // Context Actions
+  setContext: (context: AIState['context']) => void;
+  
   // Query Actions
   setCurrentPrompt: (prompt: string) => void;
   addQueryToHistory: (query: AIQuery) => void;
@@ -78,6 +91,7 @@ interface AIState {
   setCurrentResponse: (response: string | null) => void;
   setStreamingResponse: (response: string) => void;
   setCurrentTokenUsage: (usage: { input: number; output: number } | null) => void;
+  setVisualizationTokenUsage: (usage: { input: number; output: number } | null) => void;
   setCurrentError: (error: string | null) => void;
   
   // Conversation Actions
@@ -228,10 +242,13 @@ export const useAIStore = create<AIState>()(
       currentResponse: null,
       streamingResponse: '',
       currentTokenUsage: null,
+      visualizationTokenUsage: null,
       currentError: null,
       
       currentConversation: [],
       conversationId: null,
+      
+      context: null,
       
       mcpConnections: [],
       activeMCPConnection: null,
@@ -294,8 +311,11 @@ export const useAIStore = create<AIState>()(
       setStreamingResponse: (response) => set({ streamingResponse: response }),
       
       setCurrentTokenUsage: (usage) => set({ currentTokenUsage: usage }),
+      setVisualizationTokenUsage: (usage) => set({ visualizationTokenUsage: usage }),
       
       setCurrentError: (error) => set({ currentError: error }),
+      
+      setContext: (context) => set({ context }),
       
       addMessageToConversation: (message) => {
         set((state) => {

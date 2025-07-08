@@ -159,7 +159,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
     );
 
     if (hasConversation) {
-      return `Ask followup question...`;
+      return `Ask follow up question...`;
     }
 
     return `Ask about ${tableName}...`;

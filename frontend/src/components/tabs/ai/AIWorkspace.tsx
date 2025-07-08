@@ -4,6 +4,7 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useAIVisualization } from "@/hooks/ai/useAIVisualization";
 
 import SchemaBrowser from "@/components/tabs/query/SchemaBrowser";
 import AuthModal from "@/components/auth/AuthModal";
@@ -12,6 +13,7 @@ import PromptPanel from "./PromptPanel";
 import ResponsePanel from "./ResponsePanel";
 import ResultsPanel from "./ResultsPanel";
 import ApiKeyModal from "./ApiKeyModal";
+import AIVisualizationPanel from "./AIVisualizationPanel";
 
 const AIWorkspace: React.FC = () => {
   const [schemaBrowserOpen, setSchemaBrowserOpen] = useState(false);
@@ -22,12 +24,21 @@ const AIWorkspace: React.FC = () => {
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
     "signup"
   );
+  
+  // Visualization state
+  const [activeVizId, setActiveVizId] = useState<string | null>(null);
+  const [splitViewRatio, setSplitViewRatio] = useState(50);
 
   const { queryResults, activeProvider, setActiveProvider, apiKeys } = useAIStore();
   const { isAuthenticated } = useAuth();
+  const { getVisualization, clearVisualization, exportVisualization, generateVisualization, isGenerating } = useAIVisualization();
 
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const resultsResizeRef = useRef<HTMLDivElement>(null);
+  const splitResizeRef = useRef<HTMLDivElement>(null);
+
+  // Get active visualization data
+  const activeViz = activeVizId ? getVisualization(activeVizId) : null;
 
   // Auto-expand results when query executes
   useEffect(() => {
@@ -63,6 +74,33 @@ const AIWorkspace: React.FC = () => {
     document.body.style.cursor = "ns-resize";
   };
 
+  // Handle split view resize
+  const handleSplitResize = (e: React.MouseEvent) => {
+    const container = e.currentTarget.parentElement;
+    if (!container) return;
+
+    const startX = e.clientX;
+    const containerWidth = container.offsetWidth;
+    const startRatio = splitViewRatio;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const deltaRatio = (deltaX / containerWidth) * 100;
+      const newRatio = Math.max(30, Math.min(70, startRatio + deltaRatio));
+      setSplitViewRatio(newRatio);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "default";
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "ew-resize";
+  };
+
   const handleOpenAuthModal = (mode: "login" | "signup") => {
     setAuthModalMode(mode);
     setShowAuthModal(true);
@@ -70,6 +108,28 @@ const AIWorkspace: React.FC = () => {
 
   const handleOpenSettings = () => {
     setShowApiKeyModal(true);
+  };
+
+  const handleVisualizationOpen = (vizId: string) => {
+    setActiveVizId(vizId);
+  };
+
+  const handleVisualizationClose = () => {
+    if (activeVizId) {
+      clearVisualization(activeVizId);
+    }
+    setActiveVizId(null);
+  };
+
+  const handleVisualizationExpand = () => {
+    // Could open in full visualization tab or maximize in current view
+    console.log('Expand visualization');
+  };
+
+  const handleVisualizationExport = (format: 'png' | 'svg' | 'csv') => {
+    if (activeVizId) {
+      exportVisualization(activeVizId, format);
+    }
   };
 
   // Check if current provider is ready to use
@@ -108,10 +168,13 @@ const AIWorkspace: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Chat/Response Area */}
+        {/* Chat/Response Area with Split View */}
         <div className="flex-1 flex min-w-0">
           {/* Left: Prompt Panel */}
-          <div className="w-[40%] border-r border-white/10 min-w-0">
+          <div 
+            className="border-r border-white/10 min-w-0 flex-shrink-0"
+            style={{ width: activeViz ? '30%' : '40%' }}
+          >
             <PromptPanel
               inputRef={promptInputRef}
               showSetupPrompt={showSetupPrompt}
@@ -122,10 +185,51 @@ const AIWorkspace: React.FC = () => {
             />
           </div>
 
-          {/* Right: Response Panel */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <ResponsePanel />
+          {/* Middle: Response Panel */}
+          <div 
+            className="min-w-0 overflow-hidden border-r border-white/10 relative"
+            style={{ width: activeViz ? `${splitViewRatio}%` : '60%' }}
+          >
+            <ResponsePanel 
+              onVisualizationOpen={handleVisualizationOpen}
+              generateVisualization={generateVisualization}
+              isGeneratingViz={isGenerating}
+            />
+            
+            {/* Split Resize Handle */}
+            {activeViz && (
+              <div
+                ref={splitResizeRef}
+                onMouseDown={handleSplitResize}
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/20 transition-colors z-10"
+              />
+            )}
           </div>
+
+          {/* Right: Visualization Panel (conditional) */}
+          <AnimatePresence>
+            {activeViz && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: `${100 - splitViewRatio}%`, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="min-w-0 overflow-hidden bg-black/20"
+              >
+                {console.log('AIWorkspace: Passing to visualization panel:', activeViz)}
+                <AIVisualizationPanel
+                  data={activeViz.data}
+                  config={activeViz.config}
+                  chartType={activeViz.chartType}
+                  sql={activeViz.sql}
+                  insights={activeViz.insights}
+                  onClose={handleVisualizationClose}
+                  onExpand={handleVisualizationExpand}
+                  onExport={handleVisualizationExport}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

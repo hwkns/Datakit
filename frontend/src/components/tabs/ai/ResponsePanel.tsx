@@ -3,20 +3,29 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { useAIStore } from "@/store/aiStore";
 import { useAIOperations } from "@/hooks/ai/useAIOperations";
-import { aiService } from "@/lib/ai/aiService";
+import { useTokenUsage } from "@/hooks/ai/useTokenUsage";
 import SQLQueryCard from "./SQLQueryCard";
 import { Coins } from "lucide-react";
 
-const ResponsePanel: React.FC = () => {
+interface ResponsePanelProps {
+  onVisualizationOpen?: (queryId: string) => void;
+  generateVisualization: (request: any) => Promise<any>;
+  isGeneratingViz?: boolean;
+}
+
+const ResponsePanel: React.FC<ResponsePanelProps> = ({ 
+  onVisualizationOpen,
+  generateVisualization,
+  isGeneratingViz 
+}) => {
   const {
     isProcessing,
     currentResponse,
     streamingResponse,
-    currentTokenUsage,
-    activeProvider,
     showCostEstimates
   } = useAIStore();
   const { extractSQLQueries } = useAIOperations();
+  const { getCostBreakdown, hasUsage } = useTokenUsage();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Use streaming response if available, otherwise use current response
@@ -108,23 +117,7 @@ const ResponsePanel: React.FC = () => {
   };
 
   const responseParts = renderResponse();
-
-  // Calculate cost
-  const calculateCost = () => {
-    if (!currentTokenUsage || !activeProvider) return null;
-
-    const cost = aiService.calculateCost(activeProvider, {
-      promptTokens: currentTokenUsage.input,
-      completionTokens: currentTokenUsage.output,
-    });
-
-    return cost;
-  };
-
-  const cost = calculateCost();
-  const totalTokens = currentTokenUsage
-    ? currentTokenUsage.input + currentTokenUsage.output
-    : 0;
+  const costBreakdown = getCostBreakdown();
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -133,24 +126,24 @@ const ResponsePanel: React.FC = () => {
         <h3 className="text-sm font-medium text-white flex items-center gap-2">
           Response
         </h3>
-        {showCostEstimates && currentTokenUsage && (
+        {showCostEstimates && hasUsage && (
           <div className="flex items-center gap-3 text-xs text-white/60">
             <div className="flex items-center gap-1">
               <span>Tokens:</span>
               <span className="text-white/80 font-mono">
-                {totalTokens.toLocaleString()}
+                {costBreakdown.total.tokens.toLocaleString()}
               </span>
-              <span className="text-white/40">
-                ({currentTokenUsage.input.toLocaleString()} +{" "}
-                {currentTokenUsage.output.toLocaleString()})
-              </span>
+              {costBreakdown.response.tokens > 0 && costBreakdown.visualization.tokens > 0 && (
+                <span className="text-white/40">
+                  ({costBreakdown.response.tokens.toLocaleString()} response + {costBreakdown.visualization.tokens.toLocaleString()} viz)
+                </span>
+              )}
             </div>
-            {cost !== null && cost > 0 && (
+            {costBreakdown.total.cost > 0 && (
               <div className="flex items-center gap-1">
                 <Coins className="h-3 w-3" />
                 <span className="text-white/80 font-mono">
-                  {/* cost is in credits - so turning to dollars for user */}$
-                  {(cost * 0.01).toFixed(4)}
+                  ${(costBreakdown.total.cost * 0.01).toFixed(4)}
                 </span>
               </div>
             )}
@@ -216,7 +209,11 @@ const ResponsePanel: React.FC = () => {
                         key={index}
                         query={part.content}
                         index={queryIndex >= 0 ? queryIndex : 0}
+                        responseId={`response-${Date.now()}-${index}`}
                         isPrimary={queryIndex === 0}
+                        onVisualizationOpen={onVisualizationOpen}
+                        generateVisualization={generateVisualization}
+                        isGenerating={isGeneratingViz}
                       />
                     );
                   }
