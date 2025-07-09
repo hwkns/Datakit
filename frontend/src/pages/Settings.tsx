@@ -249,7 +249,7 @@ const Settings: React.FC = () => {
 
           {/* Main Content Area */}
           <div className="flex-1 h-full overflow-hidden flex items-center justify-center">
-            <div className="w-full max-w-4xl p-8">
+            <div className="w-full max-w-6xl p-8">
               <div className="bg-darkNav rounded-lg p-8">
                 {renderTabContent()}
               </div>

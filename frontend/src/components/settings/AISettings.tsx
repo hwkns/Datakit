@@ -246,12 +246,17 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
               
               <div className="mb-3">
                 <h4 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                
                   DataKit Models
                 </h4>
                 <p className="text-xs text-white/70 leading-relaxed">
                   Premium AI models optimized for data analysis. No API keys needed.
                 </p>
+                
+                {/* Anthropic Badge */}
+                <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-full">
+                  <img src={AnthropicLogo} className="h-3 w-3" alt="Anthropic" />
+                  <span className="text-xs text-white/70">Powered by Anthropic</span>
+                </div>
               </div>
 
               {/* Compact Features */}
@@ -288,7 +293,7 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                   </div>
                   <button 
                     onClick={handleUpgrade}
-                    className="w-full  text-white py-2 px-3 rounded-lg font-medium text-sm transition-colors cursor-pointer"
+                    className="w-full text-white py-2 px-3 rounded-lg font-medium text-sm transition-colors cursor-pointer"
                   >
                     View All Plans →
                   </button>
@@ -375,10 +380,10 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
               return (
                 <div
                   key={provider}
-                  className={`rounded-lg border p-3 transition-all duration-200 cursor-pointer ${
+                  className={`rounded-xl border p-3 transition-all duration-200 cursor-pointer ${
                     isActive
-                      ? "bg-white/10 border-primary/50"
-                      : "bg-white/5 border-white/10 hover:border-white/20"
+                      ? "bg-gradient-to-br from-white/10 to-white/5 border-primary/50 shadow-lg shadow-primary/20"
+                      : "bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 hover:border-white/20 hover:shadow-lg"
                   }`}
                   onClick={handleSelectProvider}
                 >
@@ -498,7 +503,7 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
           
           {/* Why DataKit AI */}
           {!isProOrTeam && (
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-3 mt-3">
+            <div className="border border-primary/20 rounded-lg p-3 mt-3">
               <h5 className="text-xs font-medium text-white mb-1.5">Why DataKit Models?</h5>
               <ul className="space-y-1 text-xs text-white/70">
                 <li className="flex items-start gap-1.5">
@@ -527,7 +532,7 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
 
       {/* Compact Settings Footer */}
       <div className="mt-4 pt-4 border-t border-white/10">
-        <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-xl">
           <div className="flex items-center gap-2">
             <SettingsIcon className="h-3 w-3 text-white/60" />
             <div>
