@@ -81,11 +81,11 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
       >
         <div className={`p-3 rounded-lg border flex items-start gap-3 ${
           errorInfo.type === 'warning' 
-            ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-200' 
+            ? 'bg-blue-500/10 border-blue-500/20 text-blue-200' 
             : 'bg-red-500/10 border-red-500/20 text-red-200'
         }`}>
           <AlertCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-            errorInfo.type === 'warning' ? 'text-yellow-400' : 'text-red-400'
+            errorInfo.type === 'warning' ? 'text-blue-400' : 'text-red-400'
           }`} />
           
           <div className="flex-1 min-w-0">

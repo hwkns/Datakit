@@ -29,9 +29,11 @@ interface AIVisualizationPanelProps {
   sql: string;
   isLoading?: boolean;
   insights?: string[];
+  title?: string;
   onClose?: () => void;
   onExpand?: () => void;
   onExport?: (format: 'png' | 'svg' | 'csv') => void;
+  onToggle?: () => void;
 }
 
 // Nivo theme for DataKit's dark aesthetic
@@ -103,9 +105,11 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
   sql,
   isLoading,
   insights,
+  title,
   onClose,
   onExpand,
-  onExport
+  onExport,
+  onToggle
 }) => {
   const { showSuccess, showError } = useNotifications();
   const [chartData, setChartData] = useState<any>(null);
@@ -250,6 +254,7 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: -45,
+              legend: config.xAxis || 'X Axis',
               legendOffset: 36,
               legendPosition: 'middle'
             }}
@@ -257,6 +262,7 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
+              legend: Array.isArray(config.yAxis) ? config.yAxis[0] : config.yAxis || 'Y Axis',
               legendOffset: -40,
               legendPosition: 'middle'
             }}
@@ -300,6 +306,11 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: config.layout === 'horizontal' ? 0 : -45,
+              // TODO: LETS NOT SHOW FOR NOW SO WE FIGURE IT OUT LATER
+              //
+              // legend: config.layout === 'horizontal' 
+              //   ? (Array.isArray(config.yAxis) ? config.yAxis[0] : config.yAxis || 'Y Axis')
+              //   : (config.xAxis || 'X Axis'),
               legendOffset: 36,
               legendPosition: 'middle'
             }}
@@ -307,6 +318,11 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
+              // TODO: LETS NOT SHOW FOR NOW SO WE FIGURE IT OUT LATER
+              //
+              // legend: config.layout === 'horizontal' 
+              //   ? (config.xAxis || 'X Axis')
+              //   : (Array.isArray(config.yAxis) ? config.yAxis[0] : config.yAxis || 'Y Axis'),
               legendOffset: -40,
               legendPosition: 'middle'
             }}
@@ -358,6 +374,7 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
+              legend: config.xAxis || 'X Axis',
               legendOffset: 36,
               legendPosition: 'middle'
             }}
@@ -365,6 +382,7 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
+              legend: Array.isArray(config.yAxis) ? config.yAxis[0] : config.yAxis || 'Y Axis',
               legendOffset: -40,
               legendPosition: 'middle'
             }}
@@ -379,37 +397,36 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
     }
   };
 
-  const handleExport = (format: 'png' | 'svg' | 'csv') => {
+  const handleExport = () => {
     if (onExport) {
-      onExport(format);
-    } else {
-      showSuccess(`Export to ${format.toUpperCase()} initiated`);
+      onExport();
     }
   };
 
   return (
-    <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg">
+    <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg" data-viz-id="current-viz">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          <h3 className="text-sm font-medium text-white">Visualization</h3>
+          <h3 className="text-sm font-medium text-white">
+            {title || 'Visualization'}
+          </h3>
         </div>
         
         <div className="flex items-center gap-1">
-          <Tooltip content="Export as PNG">
+          <Tooltip placement="bottom" content="Export">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => handleExport('png')}
+              onClick={handleExport}
             >
               <Download className="h-4 w-4" />
             </Button>
           </Tooltip>
           
           {onExpand && (
-            <Tooltip content="Expand">
+            <Tooltip placement="bottom" content="Customize">
               <Button
                 variant="ghost"
                 size="icon"
@@ -421,16 +438,16 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
             </Tooltip>
           )}
           
-          {onClose && (
+          <Tooltip  placement="bottom" content="Toggle">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={onClose}
+              onClick={onToggle || onClose}
             >
               <X className="h-4 w-4" />
             </Button>
-          )}
+          </Tooltip>
         </div>
       </div>
 
@@ -445,7 +462,9 @@ const AIVisualizationPanel: React.FC<AIVisualizationPanelProps> = ({
           </div>
         ) : (
           <div className="absolute inset-0 p-4">
-            {renderChart()}
+            <div className="nivo-chart w-full h-full">
+              {renderChart()}
+            </div>
           </div>
         )}
       </div>

@@ -5,18 +5,22 @@ import { useAIStore } from "@/store/aiStore";
 import { useAIOperations } from "@/hooks/ai/useAIOperations";
 import { useTokenUsage } from "@/hooks/ai/useTokenUsage";
 import SQLQueryCard from "./SQLQueryCard";
-import { Coins } from "lucide-react";
+import { Coins, BarChart3, ChevronRight } from "lucide-react";
 
 interface ResponsePanelProps {
   onVisualizationOpen?: (queryId: string) => void;
   generateVisualization: (request: any) => Promise<any>;
   isGeneratingViz?: boolean;
+  hasActiveVisualization?: boolean;
+  onShowVisualization?: () => void;
 }
 
 const ResponsePanel: React.FC<ResponsePanelProps> = ({ 
   onVisualizationOpen,
   generateVisualization,
-  isGeneratingViz 
+  isGeneratingViz,
+  hasActiveVisualization,
+  onShowVisualization
 }) => {
   const {
     isProcessing,
@@ -123,9 +127,21 @@ const ResponsePanel: React.FC<ResponsePanelProps> = ({
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-white flex items-center gap-2">
-          Response
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-sm font-medium text-white">Response</h3>
+          {/* {hasActiveVisualization && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={onShowVisualization}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/50 rounded-md transition-all text-xs group"
+            >
+              <BarChart3 className="h-3 w-3 text-primary" />
+              <span className="text-white/70 group-hover:text-white">Show Chart</span>
+              <ChevronRight className="h-3 w-3 text-white/50 group-hover:text-white/70" />
+            </motion.button>
+          )} */}
+        </div>
         {showCostEstimates && hasUsage && (
           <div className="flex items-center gap-3 text-xs text-white/60">
             <div className="flex items-center gap-1">

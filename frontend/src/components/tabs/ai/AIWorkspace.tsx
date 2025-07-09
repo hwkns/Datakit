@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -14,6 +14,12 @@ import ResponsePanel from "./ResponsePanel";
 import ResultsPanel from "./ResultsPanel";
 import ApiKeyModal from "./ApiKeyModal";
 import AIVisualizationPanel from "./AIVisualizationPanel";
+import VisualizationExportModal from "./VisualizationExportModal";
+import VisualizationSideTab from "./VisualizationSideTab";
+import ResultsExpandButton from "./ResultsExpandButton";
+import VisualizationCustomizePanel from "./VisualizationCustomizePanel";
+import SplitResizeHandle from "./SplitResizeHandle";
+
 
 const AIWorkspace: React.FC = () => {
   const [schemaBrowserOpen, setSchemaBrowserOpen] = useState(false);
@@ -27,7 +33,13 @@ const AIWorkspace: React.FC = () => {
   
   // Visualization state
   const [activeVizId, setActiveVizId] = useState<string | null>(null);
+  const [vizExpanded, setVizExpanded] = useState(true);
+  const [vizCustomizeMode, setVizCustomizeMode] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [splitViewRatio, setSplitViewRatio] = useState(50);
+  
+  // Live chart configuration state
+  const [liveConfig, setLiveConfig] = useState<any>(null);
 
   const { queryResults, activeProvider, setActiveProvider, apiKeys } = useAIStore();
   const { isAuthenticated } = useAuth();
@@ -35,7 +47,6 @@ const AIWorkspace: React.FC = () => {
 
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const resultsResizeRef = useRef<HTMLDivElement>(null);
-  const splitResizeRef = useRef<HTMLDivElement>(null);
 
   // Get active visualization data
   const activeViz = activeVizId ? getVisualization(activeVizId) : null;
@@ -112,24 +123,38 @@ const AIWorkspace: React.FC = () => {
 
   const handleVisualizationOpen = (vizId: string) => {
     setActiveVizId(vizId);
+    setVizExpanded(true);
   };
 
-  const handleVisualizationClose = () => {
-    if (activeVizId) {
-      clearVisualization(activeVizId);
-    }
-    setActiveVizId(null);
+
+
+  const handleVisualizationToggle = () => {
+    setVizExpanded(!vizExpanded);
   };
 
   const handleVisualizationExpand = () => {
-    // Could open in full visualization tab or maximize in current view
-    console.log('Expand visualization');
+    setVizCustomizeMode(true);
+    // Initialize live config with current visualization config
+    if (activeViz) {
+      setLiveConfig({
+        ...activeViz.config,
+        title: 'AI Generated Visualization'
+      });
+    }
   };
 
-  const handleVisualizationExport = (format: 'png' | 'svg' | 'csv') => {
-    if (activeVizId) {
-      exportVisualization(activeVizId, format);
-    }
+  const handleVisualizationExitCustomize = () => {
+    setVizCustomizeMode(false);
+    setLiveConfig(null);
+  };
+
+  // Update live configuration
+  const updateLiveConfig = (updates: any) => {
+    setLiveConfig(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleVisualizationExport = () => {
+    setShowExportModal(true);
   };
 
   // Check if current provider is ready to use
@@ -173,7 +198,10 @@ const AIWorkspace: React.FC = () => {
           {/* Left: Prompt Panel */}
           <div 
             className="border-r border-white/10 min-w-0 flex-shrink-0"
-            style={{ width: activeViz ? '30%' : '40%' }}
+            style={{ 
+              width: vizCustomizeMode ? '20%' : (activeViz ? '30%' : '40%'),
+              display: vizCustomizeMode ? 'none' : 'block'
+            }}
           >
             <PromptPanel
               inputRef={promptInputRef}
@@ -185,53 +213,80 @@ const AIWorkspace: React.FC = () => {
             />
           </div>
 
-          {/* Middle: Response Panel */}
+          {/* Middle: Response Panel or Customization Panel */}
           <div 
-            className="min-w-0 overflow-hidden border-r border-white/10 relative"
-            style={{ width: activeViz ? `${splitViewRatio}%` : '60%' }}
+            className={`min-w-0 overflow-hidden relative ${
+              activeViz && vizExpanded ? 'border-r border-white/10' : ''
+            }`}
+            style={{ 
+              width: vizCustomizeMode 
+                ? '25%' 
+                : (activeViz && vizExpanded ? `${splitViewRatio}%` : '60%'),
+              flex: activeViz && !vizExpanded ? '1' : undefined
+            }}
           >
-            <ResponsePanel 
-              onVisualizationOpen={handleVisualizationOpen}
-              generateVisualization={generateVisualization}
-              isGeneratingViz={isGenerating}
-            />
-            
-            {/* Split Resize Handle */}
-            {activeViz && (
-              <div
-                ref={splitResizeRef}
-                onMouseDown={handleSplitResize}
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/20 transition-colors z-10"
+            {vizCustomizeMode ? (
+              /* Customization Panel */
+              <VisualizationCustomizePanel
+                liveConfig={liveConfig}
+                onConfigUpdate={updateLiveConfig}
               />
+            ) : (
+              /* Normal Response Panel */
+              <>
+                <ResponsePanel 
+                  onVisualizationOpen={handleVisualizationOpen}
+                  generateVisualization={generateVisualization}
+                  isGeneratingViz={isGenerating}
+                  hasActiveVisualization={!!activeViz && !vizExpanded}
+                  onShowVisualization={handleVisualizationToggle}
+                />
+                
+                {/* Visualization Indicator (when collapsed) */}
+                <VisualizationSideTab
+                  isVisible={!vizExpanded && !!activeViz}
+                  onToggle={handleVisualizationToggle}
+                />
+                
+                {/* Split Resize Handle */}
+                <SplitResizeHandle
+                  isVisible={activeViz && vizExpanded}
+                  onResize={handleSplitResize}
+                />
+              </>
             )}
           </div>
 
           {/* Right: Visualization Panel (conditional) */}
           <AnimatePresence>
-            {activeViz && (
+            {activeViz && vizExpanded && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: `${100 - splitViewRatio}%`, opacity: 1 }}
+                animate={{ 
+                  width: vizCustomizeMode ? '75%' : `${100 - splitViewRatio}%`, 
+                  opacity: 1 
+                }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="min-w-0 overflow-hidden bg-black/20"
               >
-                {console.log('AIWorkspace: Passing to visualization panel:', activeViz)}
                 <AIVisualizationPanel
                   data={activeViz.data}
-                  config={activeViz.config}
+                  config={vizCustomizeMode && liveConfig ? liveConfig : activeViz.config}
                   chartType={activeViz.chartType}
                   sql={activeViz.sql}
                   insights={activeViz.insights}
-                  onClose={handleVisualizationClose}
+                  title={vizCustomizeMode ? liveConfig?.title : undefined}
                   onExpand={handleVisualizationExpand}
                   onExport={handleVisualizationExport}
+                  onToggle={vizCustomizeMode ? handleVisualizationExitCustomize : handleVisualizationToggle}
                 />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
+
 
       {/* Bottom: Results Panel - Collapsible */}
       <AnimatePresence>
@@ -264,15 +319,10 @@ const AIWorkspace: React.FC = () => {
       </AnimatePresence>
 
       {/* Results Expand Button (when collapsed) */}
-      {!resultsExpanded && queryResults && (
-        <button
-          onClick={() => setResultsExpanded(true)}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black border border-white/10 rounded-t-lg px-4 py-1 hover:border-primary transition-colors flex items-center gap-2"
-        >
-          <ChevronUp className="h-4 w-4 text-white/70" />
-          <span className="text-sm text-white/70">Show Results</span>
-        </button>
-      )}
+      <ResultsExpandButton
+        isVisible={!resultsExpanded && !!queryResults}
+        onExpand={() => setResultsExpanded(true)}
+      />
 
       {/* API Key Modal */}
       <ApiKeyModal
@@ -287,6 +337,18 @@ const AIWorkspace: React.FC = () => {
         defaultMode={authModalMode}
         onLoginSuccess={() => setActiveProvider('datakit')}
       />
+
+
+      {/* Fullscreen Export Modal */}
+      {activeViz && (
+        <VisualizationExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          vizId="current-viz"
+          title="Visualization"
+          data={activeViz.data}
+        />
+      )}
     </div>
   );
 };
