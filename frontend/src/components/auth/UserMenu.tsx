@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 
 import { Button } from '@/components/ui/Button';
+import LoadingDots from '@/components/ui/LoadingDots';
 import AuthModal from './AuthModal';
 
 interface UserMenuProps {
@@ -18,7 +19,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
   variant = 'header',
   className = '' 
 }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
   const {  setActiveProvider } = useAIStore();
   const { showSuccess } = useNotifications();
 
@@ -88,9 +89,16 @@ const UserMenu: React.FC<UserMenuProps> = ({
           size="sm"
           onClick={() => setShowAuthModal(true)}
           className={`w-full border border-white/30 ${className}`}
+          disabled={isLoading}
         >
-          <User size={14} className="mr-0.5" />
-          <span className="text-xs">Sign In</span>
+          {isLoading ? (
+            <LoadingDots size="sm" className="mr-1" />
+          ) : (
+            <User size={14} className="mr-0.5" />
+          )}
+          <span className="text-xs">
+            {isLoading ? "Signing in" : "Sign In"}
+          </span>
         </Button>
         
         <AuthModal
