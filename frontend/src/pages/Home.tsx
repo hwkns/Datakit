@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { Table, BarChart, Database, UserPen } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import MainLayout from "@/components/layout/MainLayout";
 import TabNavigation, { Tab } from "@/components/navigation/TabNavigation";
@@ -9,9 +11,6 @@ import AITab from "@/components/tabs/AITab";
 
 import { DataLoadWithDuckDBResult } from "@/components/layout/Sidebar";
 import ActionButtons from "@/components/common/ActionButtons";
-
-import { Table, BarChart, Database, UserPen } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { useAppStore } from "@/store/appStore";
 import {
@@ -65,7 +64,6 @@ const Home = () => {
    */
   const handleDataLoad = (result: DataLoadWithDuckDBResult) => {
     addFile(result);
-
     analytics.trackFileUpload(result);
 
     // Track specific file type

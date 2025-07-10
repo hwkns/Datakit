@@ -27,6 +27,8 @@ export interface WelcomeAnimationHookResult {
   animationActive: boolean;
 }
 
+export { useFileUpload } from "./useFileUpload";
+
 /**
  * Custom hook to generate an empty grid
  *

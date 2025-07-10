@@ -160,7 +160,6 @@ const SubscriptionSettings: React.FC = () => {
         'Personal workspace',
         'Basic data analysis',
         'Community support',
-        'Standard AI models',
       ],
       isCurrentPlan: currentPlan === 'free',
       icon: <></>,
@@ -172,10 +171,8 @@ const SubscriptionSettings: React.FC = () => {
       description: 'With more Anthropic credits',
       features: [
         '1500 credits per month',
-        'DataKit AI access',
         'Advanced analytics',
         'Priority support',
-        'Premium AI models',
         'Export capabilities',
         'Advanced integrations',
       ],
@@ -191,6 +188,7 @@ const SubscriptionSettings: React.FC = () => {
       features: [
         'Unlimited credits',
         'Team collaboration',
+        'Multiple Workspaces',
         'Member management',
         'Premium support',
         'Custom integrations',

@@ -33,7 +33,6 @@ const QueryResultsEmptyState: React.FC<QueryResultsEmptyStateProps> = ({ type, m
     case 'empty':
       return (
         <div className="flex flex-col items-center justify-center h-full py-10 text-white text-opacity-70">
-          <Database size={24} className="text-white opacity-30 mb-4" />
           <p className="text-sm">Execute a query to see results.</p>
         </div>
       );
