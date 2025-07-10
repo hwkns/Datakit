@@ -237,7 +237,7 @@ const SubscriptionSettings: React.FC = () => {
       handleWaitlistSignup('Pro');
     }
   };
-
+console.log('creditsRemaining', creditsRemaining);
   return (
     <div className="h-full flex flex-col max-w-7xl mx-auto">
       {/* Compact Header */}
@@ -261,7 +261,7 @@ const SubscriptionSettings: React.FC = () => {
             <div className="space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
                 <div className="text-xl font-bold text-primary">
-                  {creditsRemaining === -1 ? '∞' : creditsRemaining || 0}
+                  {creditsRemaining === -1 ? '∞' : Number(creditsRemaining).toFixed(2) || 0}
                 </div>
                 <div className="text-xs text-white/60">Credits Remaining</div>
               </div>
