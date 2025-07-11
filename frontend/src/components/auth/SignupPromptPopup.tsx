@@ -47,7 +47,7 @@ const SignupPromptPopup: React.FC<SignupPromptPopupProps> = ({ onClose }) => {
           contain: 'layout style paint',
         }}
       >
-        <div className="bg-black border border-white/10 rounded-lg shadow-2xl p-5">
+        <div className="bg-black border border-white/20 rounded-lg shadow-2xl p-5">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
