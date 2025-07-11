@@ -63,7 +63,7 @@ export default {
       // Send email
       const { data, error } = await resend.emails.send({
         from: 'DataKit Feedback <feedback@datakit.page>',
-        to: 'amin@wavequery.com',
+        to: ['amin@datakit.page', 'luke@datakit.page'],
         subject: 'New DataKit Feedback',
         html: `
           <h2>New Feedback from DataKit</h2>

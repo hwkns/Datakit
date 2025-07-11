@@ -100,33 +100,6 @@ export function useFeedback(options?: FeedbackOptions): UseFeedbackReturn {
         throw new Error('Failed to send feedback');
       }
 
-      /* 
-      // OPTION 2: For development and testing - console log the feedback
-      console.log('Feedback submitted:', {
-        message: feedbackMessage,
-        email: feedbackEmail || 'Anonymous user',
-        context: options?.context,
-        timestamp: new Date().toISOString()
-      });
-      */
-
-      /* 
-      // OPTION 3: Use a service with client SDK (like EmailJS)
-      // You'll need to install and import the relevant package
-      // import emailjs from '@emailjs/browser';
-      
-      await emailjs.send(
-        'YOUR_SERVICE_ID',
-        'YOUR_TEMPLATE_ID',
-        {
-          from_email: feedbackEmail || 'Anonymous user',
-          message: feedbackMessage,
-          context: options?.context || 'No context provided'
-        },
-        'YOUR_PUBLIC_KEY'
-      );
-      */
-
       setFeedbackSuccess(true);
       setFeedbackMessage('');
       setFeedbackEmail('');
