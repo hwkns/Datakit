@@ -6,24 +6,30 @@ import { useAIStore } from "@/store/aiStore";
 import { aiService } from "@/lib/ai/aiService";
 import { modelManager } from "@/lib/ai/modelManager";
 import { AIProvider, AIModel } from "@/types/ai";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 import OpenAILogo from '@/assets/openai.webp';
 import AnthropicLogo  from '@/assets/anthropic.webp';
 import GroqLogo from '@/assets/groq.png';
+import DatakitLogoShort from '@/assets/datakitShort.png';
+import AuthModal from "@/components/auth/AuthModal";
 
 interface ModelSelectorProps {
   compact?: boolean;
 }
 
-const PROVIDER_COLORS: Record<AIProvider, string> = {
+const PROVIDER_COLORS: Record<AIProvider | 'datakit', string> = {
+  datakit: 'primary',
   openai: 'blue',
   anthropic: 'blue',
   groq: 'blue',
   local: 'blue',
 };
 
-const PROVIDER_ICONS: Record<AIProvider, React.ReactNode> = {
+const PROVIDER_ICONS: Record<AIProvider | 'datakit', React.ReactNode> = {
+  datakit: <img src={DatakitLogoShort} className="h-4 w-4" />,
   openai: <img src={OpenAILogo} className="h-4 w-4" />,
   anthropic: <img src={AnthropicLogo} className="h-4 w-4" />,
   groq: <img src={GroqLogo} className="h-4 w-4" />,
@@ -34,6 +40,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [downloadedModels, setDownloadedModels] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
+    "signup"
+  );
+
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   
   const {
     activeProvider,
@@ -78,16 +92,37 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
   const currentModel = getCurrentModel();
 
   // Check if provider needs API key and has one
-  const hasApiKey = (provider: AIProvider) => {
+  const hasApiKey = (provider: AIProvider | 'datakit') => {
     if (provider === 'local') return true;
-    return apiKeys.has(provider) && !!apiKeys.get(provider);
+    if (provider === 'datakit') return isAuthenticated; // DataKit requires authentication
+    return apiKeys.has(provider as AIProvider) && !!apiKeys.get(provider as AIProvider);
   };
 
+
+  const handleOpenAuthModal = (mode: "login" | "signup") => {
+    setAuthModalMode(mode);
+    setShowAuthModal(true);
+  };
+
+
   // Handle model selection
-  const handleModelSelect = async (provider: AIProvider, modelId: string) => {
-    setActiveProvider(provider);
+  const handleModelSelect = async (provider: AIProvider | 'datakit', modelId: string) => {
+    // If trying to select DataKit AI without being authenticated, redirect to settings
+    if (provider === 'datakit' && !isAuthenticated) {
+      setIsOpen(false);
+      handleOpenAuthModal("signup");
+      return;
+    }
+
+    setActiveProvider(provider as AIProvider);
     setActiveModel(modelId);
     setIsOpen(false);
+
+    // For DataKit models, no special loading needed - handled by backend
+    if (provider === 'datakit') {
+      // Just set the model, backend will handle the actual AI calls
+      return;
+    }
 
     // For local models, ensure the model is loaded
     if (provider === 'local') {
@@ -105,20 +140,26 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
     }
   };
 
+  const handleSignInClick = () => {
+    setIsOpen(false);
+    handleOpenAuthModal("signup");
+  };
+
   // Get color class for provider
-  const getProviderColorClass = (provider: AIProvider, type: 'bg' | 'border' | 'text') => {
+  const getProviderColorClass = (provider: AIProvider | 'datakit', type: 'bg' | 'border' | 'text') => {
     const color = PROVIDER_COLORS[provider];
     switch (type) {
       case 'bg':
-        return `bg-${color}-500/10`;
+        return color === 'primary' ? 'bg-primary/10' : `bg-${color}-500/10`;
       case 'border':
-        return `border-${color}-500/30`;
+        return color === 'primary' ? 'border-primary/30' : `border-${color}-500/30`;
       case 'text':
-        return `text-${color}-500`;
+        return color === 'primary' ? 'text-primary' : `text-${color}-500`;
       default:
         return '';
     }
   };
+
 
 
   return (
@@ -169,7 +210,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 mt-2 w-80 bg-black border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-96 overflow-y-auto"
+            className="absolute top-full left-0 mt-2 w-80 bg-black border border-white/10 rounded-lg shadow-xl shadow-black/30 z-50 max-h-100 overflow-y-auto"
           >
             <div className="p-3">
               <div className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
@@ -181,9 +222,17 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                   <div key={provider}>
                     <div className="text-xs font-medium text-white/50 mb-2 flex items-center">
                       {PROVIDER_ICONS[provider]}
-                      <span className="ml-2 capitalize">{provider}</span>
-                      {!hasApiKey(provider) && provider !== 'local' && (
+                      <span className="ml-2 capitalize">{provider === 'datakit' ? 'DataKit' : provider}</span>
+                      {provider === 'datakit' && (
+                        <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                         Claude Models
+                        </span>
+                      )}
+                      {!hasApiKey(provider) && provider !== 'local' && provider !== 'datakit' && (
                         <span className="ml-2 text-yellow-500">(API key required)</span>
+                      )}
+                      {provider === 'datakit' && !isAuthenticated && (
+                        <span className="ml-2 text-yellow-500">(Sign in required)</span>
                       )}
                     </div>
                     
@@ -192,12 +241,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                         <button
                           key={model.id}
                           onClick={() => handleModelSelect(provider, model.id)}
-                          disabled={!hasApiKey(provider)}
+                          disabled={provider === 'datakit' ? !isAuthenticated : !hasApiKey(provider)}
                           className={cn(
                             "w-full text-left p-2 rounded-lg border transition-all duration-200",
                             activeModel === model.id
                               ? `${getProviderColorClass(provider, 'bg')} ${getProviderColorClass(provider, 'border')}`
-                              : hasApiKey(provider)
+                              : (provider === 'datakit' ? isAuthenticated : hasApiKey(provider))
                               ? "border-transparent hover:bg-white/5 hover:border-white/10"
                               : "border-transparent opacity-50 cursor-not-allowed",
                           )}
@@ -211,12 +260,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                                 {model.contextWindow.toLocaleString()} tokens
                                 {model.costPer1kTokens && (
                                   <span className="ml-2">
-                                    ${model.costPer1kTokens.input.toFixed(3)}/1K
+                                    {provider === 'datakit' 
+                                      ? `${model.costPer1kTokens.input.toFixed(2)} credits/1K tokens`
+                                      : `$${model.costPer1kTokens.input.toFixed(3)}/1K`
+                                    }
                                   </span>
                                 )}
                               </div>
                               <div className="text-xs text-white/40 mt-1">
-                                {model.capabilities.join(', ')}
+                                {provider === 'datakit' ? model.description : model.capabilities.join(', ')}
                               </div>
                             </div>
                             
@@ -227,6 +279,32 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                         </button>
                       ))}
                     </div>
+                    
+                    {/* Special sections for DataKit */}
+                    {provider === 'datakit' && !isAuthenticated && (
+                      <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                        <div className="text-sm text-white/70 mb-2">
+                          Sign up to use DataKit credits
+                        </div>
+                        <div className="text-xs text-white/50 mb-3">
+                          No API keys needed. Credits included with your account.
+                        </div>
+                        <button
+                          onClick={handleSignInClick}
+                          className="w-full px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-sm font-medium text-primary transition-all duration-200"
+                        >
+                          Sign up to get started
+                        </button>
+                      </div>
+                    )}
+
+                    {provider === 'datakit' && isAuthenticated && user?.credits && (
+                      <div className="mt-2 p-2 bg-background/10 border border-white/10 rounded">
+                        <div className="text-xs text-white/60">
+                          Credits remaining: <span className="text-white font-medium">{user.credits.remaining}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -254,6 +332,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultMode={authModalMode}
+        onLoginSuccess={() => setActiveProvider('datakit')}
+      />
     </div>
   );
 };

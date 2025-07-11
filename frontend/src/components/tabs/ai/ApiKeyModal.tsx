@@ -15,6 +15,8 @@ import { AIProvider } from "@/types/ai";
 import { Button } from "@/components/ui/Button";
 import LocalModelManager from "./LocalModelManager";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/auth/useAuth";
+import { useNavigate } from "react-router-dom";
 
 import OpenAILogo from "@/assets/openai.webp";
 import AnthropicLogo from "@/assets/anthropic.webp";
@@ -27,10 +29,8 @@ const PROVIDER_CONFIG = {
     color: "blue",
     description: "GPT-4o and GPT-4o Mini models",
     websiteUrl: "https://platform.openai.com/api-keys",
-    helpText:
-      "Most capable models for complex reasoning and analysis. New users get $5 free credits.",
+    helpText: "Most capable models for complex reasoning and analysis.",
     keyFormat: "sk-...",
-
   },
   anthropic: {
     name: "Anthropic",
@@ -75,6 +75,9 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
   );
   const [showKeys, setShowKeys] = useState<Map<AIProvider, boolean>>(new Map());
 
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   const {
     apiKeys,
     setActiveProvider: setActiveProviderToStore,
@@ -110,6 +113,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
       }
     }
     onClose();
+  };
+
+  const handleUpgradeClick = () => {
+    onClose();
+    navigate("/settings#ai");
   };
 
   const getProviderColorClass = (
@@ -333,29 +341,56 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                           </div>
                         </div>
 
+                        {/* DataKit AI Promotion for Unauthenticated Users */}
+                        {!isAuthenticated && (
+                          <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mt-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-white mb-1">
+                                  Skip the API keys with DataKit credits
+                                </p>
+                                <p className="text-xs text-white/70 mb-3">
+                                  Get instant access to powerful AI models
+                                  without managing API keys. Credits included
+                                  with your account.
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleUpgradeClick}
+                                  className="h-7 bg-primary/20 hover:bg-primary/30 border-primary/50 text-primary"
+                                >
+                                  Sign in to get started
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {PROVIDER_CONFIG[activeProvider].websiteUrl && (
                           <div className="bg-white/5 border border-white/10 rounded-lg p-4">
                             <div className="flex items-start gap-3">
-                              <Key className="h-4 w-4 text-white/60 mt-0.5" />
                               <div className="flex-1">
                                 <p className="text-sm text-white/80 mb-2">
                                   {PROVIDER_CONFIG[activeProvider].helpText}
                                 </p>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    window.open(
-                                      PROVIDER_CONFIG[activeProvider]
-                                        .websiteUrl!,
-                                      "_blank"
-                                    )
-                                  }
-                                  className="h-7"
-                                >
-                                  <ExternalLink className="h-3 w-3 mr-1" />
-                                  Get API Key
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      window.open(
+                                        PROVIDER_CONFIG[activeProvider]
+                                          .websiteUrl!,
+                                        "_blank"
+                                      )
+                                    }
+                                    className="h-7"
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    Get API Key
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>

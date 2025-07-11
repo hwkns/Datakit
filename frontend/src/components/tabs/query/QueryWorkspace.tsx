@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import {
   Play,
   ChevronLeft,
@@ -10,11 +16,13 @@ import {
   Clock,
   AlertTriangle,
   Zap,
+  Command,
 } from "lucide-react";
 
 import {
   useInitialQuery,
   useDuckDBInitialization,
+  usePendingQuery,
 } from "@/hooks/query/useQueryInitialization";
 
 import SchemaBrowser from "./SchemaBrowser";
@@ -53,6 +61,8 @@ const QueryWorkspace: React.FC = () => {
 
   const { query, setQuery, canExecuteQueries, hasUserTables } =
     useInitialQuery();
+
+  usePendingQuery(setQuery);
 
   const { tableSchema } = useSchemaInfo(tableName);
 
@@ -100,7 +110,7 @@ const QueryWorkspace: React.FC = () => {
 
   // Schema browser width state
   const [schemaBrowserWidth, setSchemaBrowserWidth] = useState(() => {
-    const saved = localStorage.getItem('datakit-schema-browser-width');
+    const saved = localStorage.getItem("datakit-schema-browser-width");
     return saved ? parseInt(saved, 10) : DEFAULT_PANEL_WIDTH;
   });
 
@@ -126,13 +136,13 @@ const QueryWorkspace: React.FC = () => {
   const handleSchemaResize = useCallback((e: MouseEvent) => {
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
-      
+
       const containerRect = containerRef.current.getBoundingClientRect();
       const newWidth = Math.min(
         Math.max(e.clientX - containerRect.left, MIN_PANEL_WIDTH),
         MAX_PANEL_WIDTH
       );
-      
+
       setSchemaBrowserWidth(newWidth);
     });
   }, []);
@@ -146,23 +156,26 @@ const QueryWorkspace: React.FC = () => {
     if (isResizingSchema) {
       setIsResizingSchema(false);
       // Save the width to localStorage
-      localStorage.setItem('datakit-schema-browser-width', schemaBrowserWidth.toString());
+      localStorage.setItem(
+        "datakit-schema-browser-width",
+        schemaBrowserWidth.toString()
+      );
     }
   }, [isResizingSchema, schemaBrowserWidth]);
 
   // Handle mouse events for schema browser resizing
   useEffect(() => {
     if (isResizingSchema) {
-      document.addEventListener('mousemove', handleSchemaResize);
-      document.addEventListener('mouseup', stopSchemaResize);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+      document.addEventListener("mousemove", handleSchemaResize);
+      document.addEventListener("mouseup", stopSchemaResize);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
 
       return () => {
-        document.removeEventListener('mousemove', handleSchemaResize);
-        document.removeEventListener('mouseup', stopSchemaResize);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        document.removeEventListener("mousemove", handleSchemaResize);
+        document.removeEventListener("mouseup", stopSchemaResize);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       };
     }
   }, [isResizingSchema, handleSchemaResize, stopSchemaResize]);
@@ -195,28 +208,36 @@ const QueryWorkspace: React.FC = () => {
   };
 
   // Memoized event handlers to prevent unnecessary re-renders
+  const handleExecuteQuery = useCallback(() => {
+    if (canExecuteQueries && query.trim()) {
+      executeQuery();
+    }
+  }, [canExecuteQueries, query, executeQuery]);
+
   const keyboardHandlers = useMemo(
     () => ({
-      executeQuery: () => {
-        if (canExecuteQueries && query.trim()) {
-          executeQuery();
-        }
-      },
+      executeQuery: handleExecuteQuery,
       saveQuery: handleSaveQuery,
       exitFullScreen: () => setFullScreenMode("none"),
     }),
-    [canExecuteQueries, query, executeQuery, handleSaveQuery]
+    [handleExecuteQuery, handleSaveQuery]
   );
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter to execute query
+      // Ctrl/Cmd + Enter to execute query (fallback if Monaco doesn't catch it)
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        keyboardHandlers.executeQuery();
+        const target = e.target as HTMLElement;
+        const isInMonacoEditor = target.closest('.monaco-editor');
+        
+        // Only handle if we're in the Monaco editor but the event bubbled up
+        if (isInMonacoEditor) {
+          e.preventDefault();
+          keyboardHandlers.executeQuery();
+        }
       }
-
+      
       // Ctrl/Cmd + S to save query
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
@@ -230,8 +251,8 @@ const QueryWorkspace: React.FC = () => {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true); // Use capture phase
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [keyboardHandlers, fullScreenMode]);
 
   // Show getting started state
@@ -409,16 +430,22 @@ const QueryWorkspace: React.FC = () => {
 
   // Regular layout with panels
   return (
-    <div ref={containerRef} className="h-full w-full flex overflow-hidden relative">
+    <div
+      ref={containerRef}
+      className="h-full w-full flex overflow-hidden relative"
+    >
       {/* Resize Overlay - prevents interference from iframes/content during resize */}
       {isResizingSchema && (
-        <div className="absolute inset-0 z-50" style={{ cursor: 'col-resize' }} />
+        <div
+          className="absolute inset-0 z-50"
+          style={{ cursor: "col-resize" }}
+        />
       )}
 
       {/* Schema Browser Panel */}
       <div
         className={`flex-shrink-0 overflow-hidden bg-darkNav border-r border-white/10 relative ${
-          isResizingSchema ? '' : 'transition-all duration-200'
+          isResizingSchema ? "" : "transition-all duration-200"
         }`}
         style={{
           width: showSchemaBrowser ? `${schemaBrowserWidth}px` : "0px",
@@ -432,13 +459,15 @@ const QueryWorkspace: React.FC = () => {
         {showSchemaBrowser && (
           <div
             className={`absolute top-0 right-0 w-1 h-full cursor-col-resize bg-transparent ${
-              isResizingSchema ? 'bg-primary/50' : 'hover:bg-primary/30 transition-colors'
+              isResizingSchema
+                ? "bg-primary/50"
+                : "hover:bg-primary/30 transition-colors"
             }`}
             onMouseDown={startSchemaResize}
             style={{
               // Make the hit area wider for easier grabbing
-              width: '5px',
-              right: '-2px',
+              width: "5px",
+              right: "-2px",
             }}
           >
             {/* Visual indicator during resize */}
@@ -480,9 +509,6 @@ const QueryWorkspace: React.FC = () => {
 
               <h3 className="text-sm font-medium">SQL Editor</h3>
 
-              <div className="text-xs text-white/50">
-                Press Ctrl+Enter to execute
-              </div>
 
               {hasWarnings && (
                 <button
@@ -523,10 +549,17 @@ const QueryWorkspace: React.FC = () => {
                   !query.trim() ||
                   !canExecuteQueries
                 }
-                className="h-8"
+                className="h-8 gap-2"
+                title="Execute query (⌘+Enter)"
               >
-                <Play size={14} className="mr-1" />
-                <span>Execute</span>
+                <div className="flex items-center">
+                  <Play size={14} className="mr-1" />
+                  <span>Execute</span>
+                </div>
+                <div className="flex items-center text-[11px] opacity-60 bg-white/10 px-1.5 py-0.5 rounded">
+                  <Command size={11} className="mr-0.5" />
+                  <span className="leading-none">↵</span>
+                </div>
               </Button>
 
               <Button
@@ -635,8 +668,8 @@ const QueryWorkspace: React.FC = () => {
                   </h4>
                   <p className="text-xs text-white/80 mb-2">
                     This query is returning a large dataset which may affect
-                    performance. Consider adding filters or LIMIT clause with lower value to
-                    reduce the result size.
+                    performance. Consider adding filters or LIMIT clause with
+                    lower value to reduce the result size.
                   </p>
                   <div className="flex justify-end space-x-2 mt-2">
                     <button

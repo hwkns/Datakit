@@ -2,10 +2,16 @@ import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import { useDuckDBStore } from "@/store/duckDBStore";
+import { useAuthStore } from "@/store/authStore";
 import { useConsentManager } from "@/components/common/ConsentPopup";
+import { NotificationProvider } from "@/hooks/useNotifications";
+import { useSignupPrompt } from "@/hooks/useSignupPrompt";
 
 import Home from "@/pages/Home";
 import Privacy from "@/pages/Privacy";
+import Settings from "@/pages/Settings";
+import Info from "@/pages/Info";
+import NotFound from "@/pages/NotFound";
 import { Button } from "@/components/ui/Button";
 import { SEO } from "@/components/common/SEO";
 
@@ -54,12 +60,19 @@ const MobileWarning = () => {
 
 const AppContent = () => {
   const { initialize } = useDuckDBStore();
+  const { checkAuth } = useAuthStore();
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const { ConsentPopup } = useConsentManager();
+  const { SignupPrompt } = useSignupPrompt();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Global auth check on app startup
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // Apply saved theme color
   useEffect(() => {
@@ -98,11 +111,16 @@ const AppContent = () => {
           path="/"
           element={
             <>
-              <Home /> <ConsentPopup />{" "}
+              <Home /> 
+              <ConsentPopup />
+              <SignupPrompt />
             </>
           }
         />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/info" element={<Info />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
@@ -111,7 +129,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <Router>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </Router>
   );
 };

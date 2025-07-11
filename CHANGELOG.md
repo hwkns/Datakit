@@ -1,3 +1,9 @@
+# 0.3.0
+DataKit cloud is up. Get free credits on Anthropic claude models.
+
+# 0.2.0
+DataKit assitant tab with different models.
+
 # 0.1.6
 MotherDuck Cloud Support
 Connect to MotherDuck databases with token authentication. Query routing automatically detects "database"."table" syntax.

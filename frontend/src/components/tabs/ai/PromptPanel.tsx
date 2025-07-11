@@ -1,5 +1,5 @@
 import React, { useState, useEffect, RefObject } from "react";
-import { Send, Settings, ChevronRight } from "lucide-react";
+import { Send, ChevronRight, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAIStore } from "@/store/aiStore";
@@ -9,11 +9,15 @@ import { selectTableName } from "@/store/selectors/appSelectors";
 
 import ModelSelector from "./ModelSelector";
 import { Button } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
+import ErrorDisplay from "./ErrorDisplay";
+import { validateAIInput } from "./utils/validation";
 
 interface PromptPanelProps {
   inputRef: RefObject<HTMLTextAreaElement>;
   showSetupPrompt: boolean;
-  onOpenApiKeyModal: () => void;
+  onSignUpClick?: () => void;
+  onConfigureClick?: () => void;
   onToggleSchema?: () => void;
   schemaBrowserOpen?: boolean;
 }
@@ -21,15 +25,17 @@ interface PromptPanelProps {
 const PROMPT_SUGGESTIONS = [
   {
     title: "Explore Data",
-    prompt: "Give me an overview of this dataset - what columns do we have and what insights can you find?",
+    prompt:
+      "Give me an overview of this dataset - what columns do we have and what insights can you find?",
   },
   {
-    title: "Find Patterns", 
+    title: "Find Patterns",
     prompt: "What are the most interesting patterns or trends in this data?",
   },
   {
     title: "Data Quality",
-    prompt: "Check this dataset for missing values, duplicates, or data quality issues",
+    prompt:
+      "Check this dataset for missing values, duplicates, or data quality issues",
   },
   {
     title: "Quick Stats",
@@ -37,91 +43,206 @@ const PROMPT_SUGGESTIONS = [
   },
 ];
 
-const PromptPanel: React.FC<PromptPanelProps> = ({ 
-  inputRef, 
+const PromptPanel: React.FC<PromptPanelProps> = ({
+  inputRef,
   showSetupPrompt,
-  onOpenApiKeyModal,
+  onSignUpClick,
+  onConfigureClick,
   onToggleSchema,
-  schemaBrowserOpen = false
+  schemaBrowserOpen = false,
 }) => {
   const [prompt, setPrompt] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(true);
-  
+
   const tableName = useAppStore(selectTableName);
-  const { isProcessing } = useAIStore();
+  const {
+    isProcessing,
+    clearQueryHistory,
+    clearConversation,
+    currentConversation,
+    currentError,
+    setCurrentError,
+    activeProvider,
+    activeModel,
+  } = useAIStore();
   const { executeAIQueryStream, canExecute } = useAIOperations();
-  
+
   // Hide suggestions when user starts typing
   useEffect(() => {
     setShowSuggestions(prompt.length === 0);
   }, [prompt]);
-  
+
+  // Validate input and show warnings when user starts typing
+  useEffect(() => {
+    const validationError = validateAIInput(
+      prompt,
+      tableName,
+      activeProvider,
+      activeModel
+    );
+    setCurrentError(validationError);
+  }, [prompt, tableName, activeProvider, activeModel, setCurrentError]);
+
+  const validateBeforeSubmit = () => {
+    const validationError = validateAIInput(
+      prompt,
+      tableName,
+      activeProvider,
+      activeModel
+    );
+
+    if (validationError) {
+      setCurrentError(validationError);
+      return false;
+    }
+
+    // Check if provider is configured
+    if (!canExecute) {
+      if (activeProvider === "datakit") {
+        setCurrentError("authentication required");
+      } else {
+        setCurrentError(`AI provider ${activeProvider} not configured`);
+      }
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    
-    if (!prompt.trim() || !canExecute || isProcessing) return;
-    
-    await executeAIQueryStream(prompt);
-    setPrompt("");
+
+    if (!prompt.trim() || isProcessing) return;
+
+    if (!validateBeforeSubmit()) return;
+
+    try {
+      await executeAIQueryStream(prompt);
+      setPrompt("");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      setCurrentError(errorMessage);
+    }
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
-  
+
   const handleSuggestionClick = (suggestionPrompt: string) => {
     setPrompt(suggestionPrompt);
     inputRef.current?.focus();
   };
-  
+
+  const handleRefreshChat = () => {
+    clearQueryHistory();
+    clearConversation();
+    setPrompt("");
+    setShowSuggestions(true);
+    setCurrentError(null);
+    inputRef.current?.focus();
+  };
+
+  // Determine placeholder text based on conversation state
+  const getPlaceholderText = () => {
+    if (!tableName) {
+      return "Ask about your data...";
+    }
+
+    // Check if there's an ongoing conversation (has user messages)
+    const hasConversation = currentConversation.some(
+      (msg) => msg.role === "user"
+    );
+
+    if (hasConversation) {
+      return `Ask follow up question...`;
+    }
+
+    return `Ask about ${tableName}...`;
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
+      inputRef.current.style.height = `${Math.min(
+        inputRef.current.scrollHeight,
+        120
+      )}px`;
     }
   }, [prompt, inputRef]);
-  
-  if (showSetupPrompt) {
-    return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="mb-4 flex justify-center">
-            
-          </div>
-          <h3 className="text-xl font-medium text-white mb-3">
-            Analysis Assistant
-          </h3>
-          <p className="text-white/70 text-sm mb-4 leading-relaxed">
-            Connect to AI models like GPT-4o, Claude, or Groq to analyze your data with natural language. 
-            
-          </p>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6 text-left">
-            <p className="text-xs text-white/60 mb-2">What you can do:</p>
-            <ul className="text-xs text-white/70 space-y-1">
-              <li>• Ask questions in plain English</li>
-              <li>• Get generated SQL queries automatically</li>
-              <li>• Get data insights and summaries</li>
-              <li>• Identify patterns and trends</li>
-            </ul>
-            <p className="text-xs text-primary mt-3">
-              AI models only see your table structure, not your actual data
-            </p>
-          </div>
-          <Button onClick={onOpenApiKeyModal} variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Configure Models
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      @property --angle {
+        syntax: '<angle>';
+        initial-value: 0deg;
+        inherits: false;
+      }
+      
+      @keyframes rotate-border {
+        0% {
+          --angle: 0deg;
+        }
+        100% {
+          --angle: 360deg;
+        }
+      }
+      
+      .animate-pulse-border {
+        position: relative;
+        background: rgb(23, 23, 23);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      
+      .animate-pulse-border::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        padding: 2px;
+        background: conic-gradient(
+          from var(--angle),
+          transparent 0deg,
+          transparent 60deg,
+          rgba(139, 92, 246, 0.8) 90deg,
+          rgba(139, 92, 246, 1) 120deg,
+          rgba(139, 92, 246, 0.8) 150deg,
+          transparent 180deg,
+          transparent 360deg
+        );
+        -webkit-mask: 
+          linear-gradient(#fff 0 0) content-box, 
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rotate-border 4s linear infinite;
+      }
+      
+      .animate-pulse-border:hover::before {
+        background: conic-gradient(
+          from var(--angle),
+          rgba(139, 92, 246, 0.3) 0deg,
+          rgba(139, 92, 246, 1) 180deg,
+          rgba(139, 92, 246, 0.3) 360deg
+        );
+        animation-duration: 2s;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/10">
         <div className="flex items-center justify-between">
@@ -129,52 +250,136 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
             {onToggleSchema && (
               <button
                 onClick={onToggleSchema}
-                className="p-1 hover:bg-white/10 rounded transition-colors"
+                className="p-1 hover:bg-white/10 border rounded transition-colors"
                 title={schemaBrowserOpen ? "Hide Schema" : "Show Schema"}
               >
-                <ChevronRight 
+                <ChevronRight
                   className={`h-4 w-4 text-white/70 transition-transform ${
                     schemaBrowserOpen ? "rotate-180" : ""
-                  }`} 
+                  }`}
                 />
               </button>
             )}
-            <h3 className="text-sm font-medium text-white">Ask AI</h3>
+            <h3 className="text-sm font-medium text-white">Schemas</h3>
           </div>
-          <ModelSelector compact />
+          <div className="flex items-center gap-2">
+            <div
+              className={
+                showSetupPrompt ? "opacity-50 pointer-events-none" : ""
+              }
+            >
+              <ModelSelector compact />
+            </div>
+            <Tooltip content="Start a new chat" placement="bottom">
+              <button
+                onClick={handleRefreshChat}
+                disabled={showSetupPrompt || isProcessing}
+                className={`p-1.5 rounded transition-all ${
+                  showSetupPrompt || isProcessing
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-white/10 text-white/70 hover:text-white"
+                }`}
+                aria-label="Start new chat"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </Tooltip>
+          </div>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {/* Prompt Input */}
         <form onSubmit={handleSubmit} className="mb-4">
-          <div className="relative">
-            <textarea
-              ref={inputRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={tableName ? `Ask about ${tableName}...` : "Ask about your data..."}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-              rows={2}
-              disabled={isProcessing}
+          <div className="space-y-3">
+            <div className="relative">
+              <textarea
+                ref={inputRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={getPlaceholderText()}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                rows={2}
+                disabled={isProcessing || showSetupPrompt}
+              />
+
+              <button
+                type="submit"
+                disabled={
+                  !prompt.trim() ||
+                  !canExecute ||
+                  isProcessing ||
+                  showSetupPrompt
+                }
+                className={`absolute bottom-3 right-3 p-2 rounded-md transition-all ${
+                  prompt.trim() &&
+                  canExecute &&
+                  !isProcessing &&
+                  !showSetupPrompt
+                    ? "bg-primary text-white hover:bg-primary/80"
+                    : "bg-white/10 text-white/30 cursor-not-allowed"
+                }`}
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Error Display */}
+            <ErrorDisplay
+              error={currentError}
+              onDismiss={() => setCurrentError(null)}
+              onRetry={() => {
+                setCurrentError(null);
+                if (prompt.trim()) {
+                  handleSubmit();
+                }
+              }}
             />
-            
-            <button
-              type="submit"
-              disabled={!prompt.trim() || !canExecute || isProcessing}
-              className={`absolute bottom-3 right-3 p-2 rounded-md transition-all ${
-                prompt.trim() && canExecute && !isProcessing
-                  ? "bg-primary text-white hover:bg-primary/80"
-                  : "bg-white/10 text-white/30 cursor-not-allowed"
-              }`}
-            >
-              <Send className="h-4 w-4" />
-            </button>
+
+            {/* Setup Prompt - Integrated */}
+            {showSetupPrompt && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-3"
+              >
+                <p className="text-xs text-white/50 text-center">
+                  Configure your AI model to start asking questions
+                </p>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={onSignUpClick}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 animate-pulse-border"
+                  >
+                    Sign Up for Free Credits
+                  </Button>
+
+                  <Button
+                    onClick={onConfigureClick}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Configure Your Own Model
+                  </Button>
+                </div>
+
+                <p className="text-xs text-white/40 text-center">
+                  {/* Choose from OpenAI, Anthropic, Groq, or DataKit. */}
+                  {/* <br /> */}
+                  Models only see your table structure, not your actual data
+                </p>
+              </motion.div>
+            )}
           </div>
         </form>
-        
+
         {/* Suggestions */}
         <AnimatePresence>
           {showSuggestions && (
@@ -189,13 +394,26 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
               {PROMPT_SUGGESTIONS.map((suggestion, index) => (
                 <button
                   key={index}
-                  onClick={() => handleSuggestionClick(suggestion.prompt)}
-                  className="w-full text-left p-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all group"
+                  onClick={() =>
+                    !showSetupPrompt && handleSuggestionClick(suggestion.prompt)
+                  }
+                  disabled={showSetupPrompt}
+                  className={`w-full text-left p-3 border rounded-lg transition-all ${
+                    showSetupPrompt
+                      ? "bg-white/3 border-white/5 cursor-not-allowed opacity-50"
+                      : "bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 group"
+                  }`}
                 >
                   <div className="font-medium text-sm text-white/90 mb-1">
                     {suggestion.title}
                   </div>
-                  <div className="text-xs text-white/60 group-hover:text-white/70">
+                  <div
+                    className={`text-xs ${
+                      showSetupPrompt
+                        ? "text-white/40"
+                        : "text-white/60 group-hover:text-white/70"
+                    }`}
+                  >
                     {suggestion.prompt}
                   </div>
                 </button>
@@ -204,7 +422,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
           )}
         </AnimatePresence>
       </div>
-      
+
       {/* Status */}
       {isProcessing && (
         <div className="px-4 py-2 border-t border-white/10">

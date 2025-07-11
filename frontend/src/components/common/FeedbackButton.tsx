@@ -1,20 +1,17 @@
-import { FC } from "react";
-import { MessageSquare } from "lucide-react";
+import { FC } from 'react';
+import { MessageSquare } from 'lucide-react';
 
-import { Button } from "@/components/ui/Button";
-import Tooltip from "@components/ui/Tooltip";
+import { Button } from '@/components/ui/Button';
 
-import useFeedback from "@/hooks/feedback/useFeedback";
+import useFeedback from '@/hooks/feedback/useFeedback';
 
 interface FeedbackButtonProps {
   /** Context to include with feedback */
   context?: string;
-  /** Custom API endpoint for feedback submission */
-  apiEndpoint?: string;
   /** Custom size for the button (defaults to 'sm') */
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   /** Custom variant for the button (defaults to 'ghost') */
-  variant?: "ghost" | "primary" | "secondary" | "outline";
+  variant?: 'ghost' | 'primary' | 'secondary' | 'outline';
   /** Custom button text (defaults to 'Share Feedback') */
   text?: string;
   /** Additional CSS classes */
@@ -27,11 +24,10 @@ interface FeedbackButtonProps {
  */
 const FeedbackButton: FC<FeedbackButtonProps> = ({
   context,
-  apiEndpoint,
-  size = "sm",
-  variant = "primary",
-  text = "Share Feedback?",
-  className = "",
+  size = 'sm',
+  variant = 'primary',
+  text = 'Share Feedback?',
+  className = '',
 }) => {
   const {
     showFeedbackModal,
@@ -46,27 +42,21 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
     setFeedbackMessage,
     handleSubmitFeedback,
   } = useFeedback({
-    context,
-    apiEndpoint,
+    context
   });
 
   return (
     <>
       {/* Feedback Button */}
-      <Tooltip placement="bottom" content="Share feedback?">
       <Button
         variant={variant}
         size={size}
         onClick={openFeedbackModal}
-        className={`flex items-center hover:text-primary ${className}`}
+        className={`flex items-center ${className}`}
       >
-        <MessageSquare size={14} className="mr-1.5 text-primary" />
+        <MessageSquare size={14} className="mr-1.5 text-white" />
         <span className="text-xs">{text}</span>
       </Button>
-      </Tooltip>
-
-      {/* Tooltip */}
-   
 
       {/* Feedback Modal */}
       {showFeedbackModal && (
@@ -177,7 +167,7 @@ const FeedbackButton: FC<FeedbackButtonProps> = ({
                         <span>Sending...</span>
                       </div>
                     ) : (
-                      "Submit"
+                      'Submit'
                     )}
                   </Button>
                 </div>
