@@ -32,7 +32,7 @@ interface DataPreviewResult {
  * Custom hook for data preview with pagination
  * Follows the same pattern as useQueryExecution for consistency
  */
-export const useDataPreview = (): DataPreviewResult => {
+export const useDataPreview = (targetFileId?: string): DataPreviewResult => {
   const activeFile = useAppStore(selectActiveFile);
   const { executePaginatedQuery, getObjectType } = useDuckDBStore();
   
@@ -45,8 +45,8 @@ export const useDataPreview = (): DataPreviewResult => {
   // Local loading state for page changes
   const [isChangingPage, setIsChangingPage] = useState(false);
   
-  // Get or initialize file state
-  const fileId = activeFile?.id || '';
+  // Use provided fileId or fall back to active file
+  const fileId = targetFileId || activeFile?.id || '';
   const fileState = getFileState(fileId) || {
     currentPage: 1,
     rowsPerPage: 1000,
@@ -60,34 +60,39 @@ export const useDataPreview = (): DataPreviewResult => {
     lastFetchTime: 0,
   };
   
-  // Initialize file state when active file changes
+  // Get current file based on fileId parameter
+  const currentFile = targetFileId 
+    ? useAppStore.getState().files.find(f => f.id === targetFileId)
+    : activeFile;
+
+  // Initialize file state when file changes
   useEffect(() => {
-    if (activeFile?.id) {
-      initializeFileState(activeFile.id);
+    if (fileId) {
+      initializeFileState(fileId);
     }
-  }, [activeFile?.id, initializeFileState]);
+  }, [fileId, initializeFileState]);
   
   /**
-   * Load initial data for the active file
+   * Load initial data for the target file
    */
   const loadInitialData = useCallback(async () => {
-    if (!activeFile?.tableName || !activeFile?.id) return;
+    if (!currentFile?.tableName || !fileId) return;
     
-    const existingState = getFileState(activeFile.id);
+    const existingState = getFileState(fileId);
     
     // If we already have data cached and it's recent (< 5 minutes), use it
     if (existingState?.data && existingState.lastFetchTime > Date.now() - 5 * 60 * 1000) {
-      console.log('[useDataPreview] Using cached data for file:', activeFile.fileName);
+      console.log('[useDataPreview] Using cached data for file:', currentFile.fileName);
       return;
     }
     
     try {
-      updateFileState(activeFile.id, { 
+      updateFileState(fileId, { 
         isLoading: true, 
         error: null 
       });
       
-      const tableName = activeFile.tableName;
+      const tableName = currentFile.tableName;
       const query = `SELECT * FROM "${tableName}"`;
       
       console.log(`[useDataPreview] Loading initial data for ${tableName}`);
@@ -119,7 +124,7 @@ export const useDataPreview = (): DataPreviewResult => {
           ...dataWithRowNumbers
         ];
         
-        updateFileState(activeFile.id, {
+        updateFileState(fileId, {
           data: fullData,
           columns: headers,
           totalRows: 0, // We'll get this from background count
@@ -131,16 +136,16 @@ export const useDataPreview = (): DataPreviewResult => {
         
         // Start background count for exact totals (progressive loading)
         // Skip counting for views to avoid blocking
-        loadExactCount(activeFile.id, tableName);
+        loadExactCount(fileId, tableName);
       }
     } catch (err) {
       console.error('[useDataPreview] Error loading initial data:', err);
-      updateFileState(activeFile.id, {
+      updateFileState(fileId, {
         error: err instanceof Error ? err.message : 'Failed to load data',
         isLoading: false,
       });
     }
-  }, [activeFile, executePaginatedQuery, fileState.rowsPerPage, getFileState, updateFileState]);
+  }, [currentFile, fileId, executePaginatedQuery, fileState.rowsPerPage, getFileState, updateFileState]);
   
   /**
    * Load exact row count in background (progressive loading)

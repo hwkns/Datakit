@@ -15,10 +15,18 @@ import { useColumnSorting } from './hooks/useColumnSorting';
 import { useCellInteraction } from './hooks/useCellInteraction';
 import CellContextMenu from './CellContextMenu';
 
-const DataPreviewGrid: React.FC = () => {
+interface DataPreviewGridProps {
+  fileId?: string;
+  hideHeader?: boolean;
+}
+
+const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = false }) => {
   const activeFile = useAppStore(selectActiveFile);
   const { setActiveTab } = useAppStore();
   const { openPanel, analyzeFile } = useInspectorStore();
+
+  // Use provided fileId or fall back to active file
+  const targetFileId = fileId || activeFile?.id;
 
   const {
     results: gridData,
@@ -34,14 +42,14 @@ const DataPreviewGrid: React.FC = () => {
     loadInitialData,
     changePage,
     changeRowsPerPage,
-  } = useDataPreview();
+  } = useDataPreview(targetFileId);
 
-  // Load initial data when component mounts or active file changes
+  // Load initial data when component mounts or target file changes
   useEffect(() => {
-    if (activeFile?.id) {
+    if (targetFileId) {
       loadInitialData();
     }
-  }, [activeFile?.id, loadInitialData]);
+  }, [targetFileId, loadInitialData]);
 
   // Column sorting functionality
   const { sortedData, sortState, sortData, clearSort } = useColumnSorting(
@@ -252,7 +260,7 @@ const DataPreviewGrid: React.FC = () => {
   return (
     <>
       <div className="csv-grid-container relative h-full flex flex-col">
-        {renderHeader()}
+        {!hideHeader && renderHeader()}
 
         <div className="flex-1 overflow-hidden">
           <div
@@ -301,6 +309,7 @@ const DataPreviewGrid: React.FC = () => {
             onPageChange={changePage}
             onRowsPerPageChange={changeRowsPerPage}
             disabled={isLoading || isChangingPage}
+            compact={hideHeader}
           />
         )}
       </div>
