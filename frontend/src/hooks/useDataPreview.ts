@@ -34,7 +34,7 @@ interface DataPreviewResult {
  */
 export const useDataPreview = (): DataPreviewResult => {
   const activeFile = useAppStore(selectActiveFile);
-  const { executePaginatedQuery } = useDuckDBStore();
+  const { executePaginatedQuery, getObjectType } = useDuckDBStore();
   
   const { 
     getFileState, 
@@ -130,6 +130,7 @@ export const useDataPreview = (): DataPreviewResult => {
         });
         
         // Start background count for exact totals (progressive loading)
+        // Skip counting for views to avoid blocking
         loadExactCount(activeFile.id, tableName);
       }
     } catch (err) {
@@ -143,13 +144,27 @@ export const useDataPreview = (): DataPreviewResult => {
   
   /**
    * Load exact row count in background (progressive loading)
+   * Skip counting for views to avoid blocking DuckDB
    */
   const loadExactCount = useCallback(async (fileId: string, tableName: string) => {
     try {
+      // Check if this is a view - if so, skip counting
+      const objectType = await getObjectType(tableName);
+      
+      if (objectType === 'view') {
+        console.log(`[useDataPreview] Skipping count for view: ${tableName}`);
+        updateFileState(fileId, {
+          totalRows: -1, // -1 indicates unknown/unlimited
+          totalPages: -1, // -1 indicates unknown/unlimited
+          isCountLoading: false,
+        });
+        return;
+      }
+      
       updateFileState(fileId, { isCountLoading: true });
       
       const countQuery = `SELECT COUNT(*) as total_rows FROM "${tableName}"`;
-      console.log(`[useDataPreview] Getting exact count for ${tableName}`);
+      console.log(`[useDataPreview] Getting exact count for table: ${tableName}`);
       
       const result = await executePaginatedQuery(
         countQuery, 
@@ -174,7 +189,7 @@ export const useDataPreview = (): DataPreviewResult => {
       console.error('[useDataPreview] Error getting exact count:', err);
       updateFileState(fileId, { isCountLoading: false });
     }
-  }, [executePaginatedQuery, getFileState, updateFileState]);
+  }, [executePaginatedQuery, getFileState, updateFileState, getObjectType]);
   
   /**
    * Change to a different page of results
@@ -185,7 +200,14 @@ export const useDataPreview = (): DataPreviewResult => {
     const currentState = getFileState(activeFile.id);
     if (!currentState) return;
     
-    if (newPage < 1 || newPage > currentState.totalPages || newPage === currentState.currentPage) {
+    // For views (totalPages = -1), allow any page number >= 1
+    // For tables, respect the totalPages limit
+    if (newPage < 1 || newPage === currentState.currentPage) {
+      return;
+    }
+    
+    // For regular tables, check page bounds
+    if (currentState.totalPages > 0 && newPage > currentState.totalPages) {
       return;
     }
     

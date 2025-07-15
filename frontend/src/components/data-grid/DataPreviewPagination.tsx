@@ -37,9 +37,14 @@ const DataPreviewPagination: React.FC<DataPreviewPaginationProps> = ({
 
   // Calculate current range
   const startRow = (currentPage - 1) * rowsPerPage + 1;
+  
+  // Handle views (totalRows = -1) differently
+  const isView = totalRows === -1;
   const endRow = isCountLoading 
     ? Math.min(currentPage * rowsPerPage, startRow + rowsPerPage - 1)
-    : Math.min(currentPage * rowsPerPage, totalRows);
+    : isView 
+      ? startRow + rowsPerPage - 1  // For views, show estimated range
+      : Math.min(currentPage * rowsPerPage, totalRows);
 
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-darkNav border-t border-white/10">
@@ -82,6 +87,11 @@ const DataPreviewPagination: React.FC<DataPreviewPaginationProps> = ({
               </span>
             </div>
           </div>
+        ) : isView ? (
+          <span className="text-sm font-medium text-white/90">
+            {startRow.toLocaleString()} - {endRow.toLocaleString()}
+            <span className="text-white/60 ml-1">(large file)</span>
+          </span>
         ) : (
           <span className="text-sm font-medium text-white/90">
             {startRow.toLocaleString()} - {endRow.toLocaleString()} of{" "}
@@ -119,6 +129,10 @@ const DataPreviewPagination: React.FC<DataPreviewPaginationProps> = ({
               Page <span className="font-semibold">{currentPage}</span>
               <span className="text-white/60"> of ?</span>
             </span>
+          ) : isView ? (
+            <span className="text-sm font-medium text-white/90">
+              Page <span className="font-semibold">{currentPage}</span>
+            </span>
           ) : totalPages === 0 ? (
             <span className="text-sm font-medium text-white/90">
               Page <span className="font-semibold">{currentPage}</span>
@@ -136,7 +150,7 @@ const DataPreviewPagination: React.FC<DataPreviewPaginationProps> = ({
           size="sm"
           className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-white/10 disabled:opacity-40 transition-all duration-200"
           disabled={
-            disabled || currentPage === totalPages || totalPages === 0
+            disabled || (!isView && (currentPage === totalPages || totalPages === 0))
           }
           onClick={() => onPageChange(currentPage + 1)}
           title="Next Page"
@@ -148,10 +162,10 @@ const DataPreviewPagination: React.FC<DataPreviewPaginationProps> = ({
           size="sm"
           className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-white/10 disabled:opacity-40 transition-all duration-200"
           disabled={
-            disabled || currentPage === totalPages || totalPages === 0
+            disabled || isView || currentPage === totalPages || totalPages === 0
           }
           onClick={() => onPageChange(totalPages)}
-          title="Last Page"
+          title={isView ? "Not available for views" : "Last Page"}
         >
           <ChevronsRight size={16} />
         </Button>
