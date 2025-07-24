@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Container, Terminal, Code, Hexagon, Upload, PlayCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import S3 from "@/assets/s3.png";
 import HuggingFace from "@/assets/huggingface.png";
@@ -79,71 +79,6 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
     },
   ];
 
-  // Add animated border styles
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      @property --angle {
-        syntax: '<angle>';
-        initial-value: 0deg;
-        inherits: false;
-      }
-      
-      @keyframes rotate-border {
-        0% {
-          --angle: 0deg;
-        }
-        100% {
-          --angle: 360deg;
-        }
-      }
-      
-      .animate-pulse-border {
-        position: relative;
-        background: rgb(23, 23, 23);
-        border: 2px solid transparent;
-        background-clip: padding-box;
-      }
-      
-      .animate-pulse-border::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        border-radius: inherit;
-        padding: 2px;
-        background: conic-gradient(
-          from var(--angle),
-          transparent 0deg,
-          transparent 60deg,
-          rgba(139, 92, 246, 0.8) 90deg,
-          rgba(139, 92, 246, 1) 120deg,
-          rgba(139, 92, 246, 0.8) 150deg,
-          transparent 180deg,
-          transparent 360deg
-        );
-        -webkit-mask: 
-          linear-gradient(#fff 0 0) content-box, 
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        animation: rotate-border 4s linear infinite;
-      }
-      
-      .animate-pulse-border:hover::before {
-        background: conic-gradient(
-          from var(--angle),
-          rgba(139, 92, 246, 0.3) 0deg,
-          rgba(139, 92, 246, 1) 180deg,
-          rgba(139, 92, 246, 0.3) 360deg
-        );
-        animation-duration: 2s;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
 
   return (
     <div className="h-full flex items-center justify-center p-8">
@@ -165,7 +100,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
             animate={{ 
               opacity: 1, 
               scale: 1,
-              boxShadow: "0 0 15px rgba(139, 92, 246, 0.2)"
+              boxShadow: "0 0 20px rgba(139, 92, 246, 0.35)"
             }}
             transition={{ delay: 0.2, duration: 0.3 }}
             whileHover={{ 
@@ -173,7 +108,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               boxShadow: "0 0 25px rgba(139, 92, 246, 0.4)"
             }}
             whileTap={{ scale: 0.98 }}
-            className="animate-pulse-border flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white hover:text-white transition-all duration-300 group"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white hover:text-white transition-all duration-300 group border border-white/20 hover:border-white/40"
           >
             <motion.div
               whileHover={{ scale: 1.1 }}
@@ -345,7 +280,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         isOpen={showDemoModal}
         onClose={() => setShowDemoModal(false)}
         videoUrl="https://www.youtube.com/embed/qqIVesU5McE?si=ZyVZQZ54loEyOWll"
-        title="Take a look at what you could do"
+        title="Take a look at your DataKit"
       />
     </div>
   );
