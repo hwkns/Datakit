@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Container, Terminal, Code, Hexagon, Upload } from "lucide-react";
+import { Container, Terminal, Code, Hexagon, Upload, PlayCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 import S3 from "@/assets/s3.png";
 import HuggingFace from "@/assets/huggingface.png";
@@ -7,6 +8,7 @@ import GoogleSheetsIcon from "@/components/icons/GoogleSheetsIcon";
 import { Link } from "lucide-react";
 import { ImportProvider } from "@/types/remoteImport";
 import { useFileUpload } from "@/components/data-grid/hooks";
+import DemoVideoModal from "@/components/data-grid/DemoVideoModal";
 
 interface RemoteImportOption {
   id: ImportProvider;
@@ -21,6 +23,7 @@ interface Props {
 
 const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
   const { fileInputRef, handleButtonClick, handleFileSelect, isProcessing } = useFileUpload();
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   const remoteOptions: RemoteImportOption[] = [
     {
@@ -76,6 +79,72 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
     },
   ];
 
+  // Add animated border styles
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      @property --angle {
+        syntax: '<angle>';
+        initial-value: 0deg;
+        inherits: false;
+      }
+      
+      @keyframes rotate-border {
+        0% {
+          --angle: 0deg;
+        }
+        100% {
+          --angle: 360deg;
+        }
+      }
+      
+      .animate-pulse-border {
+        position: relative;
+        background: rgb(23, 23, 23);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      
+      .animate-pulse-border::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        padding: 2px;
+        background: conic-gradient(
+          from var(--angle),
+          transparent 0deg,
+          transparent 60deg,
+          rgba(139, 92, 246, 0.8) 90deg,
+          rgba(139, 92, 246, 1) 120deg,
+          rgba(139, 92, 246, 0.8) 150deg,
+          transparent 180deg,
+          transparent 360deg
+        );
+        -webkit-mask: 
+          linear-gradient(#fff 0 0) content-box, 
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rotate-border 4s linear infinite;
+      }
+      
+      .animate-pulse-border:hover::before {
+        background: conic-gradient(
+          from var(--angle),
+          rgba(139, 92, 246, 0.3) 0deg,
+          rgba(139, 92, 246, 1) 180deg,
+          rgba(139, 92, 246, 0.3) 360deg
+        );
+        animation-duration: 2s;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <div className="h-full flex items-center justify-center p-8">
       <motion.div
@@ -84,10 +153,37 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         transition={{ duration: 0.6 }}
         className="text-center max-w-2xl"
       >
-        {/* Main heading */}
-        <h1 className="text-2xl font-heading font-semibold text-white mb-3">
-          Get started with DataKit
-        </h1>
+        {/* Main heading with demo button */}
+        <div className="flex items-center justify-center gap-3 mb-3 flex-wrap">
+          <h1 className="text-2xl font-heading font-semibold text-white">
+            Get started with DataKit
+          </h1>
+          <span className="text-white/40 text-sm">or</span>
+          <motion.button
+            onClick={() => setShowDemoModal(true)}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              boxShadow: "0 0 15px rgba(139, 92, 246, 0.2)"
+            }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 0 25px rgba(139, 92, 246, 0.4)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            className="animate-pulse-border flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white hover:text-white transition-all duration-300 group"
+          >
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <PlayCircle className="h-4 w-4" />
+            </motion.div>
+            <span>watch a demo</span>
+          </motion.button>
+        </div>
 
         {/* Description */}
         <p className="text-white/70 mb-6 leading-relaxed">
@@ -113,7 +209,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               Your data stays private
             </motion.span>
           </motion.span>{" "}
-          — everything runs locally in your browser.
+          — everything runs locally.
         </p>
 
         {/* Import options */}
@@ -243,6 +339,14 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
           </div>
         </motion.div>
       </motion.div>
+      
+      {/* Demo Video Modal */}
+      <DemoVideoModal
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
+        videoUrl="https://www.youtube.com/embed/qqIVesU5McE?si=ZyVZQZ54loEyOWll"
+        title="Take a look at what you could do"
+      />
     </div>
   );
 };
