@@ -52,16 +52,15 @@ const DemoVideoModal: React.FC<DemoVideoModalProps> = ({
             </div>
 
             {/* Video Container */}
-            <div className="relative w-full aspect-video bg-black/50">
-              <iframe
+            <div className="relative w-full aspect-video bg-black/50 rounded-b-lg overflow-hidden">
+              <video
                 src={videoUrl}
-                title={title}
-                className="absolute inset-0 w-full h-full rounded-b-lg"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
+                controls
+                autoPlay
+                className="absolute inset-0 w-full h-full object-contain"
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </motion.div>
         </div>

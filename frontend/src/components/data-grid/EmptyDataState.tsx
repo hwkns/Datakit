@@ -279,7 +279,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
       <DemoVideoModal
         isOpen={showDemoModal}
         onClose={() => setShowDemoModal(false)}
-        videoUrl="https://www.youtube.com/embed/qqIVesU5McE?si=ZyVZQZ54loEyOWll"
+        videoUrl="/video/datakit-demo.mp4"
         title="Take a look at your DataKit"
       />
     </div>
