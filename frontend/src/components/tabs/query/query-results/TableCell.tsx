@@ -4,10 +4,11 @@ import { createPortal } from "react-dom";
 
 interface TableCellProps {
   value: any;
+  formattedValue?: string;
   width: number;
 }
 
-const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
+const TableCell: React.FC<TableCellProps> = ({ value, formattedValue, width }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -123,6 +124,10 @@ const TableCell: React.FC<TableCellProps> = ({ value, width }) => {
 
   // Format value for display
   const formatValue = (value: any) => {
+    if (formattedValue !== undefined) {
+      return <span>{formattedValue}</span>;
+    }
+
     // First ensure the value is safe for JSON
     const safeValue = ensureSafeJSON(value);
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FixedSizeList as List } from "react-window";
 import TableCell from "./TableCell";
+import { useQueryColumnFormatting } from "./useQueryColumnFormatting";
 
-import AutoSizer from "react-virtualized-auto-sizer";
 
 interface QueryResultsTableProps {
   results: any[];
@@ -15,6 +15,11 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
 }) => {
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
   const [totalTableWidth, setTotalTableWidth] = useState<number>(0);
+
+  const { columnTypes, formatCellValue } = useQueryColumnFormatting({
+    results,
+    columns,
+  });
 
   // Calculate column widths based on content
   useEffect(() => {
@@ -86,13 +91,19 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
             } hover:bg-white/5`}
             role="row"
           >
-            {columns.map((column, colIndex) => (
-              <TableCell
-                key={colIndex}
-                value={row[column]}
-                width={columnWidths[colIndex] || 150}
-              />
-            ))}
+            {columns.map((column, colIndex) => {
+              const rawValue = row[column];
+              const formattedValue = formatCellValue(String(rawValue || ''), index + 1, colIndex + 1);
+              
+              return (
+                <TableCell
+                  key={colIndex}
+                  value={rawValue}
+                  formattedValue={formattedValue}
+                  width={columnWidths[colIndex] || 150}
+                />
+              );
+            })}
           </div>
         );
       }
