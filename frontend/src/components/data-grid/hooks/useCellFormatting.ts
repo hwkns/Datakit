@@ -30,7 +30,7 @@ export const useCellFormatting = (
         case ColumnType.Number:
           const num = parseFloat(value);
           if (!isNaN(num)) {
-            return num.toLocaleString();
+            return num.toString();
           }
           break;
         case ColumnType.Boolean:
@@ -49,6 +49,13 @@ export const useCellFormatting = (
               const date = new Date(value);
               if (!isNaN(date.getTime())) {
                 return date.toLocaleDateString();
+              }
+            } else {
+              // Check if it's a timestamp
+              const numValue = Number(value);
+              if (!isNaN(numValue) && numValue > 946684800000 && numValue < 4102444800000) {
+                const date = new Date(numValue);
+                return date.toISOString().split('T')[0];
               }
             }
           } catch (e) {

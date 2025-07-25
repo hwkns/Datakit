@@ -84,13 +84,13 @@ const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = 
     });
 
   // Enhanced format cell value with skeleton loading
-  const formatCellValue = (row: number, col: number): React.ReactNode => {
-    const originalValue = originalFormatCellValue(row, col);
+  const formatCellValue = (value: string, rowIndex: number, colIndex: number): React.ReactNode => {
+    const originalValue = originalFormatCellValue(value, rowIndex, colIndex);
 
     // Show skeleton during any loading state (initial load or page changes)
-    if ((isLoading || isChangingPage) && row > 0 && col > 0) {
+    if ((isLoading || isChangingPage) && rowIndex > 0 && colIndex > 0) {
       // Create consistent but varied skeleton widths based on row/col position
-      const seedValue = (row * 31 + col * 17) % 100;
+      const seedValue = (rowIndex * 31 + colIndex * 17) % 100;
       let widthClass = 'w-3/4';
 
       if (seedValue < 25) widthClass = 'w-1/2';

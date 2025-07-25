@@ -31,7 +31,7 @@ const GridCell = memo<CellProps>(({ rowIndex, columnIndex, style, data }) => {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onCellContextMenu) {
-      onCellContextMenu(e, rowIndex, columnIndex, cellValue);
+      onCellContextMenu(e, rowIndex, columnIndex, formattedValue);
     }
   };
 
