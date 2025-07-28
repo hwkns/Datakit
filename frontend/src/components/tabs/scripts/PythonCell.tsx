@@ -260,7 +260,7 @@ const PythonCell: React.FC<PythonCellProps> = ({
       onClick={onActivate}
     >
       {/* Cell Header */}
-      <div className="flex items-center justify-between p-3 bg-darkNav/50 border-b border-white/10 relative">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-darkNav/50 border-b border-white/10 relative">
         <div className="flex items-center gap-3">
           {/* Cell Number */}
           <div className="flex items-center gap-2">

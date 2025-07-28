@@ -17,6 +17,7 @@ import { usePythonStore } from '@/store/pythonStore';
 import { useDuckDBStore } from '@/store/duckDBStore';
 import { useResizablePanels } from '@/hooks/useResizablePanels';
 import { useWorkspaceShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { usePanelNavigation } from '@/hooks/notebooks/usePanelNavigation';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SaveDialog } from '@/components/ui/SaveDialog';
@@ -122,6 +123,24 @@ const ScriptsWorkspace: React.FC = () => {
       saveScript(currentScript.name);
     }
   };
+
+  // Use panel navigation hook for exclusive panel behavior
+  const { handlePanelToggle } = usePanelNavigation({
+    panelStates: {
+      notebooks: showScriptHistory,
+      schema: showSchemaBrowser,
+      templates: showTemplates,
+      packages: showPackageManager,
+      variables: showVariableInspector,
+    },
+    panelToggles: {
+      notebooks: toggleScriptHistory,
+      schema: () => setShowSchemaBrowser(!showSchemaBrowser),
+      templates: toggleTemplates,
+      packages: togglePackageManager,
+      variables: toggleVariableInspector,
+    },
+  });
 
   // Close download menu when clicking outside
   useEffect(() => {
@@ -329,34 +348,34 @@ const ScriptsWorkspace: React.FC = () => {
           <div className="flex items-center space-x-2">
             {/* Left panel toggles */}
 
-            <Tooltip content="Notebooks" placement="bottom">
+            <Tooltip content="Notebooks" placement="right">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
-                onClick={toggleScriptHistory}
+                className={`h-8 w-8 ${showScriptHistory ? 'bg-primary/20 text-primary' : ''}`}
+                onClick={() => handlePanelToggle('notebooks')}
               >
                 <Notebook size={16} />
               </Button>
             </Tooltip>
 
-            <Tooltip content="Toggle Schema Browser" placement="right">
+            <Tooltip content="Schema Browser" placement="bottom">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowSchemaBrowser(!showSchemaBrowser)}
+                className={`h-8 w-8 ${showSchemaBrowser ? 'bg-primary/20 text-primary' : ''}`}
+                onClick={() => handlePanelToggle('schema')}
               >
                 <Database size={16} />
               </Button>
             </Tooltip>
 
-            <Tooltip content="Script Templates" placement="bottom">
+            <Tooltip content="Notebooks Templates" placement="bottom">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
-                onClick={toggleTemplates}
+                className={`h-8 w-8 ${showTemplates ? 'bg-primary/20 text-primary' : ''}`}
+                onClick={() => handlePanelToggle('templates')}
               >
                 <FileText size={16} />
               </Button>
@@ -366,8 +385,8 @@ const ScriptsWorkspace: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
-                onClick={togglePackageManager}
+                className={`h-8 w-8 ${showPackageManager ? 'bg-primary/20 text-primary' : ''}`}
+                onClick={() => handlePanelToggle('packages')}
               >
                 <Package size={16} />
               </Button>

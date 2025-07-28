@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   History,
   Play,
@@ -13,11 +13,11 @@ import {
   Edit3,
   Notebook,
   FilePlus,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { usePythonStore } from "@/store/pythonStore";
-import { Button } from "@/components/ui/Button";
-import type { PythonScript } from "@/lib/python/types";
+import { usePythonStore } from '@/store/pythonStore';
+import { Button } from '@/components/ui/Button';
+import type { PythonScript } from '@/lib/python/types';
 
 /**
  * Script history component for managing saved Python scripts
@@ -34,16 +34,18 @@ const ScriptHistory: React.FC = () => {
     createNewScript,
   } = usePythonStore();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedScript, setSelectedScript] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string | null>(null);
-  const [newName, setNewName] = useState("");
+  const [newName, setNewName] = useState('');
 
   // Filter scripts based on search query
-  const filteredScripts = savedScripts.filter(script =>
-    script.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (script.description && script.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredScripts = savedScripts.filter(
+    (script) =>
+      script.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (script.description &&
+        script.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleLoadScript = (script: PythonScript) => {
@@ -52,7 +54,7 @@ const ScriptHistory: React.FC = () => {
   };
 
   const handleDeleteScript = (scriptId: string) => {
-    if (confirm("Are you sure you want to delete this script?")) {
+    if (confirm('Are you sure you want to delete this script?')) {
       deleteScript(scriptId);
     }
     setShowMenu(null);
@@ -85,7 +87,7 @@ const ScriptHistory: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    importScript(file).catch(error => {
+    importScript(file).catch((error) => {
       console.error('Import failed:', error);
       alert('Failed to import script: ' + error.message);
     });
@@ -131,12 +133,12 @@ const ScriptHistory: React.FC = () => {
     // Note: This would require adding a rename function to the store
     // For now, we'll just cancel the edit
     setEditingName(null);
-    setNewName("");
+    setNewName('');
   };
 
   const cancelRename = () => {
     setEditingName(null);
-    setNewName("");
+    setNewName('');
   };
 
   return (
@@ -146,6 +148,18 @@ const ScriptHistory: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <Notebook className="w-5 h-5 text-primary" />
           <h3 className="font-medium text-white">Notebooks</h3>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+          <input
+            type="text"
+            placeholder="Search Notebooks..."
+            className="w-full pl-10 pr-4 py-2 bg-background border border-white/10 rounded text-sm text-white placeholder:text-white/50 focus:outline-none focus:border-primary/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
         {/* New Notebook Button */}
@@ -160,24 +174,12 @@ const ScriptHistory: React.FC = () => {
           New Notebook
         </Button>
 
-        {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
-          <input
-            type="text"
-            placeholder="Search Notebooks..."
-            className="w-full pl-10 pr-4 py-2 bg-background border border-white/10 rounded text-sm text-white placeholder:text-white/50 focus:outline-none focus:border-primary/50"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
         {/* Import button */}
         <div className="flex justify-between items-center">
           <span className="text-xs text-white/60">
             {savedScripts.length} saved scripts
           </span>
-          
+
           <div className="relative">
             <input
               type="file"
@@ -205,7 +207,7 @@ const ScriptHistory: React.FC = () => {
           <div className="p-4 text-center">
             <History className="w-8 h-8 text-white/30 mx-auto mb-2" />
             <p className="text-sm text-white/60">
-              {searchQuery ? "No scripts found" : "No saved scripts"}
+              {searchQuery ? 'No scripts found' : 'No saved scripts'}
             </p>
             {!searchQuery && (
               <p className="text-xs text-white/40 mt-1">
@@ -220,10 +222,14 @@ const ScriptHistory: React.FC = () => {
                 key={script.id}
                 className={`relative group rounded-lg p-3 transition-colors ${
                   currentScript?.id === script.id
-                    ? "bg-primary/20 border border-primary/30"
-                    : "bg-white/5 hover:bg-white/10"
+                    ? 'bg-primary/20 border border-primary/30'
+                    : 'bg-white/5 hover:bg-white/10'
                 }`}
-                onClick={() => setSelectedScript(selectedScript === script.id ? null : script.id)}
+                onClick={() =>
+                  setSelectedScript(
+                    selectedScript === script.id ? null : script.id
+                  )
+                }
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -235,8 +241,8 @@ const ScriptHistory: React.FC = () => {
                           onChange={(e) => setNewName(e.target.value)}
                           className="flex-1 px-2 py-1 bg-background border border-white/20 rounded text-sm text-white focus:outline-none focus:border-primary/50"
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") saveRename(script.id);
-                            if (e.key === "Escape") cancelRename();
+                            if (e.key === 'Enter') saveRename(script.id);
+                            if (e.key === 'Escape') cancelRename();
                           }}
                           onBlur={() => cancelRename()}
                           autoFocus
@@ -266,13 +272,13 @@ const ScriptHistory: React.FC = () => {
                         <Calendar className="w-3 h-3" />
                         <span>{formatRelativeTime(script.updatedAt)}</span>
                       </div>
-                      
+
                       <div className="flex items-center gap-1">
                         <FileText className="w-3 h-3" />
                         <span>{script.cells.length} cells</span>
                       </div>
-                      
-                      {script.cells.some(cell => cell.executionCount) && (
+
+                      {script.cells.some((cell) => cell.executionCount) && (
                         <div className="flex items-center gap-1">
                           <Play className="w-3 h-3" />
                           <span>Executed</span>
@@ -307,7 +313,7 @@ const ScriptHistory: React.FC = () => {
                           <Play className="w-4 h-4" />
                           Load Script
                         </button>
-                        
+
                         <button
                           className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
                           onClick={(e) => {
@@ -318,7 +324,7 @@ const ScriptHistory: React.FC = () => {
                           <Edit3 className="w-4 h-4" />
                           Rename
                         </button>
-                        
+
                         <button
                           className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
                           onClick={(e) => {
@@ -329,7 +335,7 @@ const ScriptHistory: React.FC = () => {
                           <Copy className="w-4 h-4" />
                           Duplicate
                         </button>
-                        
+
                         <button
                           className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
                           onClick={(e) => {
@@ -340,9 +346,9 @@ const ScriptHistory: React.FC = () => {
                           <Download className="w-4 h-4" />
                           Export
                         </button>
-                        
+
                         <div className="border-t border-white/10" />
-                        
+
                         <button
                           className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                           onClick={(e) => {
@@ -365,10 +371,7 @@ const ScriptHistory: React.FC = () => {
 
       {/* Click outside to close menu */}
       {showMenu && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setShowMenu(null)}
-        />
+        <div className="fixed inset-0 z-10" onClick={() => setShowMenu(null)} />
       )}
     </div>
   );
