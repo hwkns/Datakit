@@ -1,32 +1,29 @@
-import React, {
-  useRef,
-  useEffect,
-  useMemo,
-  useState,
-  useCallback,
-} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   Play,
-  ChevronLeft,
-  ChevronRight,
-  Maximize,
   Minimize,
   Save,
   Database,
   FileText,
   AlertTriangle,
   Package,
-  History,
-  Code2,
   Plus,
   Command,
+  Download,
+  Notebook,
 } from 'lucide-react';
 
 import { usePythonStore } from '@/store/pythonStore';
 import { useDuckDBStore } from '@/store/duckDBStore';
-import { useResizable } from '@/hooks/useResizable';
+import { useResizablePanels } from '@/hooks/useResizablePanels';
+import { useWorkspaceShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { SaveDialog } from '@/components/ui/SaveDialog';
+import {
+  exportAsJupyterNotebook,
+  exportNotebookAsPDF,
+} from '@/utils/notebookExport';
 
 import PythonCell from './PythonCell';
 import CellDivider from './CellDivider';
@@ -40,7 +37,6 @@ import SchemaBrowser from '../query/SchemaBrowser';
 const DEFAULT_PANEL_WIDTH = 260;
 const MIN_PANEL_WIDTH = 50;
 const MAX_PANEL_WIDTH = 400;
-const DEFAULT_EDITOR_HEIGHT = 300;
 
 /**
  * Main container for the Python scripts workspace with resizable panels
@@ -63,9 +59,9 @@ const ScriptsWorkspace: React.FC = () => {
     setActiveCellId,
     toggleScriptHistory,
     togglePackageManager,
-    toggleVariableInspector,
     toggleTemplates,
     saveScript,
+    toggleVariableInspector,
   } = usePythonStore();
 
   const { isInitialized: isDuckDBInitialized } = useDuckDBStore();
@@ -76,29 +72,36 @@ const ScriptsWorkspace: React.FC = () => {
     'none' | 'editor' | 'results'
   >('none');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [scriptName, setScriptName] = useState('');
-  const [editorHeight, setEditorHeight] = useState(DEFAULT_EDITOR_HEIGHT);
-
-  // Panel width states
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    const saved = localStorage.getItem('datakit-scripts-left-panel-width');
-    return saved ? parseInt(saved, 10) : DEFAULT_PANEL_WIDTH;
-  });
-
-  const [rightPanelWidth, setRightPanelWidth] = useState(() => {
-    const saved = localStorage.getItem('datakit-scripts-right-panel-width');
-    return saved ? parseInt(saved, 10) : DEFAULT_PANEL_WIDTH;
-  });
-
-  // Resizing states
-  const [isResizingLeft, setIsResizingLeft] = useState(false);
-  const [isResizingRight, setIsResizingRight] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
 
   // Element refs
-  const containerRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  // Use resizable panels hook
+  const {
+    containerRef,
+    leftPanelWidth,
+    rightPanelWidth,
+    isResizingLeft,
+    isResizingRight,
+    startLeftPanelResize,
+    startRightPanelResize,
+  } = useResizablePanels({
+    leftPanel: {
+      storageKey: 'datakit-scripts-left-panel-width',
+      defaultWidth: DEFAULT_PANEL_WIDTH,
+      minWidth: MIN_PANEL_WIDTH,
+      maxWidth: MAX_PANEL_WIDTH,
+    },
+    rightPanel: {
+      storageKey: 'datakit-scripts-right-panel-width',
+      defaultWidth: DEFAULT_PANEL_WIDTH,
+      minWidth: MIN_PANEL_WIDTH,
+      maxWidth: MAX_PANEL_WIDTH,
+    },
+  });
 
   // Initialize Python on mount (only once)
   useEffect(() => {
@@ -109,151 +112,62 @@ const ScriptsWorkspace: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Setup resizable editor
-  const { startResize: startEditorResize } = useResizable(editorRef, {
-    direction: 'vertical',
-    initialSize: editorHeight,
-    minSize: 200,
-    maxSize: 600,
-    storageKey: 'datakit-scripts-editor-height',
-    onResize: setEditorHeight,
-  });
-
-  // Handle left panel resize
-  const handleLeftPanelResize = useCallback((e: MouseEvent) => {
-    requestAnimationFrame(() => {
-      if (!containerRef.current) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newWidth = Math.min(
-        Math.max(e.clientX - containerRect.left, MIN_PANEL_WIDTH),
-        MAX_PANEL_WIDTH
-      );
-
-      setLeftPanelWidth(newWidth);
-    });
-  }, []);
-
-  const startLeftPanelResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingLeft(true);
-  }, []);
-
-  const stopLeftPanelResize = useCallback(() => {
-    if (isResizingLeft) {
-      setIsResizingLeft(false);
-      localStorage.setItem(
-        'datakit-scripts-left-panel-width',
-        leftPanelWidth.toString()
-      );
+  // Handle save script
+  const handleSaveScript = () => {
+    if (!currentScript) {
+      // No existing script, show dialog to get name
+      setSaveDialogOpen(true);
+    } else {
+      // Existing script, save directly
+      saveScript(currentScript.name);
     }
-  }, [isResizingLeft, leftPanelWidth]);
+  };
 
-  // Handle right panel resize
-  const handleRightPanelResize = useCallback((e: MouseEvent) => {
-    requestAnimationFrame(() => {
-      if (!containerRef.current) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newWidth = Math.min(
-        Math.max(containerRect.right - e.clientX, MIN_PANEL_WIDTH),
-        MAX_PANEL_WIDTH
-      );
-
-      setRightPanelWidth(newWidth);
-    });
-  }, []);
-
-  const startRightPanelResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingRight(true);
-  }, []);
-
-  const stopRightPanelResize = useCallback(() => {
-    if (isResizingRight) {
-      setIsResizingRight(false);
-      localStorage.setItem(
-        'datakit-scripts-right-panel-width',
-        rightPanelWidth.toString()
-      );
-    }
-  }, [isResizingRight, rightPanelWidth]);
-
-  // Mouse event handlers for resizing
+  // Close download menu when clicking outside
   useEffect(() => {
-    if (isResizingLeft) {
-      document.addEventListener('mousemove', handleLeftPanelResize);
-      document.addEventListener('mouseup', stopLeftPanelResize);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-
-      return () => {
-        document.removeEventListener('mousemove', handleLeftPanelResize);
-        document.removeEventListener('mouseup', stopLeftPanelResize);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-    }
-  }, [isResizingLeft, handleLeftPanelResize, stopLeftPanelResize]);
-
-  useEffect(() => {
-    if (isResizingRight) {
-      document.addEventListener('mousemove', handleRightPanelResize);
-      document.addEventListener('mouseup', stopRightPanelResize);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-
-      return () => {
-        document.removeEventListener('mousemove', handleRightPanelResize);
-        document.removeEventListener('mouseup', stopRightPanelResize);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-    }
-  }, [isResizingRight, handleRightPanelResize, stopRightPanelResize]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter to execute current cell
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeCellId) {
-        e.preventDefault();
-        executeCell(activeCellId);
-      }
-
-      // Ctrl/Cmd + Shift + Enter to execute all cells
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
-        e.preventDefault();
-        executeAllCells();
-      }
-
-      // Ctrl/Cmd + S to save script
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSaveScript();
-      }
-
-      // Escape to exit full screen
-      if (e.key === 'Escape' && fullScreenMode !== 'none') {
-        e.preventDefault();
-        setFullScreenMode('none');
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        downloadMenuRef.current &&
+        !downloadMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowDownloadMenu(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeCellId, executeCell, executeAllCells, fullScreenMode]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  // Handle save script
-  const handleSaveScript = () => {
-    if (!currentScript && !scriptName.trim()) {
-      setSaveDialogOpen(true);
-    } else {
-      const name =
-        scriptName.trim() || currentScript?.name || `Script ${Date.now()}`;
-      saveScript(name);
-      setSaveDialogOpen(false);
-      setScriptName('');
+  // Use workspace shortcuts hook
+  useWorkspaceShortcuts({
+    onExecuteCell: () => activeCellId && executeCell(activeCellId),
+    onExecuteAll: executeAllCells,
+    onSave: handleSaveScript,
+    onEscape: () => fullScreenMode !== 'none' && setFullScreenMode('none'),
+    canExecuteCell: !!activeCellId,
+    canSave: true,
+  });
+
+  // Download functions
+  const handleDownloadJupyter = async () => {
+    try {
+      const notebookName = currentScript?.name || 'DataKit_Notebook';
+      await exportAsJupyterNotebook(cells, notebookName);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Export failed');
+    } finally {
+      setShowDownloadMenu(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const notebookName = currentScript?.name || 'DataKit_Notebook';
+      await exportNotebookAsPDF(cells, notebookName);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Export failed');
+    } finally {
+      setShowDownloadMenu(false);
     }
   };
 
@@ -414,6 +328,18 @@ const ScriptsWorkspace: React.FC = () => {
         <div className="flex items-center justify-between p-2 bg-darkNav border-b border-white/10">
           <div className="flex items-center space-x-2">
             {/* Left panel toggles */}
+
+            <Tooltip content="Notebooks" placement="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleScriptHistory}
+              >
+                <Notebook size={16} />
+              </Button>
+            </Tooltip>
+
             <Tooltip content="Toggle Schema Browser" placement="right">
               <Button
                 variant="ghost"
@@ -433,17 +359,6 @@ const ScriptsWorkspace: React.FC = () => {
                 onClick={toggleTemplates}
               >
                 <FileText size={16} />
-              </Button>
-            </Tooltip>
-
-            <Tooltip content="Script History" placement="bottom">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={toggleScriptHistory}
-              >
-                <History size={16} />
               </Button>
             </Tooltip>
 
@@ -489,7 +404,7 @@ const ScriptsWorkspace: React.FC = () => {
               </Button>
             </Tooltip>
 
-            <Tooltip content="Save Script" placement="bottom">
+            <Tooltip content="Save Notebook" placement="bottom">
               <Button
                 variant="ghost"
                 size="sm"
@@ -524,16 +439,40 @@ const ScriptsWorkspace: React.FC = () => {
               </Button>
             </Tooltip>
 
-            {/* <Tooltip content="Full Screen Editor" placement="left">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setFullScreenMode('editor')}
-              >
-                <Maximize size={16} />
-              </Button>
-            </Tooltip> */}
+            {/* Download Button */}
+            <div className="relative" ref={downloadMenuRef}>
+              <Tooltip content="Download Notebook" placement="left">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDownloadMenu(!showDownloadMenu);
+                  }}
+                >
+                  <Download size={16} />
+                </Button>
+              </Tooltip>
+
+              {/* Download Dropdown Menu */}
+              {showDownloadMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-black border border-white/10 rounded shadow-xl z-50 min-w-48">
+                  <button
+                    className="w-full px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 rounded-t"
+                    onClick={handleDownloadPDF}
+                  >
+                    Download as PDF
+                  </button>
+                  <button
+                    className="w-full px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 flex items-center gap-2 rounded-b"
+                    onClick={handleDownloadJupyter}
+                  >
+                    Download as Jupyter Notebook
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -597,45 +536,19 @@ const ScriptsWorkspace: React.FC = () => {
       </div>
 
       {/* Save Script Dialog */}
-      {saveDialogOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-darkNav p-4 rounded-lg shadow-lg w-96">
-            <h3 className="text-lg font-medium mb-4">Save Script</h3>
-            <input
-              type="text"
-              className="w-full p-2 bg-background border border-white/10 rounded mb-4"
-              placeholder="Enter script name"
-              value={scriptName}
-              onChange={(e) => setScriptName(e.target.value)}
-              autoFocus
-            />
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSaveDialogOpen(false);
-                  setScriptName('');
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (scriptName.trim()) {
-                    saveScript(scriptName);
-                    setSaveDialogOpen(false);
-                    setScriptName('');
-                  }
-                }}
-                disabled={!scriptName.trim()}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SaveDialog
+        isOpen={saveDialogOpen}
+        title="Save Notebook"
+        placeholder="Enter Notebook name"
+        initialValue={currentScript?.name || ''}
+        onSave={(name) => {
+          saveScript(name);
+          setSaveDialogOpen(false);
+        }}
+        onClose={() => {
+          setSaveDialogOpen(false);
+        }}
+      />
     </div>
   );
 };

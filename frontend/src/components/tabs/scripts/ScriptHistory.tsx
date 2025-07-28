@@ -2,17 +2,17 @@ import React, { useState } from "react";
 import {
   History,
   Play,
-  Save,
   Trash2,
   Copy,
   Download,
   Upload,
   Search,
   Calendar,
-  Clock,
   FileText,
   MoreVertical,
   Edit3,
+  Notebook,
+  FilePlus,
 } from "lucide-react";
 
 import { usePythonStore } from "@/store/pythonStore";
@@ -31,6 +31,7 @@ const ScriptHistory: React.FC = () => {
     duplicateScript,
     importScript,
     exportScript,
+    createNewScript,
   } = usePythonStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,16 +144,28 @@ const ScriptHistory: React.FC = () => {
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-2 mb-3">
-          <History className="w-5 h-5 text-primary" />
-          <h3 className="font-medium text-white">Script History</h3>
+          <Notebook className="w-5 h-5 text-primary" />
+          <h3 className="font-medium text-white">Notebooks</h3>
         </div>
+
+        {/* New Notebook Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => createNewScript()}
+          className="w-full mb-3 h-8 border-white/30 text-white/80 hover:bg-white/10 hover:border-white/30"
+          title="Create New Notebook"
+        >
+          <FilePlus className="w-4 h-4 mr-2" />
+          New Notebook
+        </Button>
 
         {/* Search */}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
           <input
             type="text"
-            placeholder="Search scripts..."
+            placeholder="Search Notebooks..."
             className="w-full pl-10 pr-4 py-2 bg-background border border-white/10 rounded text-sm text-white placeholder:text-white/50 focus:outline-none focus:border-primary/50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -205,11 +218,11 @@ const ScriptHistory: React.FC = () => {
             {filteredScripts.map((script) => (
               <div
                 key={script.id}
-                className={`relative group rounded-lg p-3 transition-colors cursor-pointer ${
+                className={`relative group rounded-lg p-3 transition-colors ${
                   currentScript?.id === script.id
                     ? "bg-primary/20 border border-primary/30"
                     : "bg-white/5 hover:bg-white/10"
-                } ${selectedScript === script.id ? "ring-1 ring-primary/50" : ""}`}
+                }`}
                 onClick={() => setSelectedScript(selectedScript === script.id ? null : script.id)}
               >
                 <div className="flex items-start justify-between">
@@ -231,7 +244,6 @@ const ScriptHistory: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 mb-1">
-                        <FileText className="w-4 h-4 text-secondary flex-shrink-0" />
                         <h4 className="font-medium text-white text-sm truncate">
                           {script.name}
                         </h4>
@@ -273,7 +285,7 @@ const ScriptHistory: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 opacity-0 opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(showMenu === script.id ? null : script.id);
@@ -284,7 +296,7 @@ const ScriptHistory: React.FC = () => {
 
                     {/* Dropdown menu */}
                     {showMenu === script.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-darkNav border border-white/10 rounded shadow-lg z-20 min-w-40">
+                      <div className="absolute right-0 top-full mt-1 bg-black border border-white/10 rounded shadow-lg z-20 min-w-40">
                         <button
                           className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
                           onClick={(e) => {
@@ -345,50 +357,6 @@ const ScriptHistory: React.FC = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Quick actions when selected */}
-                {selectedScript === script.id && (
-                  <div className="mt-3 pt-3 border-t border-white/10 flex gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="h-7 px-3 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLoadScript(script);
-                      }}
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      Load
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-3 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDuplicateScript(script.id);
-                      }}
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copy
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-3 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleExportScript(script);
-                      }}
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      Export
-                    </Button>
-                  </div>
-                )}
               </div>
             ))}
           </div>
