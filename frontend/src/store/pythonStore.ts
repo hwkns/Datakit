@@ -12,7 +12,6 @@ import type {
 import {
   initializePyodide,
   getPyodide,
-  isPyodideReady,
   installPackage,
   getInstalledPackages,
   createDuckDBBridge,
@@ -116,56 +115,6 @@ interface PythonState {
 // Create a unique ID generator
 const createId = () => crypto.randomUUID();
 
-// Create initial cells with welcome content
-const createInitialCells = (): PythonCell[] => [
-  // Welcome markdown cell
-  {
-    id: createId(),
-    type: 'markdown',
-    code: `# Welcome to DataKit Notebooks
-
-DataKit Notebooks provide a environment for data analysis and visualization right in your browser.
-
-### Getting Started
-1. Use the buttons below cells to add new **Code** or **Text** cells
-3. Press **⌘+Enter** (Mac) or **Ctrl+Enter** (Windows) to execute code cells
-4. Access your data through the integrated SQL interface
-`,
-    output: [],
-    executionCount: null,
-    isExecuting: false,
-    isEditing: false, // Start in preview mode to show the rendered content
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  // Initial code cell
-  {
-    id: createId(),
-    type: 'code',
-    code: `# Welcome to DataKit Python environment!
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Your data analysis starts here
-print("DataKit Notebooks ready!")
-print(f"Python environment loaded with pandas {pd.__version__}")
-
-# Example: Create a simple dataset
-data = {
-    'x': range(1, 11),
-    'y': [i**2 for i in range(1, 11)]
-}
-df = pd.DataFrame(data)
-print("\\nSample data created:")
-df.head()`,
-    output: [],
-    executionCount: null,
-    isExecuting: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
 
 export const usePythonStore = create<PythonState>()(
   persist(
@@ -181,7 +130,7 @@ export const usePythonStore = create<PythonState>()(
       },
 
       currentScript: null,
-      cells: createInitialCells(),
+      cells: [], // Start with empty cells, will be populated on initialization
       activeCellId: null,
 
       savedScripts: [],
@@ -366,15 +315,6 @@ export const usePythonStore = create<PythonState>()(
         set((state) => {
           const cells = state.cells.filter((cell) => cell.id !== cellId);
 
-          // Ensure at least one cell exists
-          if (cells.length === 0) {
-            const initialCells = createInitialCells();
-            return {
-              cells: initialCells,
-              activeCellId: initialCells[0]?.id || null,
-            };
-          }
-
           // Update active cell if deleted
           const activeCellId =
             state.activeCellId === cellId
@@ -518,30 +458,18 @@ export const usePythonStore = create<PythonState>()(
 
       // Script Management
       createNewScript: (name) => {
-        const initialCells = [
-          {
-            id: createId(),
-            type: 'code',
-            code: '',
-            output: [],
-            executionCount: null,
-            isExecuting: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ];
         const newScript: PythonScript = {
           id: createId(),
           name: name || `Script ${Date.now()}`,
-          cells: initialCells,
+          cells: [],
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
         set({
           currentScript: newScript,
-          cells: newScript.cells,
-          activeCellId: newScript.cells[0]?.id || null,
+          cells: [],
+          activeCellId: null,
         });
       },
 
@@ -872,7 +800,7 @@ export const usePythonStore = create<PythonState>()(
     {
       name: 'python-store',
       partialize: (state) => ({
-        savedScripts: state.savedScripts.slice(0, 10), // Only persist last 10 scripts
+        savedScripts: state.savedScripts.slice(0, 50), // Only persist last 50 scripts
         autoSave: state.autoSave,
         maxHistoryItems: state.maxHistoryItems,
         cellExecutionTimeout: state.cellExecutionTimeout,

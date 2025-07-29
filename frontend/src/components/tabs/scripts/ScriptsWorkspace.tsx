@@ -33,6 +33,7 @@ import PackageManager from './PackageManager';
 import ScriptTemplates from './ScriptTemplates';
 import VariableInspector from './VariableInspector';
 import SchemaBrowser from '../query/SchemaBrowser';
+import { createWelcomeCells } from '@/lib/python/welcomeCells';
 
 // Constants for panel dimensions
 const DEFAULT_PANEL_WIDTH = 260;
@@ -111,6 +112,15 @@ const ScriptsWorkspace: React.FC = () => {
     }
     // Only run on mount, not on state changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Show welcome cells when app opens with no cells
+  useEffect(() => {
+    if (cells.length === 0 && !currentScript) {
+      // Set welcome cells directly
+      const welcomeCells = createWelcomeCells();
+      usePythonStore.setState({ cells: welcomeCells });
+    }
   }, []);
 
   // Handle save script
@@ -521,9 +531,21 @@ const ScriptsWorkspace: React.FC = () => {
                 />
               </React.Fragment>
             ))}
-            {/* If no cells, show a divider to create the first one */}
+            {/* If no cells, show empty state message */}
             {cells.length === 0 && (
-              <CellDivider insertIndex={0} isLastCell={true} />
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-white mb-2">
+                    Empty Notebook
+                  </h3>
+                  <p className="text-white/60 max-w-md leading-relaxed">
+                    Start by creating your first cell. You can add code cells to
+                    run Python code or text cells for documentation.
+                  </p>
+                </div>
+
+                <CellDivider insertIndex={0} isLastCell={true} />
+              </div>
             )}
           </div>
         </div>
