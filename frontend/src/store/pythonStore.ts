@@ -32,7 +32,7 @@ interface PythonState {
   currentScript: PythonScript | null;
   cells: PythonCell[];
   activeCellId: string | null;
-  
+
   // Change tracking
   saveStatus: 'saved' | 'saving' | 'unsaved';
   lastSavedState: {
@@ -73,7 +73,11 @@ interface PythonState {
   refreshInstalledPackages: () => Promise<void>;
 
   // Actions - Cell Management
-  createCell: (type?: CellType, code?: string, index?: number) => string;
+  createCell: (
+    type?: CellType,
+    code?: string,
+    index?: number
+  ) => string;
   updateCell: (cellId: string, code: string) => void;
   toggleCellEditMode: (cellId: string) => void;
   convertCellType: (cellId: string, newType: CellType) => void;
@@ -129,7 +133,6 @@ interface PythonState {
 // Create a unique ID generator
 const createId = () => crypto.randomUUID();
 
-
 export const usePythonStore = create<PythonState>()(
   persist(
     (set, get) => ({
@@ -146,7 +149,7 @@ export const usePythonStore = create<PythonState>()(
       currentScript: null,
       cells: [], // Start with empty cells, will be populated on initialization
       activeCellId: null,
-      
+
       // Change tracking
       saveStatus: 'saved',
       lastSavedState: null,
@@ -269,7 +272,7 @@ export const usePythonStore = create<PythonState>()(
           output: [],
           executionCount: null,
           isExecuting: false,
-          isEditing: type === 'markdown', // Markdown cells start in edit mode
+          isEditing: false,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -729,21 +732,32 @@ export const usePythonStore = create<PythonState>()(
               return result;
             });
 
-            pyodide.globals.set('_sql_pandas_to_table', async (df: any, tableName: string) => {
-              await bridge.pandasToTable(df, tableName);
-            });
+            pyodide.globals.set(
+              '_sql_pandas_to_table',
+              async (df: any, tableName: string) => {
+                await bridge.pandasToTable(df, tableName);
+              }
+            );
 
             pyodide.globals.set('_sql_get_table_names', () => {
               return bridge.getTableNames();
             });
 
-            pyodide.globals.set('_sql_get_table_schema', async (tableName: string) => {
-              return await bridge.getTableSchema(tableName);
-            });
+            pyodide.globals.set(
+              '_sql_get_table_schema',
+              async (tableName: string) => {
+                return await bridge.getTableSchema(tableName);
+              }
+            );
 
-            console.log('[PythonStore] DuckDB bridge injected into Python environment');
+            console.log(
+              '[PythonStore] DuckDB bridge injected into Python environment'
+            );
           } catch (error) {
-            console.error('[PythonStore] Failed to inject DuckDB bridge:', error);
+            console.error(
+              '[PythonStore] Failed to inject DuckDB bridge:',
+              error
+            );
           }
         }
 
@@ -835,20 +849,24 @@ export const usePythonStore = create<PythonState>()(
       // Change Tracking
       hasUnsavedChanges: () => {
         const state = get();
-        
+
         if (!state.lastSavedState) {
           // No baseline - consider unsaved if we have any content
-          return state.cells.length > 0 || (state.currentScript?.name && state.currentScript.name.trim() !== '');
+          return (
+            state.cells.length > 0 ||
+            (state.currentScript?.name &&
+              state.currentScript.name.trim() !== '')
+          );
         }
-        
+
         // Compare current state with last saved state
         const currentStateJson = JSON.stringify({
           script: state.currentScript,
           cells: state.cells,
         });
-        
+
         const lastSavedStateJson = JSON.stringify(state.lastSavedState);
-        
+
         return currentStateJson !== lastSavedStateJson;
       },
 
@@ -862,7 +880,7 @@ export const usePythonStore = create<PythonState>()(
 
       markAsSaved: () => {
         const state = get();
-        set({ 
+        set({
           saveStatus: 'saved',
           lastSavedState: {
             script: state.currentScript,

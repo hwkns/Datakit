@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import Editor, { OnMount, useMonaco } from "@monaco-editor/react";
 import { useDuckDBStore } from "@/store/duckDBStore";
 import { format } from "sql-formatter";
@@ -503,6 +503,17 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     });
   }, [schemaDependencyKey, monaco, language, loadSchemaData, registerLanguageProviders]);
 
+  // Cleanup auto-height disposables on unmount
+  useEffect(() => {
+    return () => {
+      if (editorRef.current && (editorRef.current as any)._autoHeightDisposables) {
+        (editorRef.current as any)._autoHeightDisposables.forEach((disposable: any) => {
+          disposable.dispose();
+        });
+      }
+    };
+  }, []);
+
   // Handle editor mount
   const handleEditorDidMount: OnMount = useCallback(
     (editor, monacoInstance) => {
@@ -540,23 +551,65 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           run: formatSql,
         });
       }
+
+      // Auto-height functionality when height is "auto"
+      if (height === "auto") {
+        let updateTimeoutId: NodeJS.Timeout;
+        
+        const updateHeight = () => {
+          clearTimeout(updateTimeoutId);
+          updateTimeoutId = setTimeout(() => {
+            const model = editor.getModel();
+            if (!model) return;
+
+            const lineCount = model.getLineCount();
+            const lineHeight = editor.getOption(monacoInstance.editor.EditorOption.lineHeight);
+            
+            // Calculate content height
+            const contentHeight = lineCount * lineHeight;
+            const padding = 10; // Small padding
+            const calculatedHeight = Math.max(
+              contentHeight + padding,
+              minHeight || 80
+            );
+            
+            const finalHeight = maxHeight 
+              ? Math.min(calculatedHeight, maxHeight)
+              : calculatedHeight;
+
+            // Get container
+            const container = editor.getContainerDomNode();
+            if (container && container.parentElement) {
+              // Update container height
+              container.style.height = `${finalHeight}px`;
+              container.parentElement.style.height = `${finalHeight}px`;
+              
+              // Layout editor
+              editor.layout();
+            }
+          }, 10);
+        };
+
+        // Listen for content changes
+        const disposable = editor.onDidChangeModelContent(updateHeight);
+        
+        // Initial update
+        updateHeight();
+
+        // Store disposable for cleanup
+        (window as any).editorDisposable = disposable;
+      }
     },
-    [onExecute, formatSql, language]
+    [onExecute, formatSql, language, height, minHeight, maxHeight]
   );
 
-  // Calculate effective height
-  const effectiveHeight = height === "auto" ? undefined : height;
-  
-  // Container styles for auto height
-  const containerStyle = height === "auto" && (minHeight || maxHeight) ? {
-    minHeight: minHeight ? `${minHeight}px` : undefined,
-    maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-  } : {};
+  // For auto height, start with minHeight and let JS update it
+  const effectiveHeight = height === "auto" ? `${minHeight || 80}px` : height;
 
   return (
-    <div className={`${height === "auto" ? "" : "h-full"} ${className}`} style={containerStyle}>
+    <div className={`${height === "auto" ? "" : "h-full"} ${className}`}>
       <Editor
-        height={effectiveHeight || (minHeight ? `${minHeight}px` : "150px")}
+        height={effectiveHeight}
         defaultLanguage={language}
         defaultValue={value}
         value={value}
@@ -599,6 +652,16 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             bracketPairs: true,
             indentation: true,
           },
+          // Auto-height specific options
+          scrollbar: {
+            vertical: height === "auto" ? "hidden" : "auto",
+            horizontal: "auto",
+            alwaysConsumeMouseWheel: false,
+          },
+          overviewRulerLanes: height === "auto" ? 0 : 3,
+          // Ensure the editor doesn't scroll vertically when auto-height
+          scrollBeyondLastLine: height === "auto" ? false : false,
+          fixedOverflowWidgets: height === "auto" ? true : false,
         }}
         onMount={handleEditorDidMount}
       />

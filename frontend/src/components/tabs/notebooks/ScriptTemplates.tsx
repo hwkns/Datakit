@@ -32,6 +32,7 @@ const CATEGORY_CONFIG = {
     color: 'text-green-400',
   },
   ml: { icon: Brain, label: 'Machine Learning', color: 'text-purple-400' },
+  hf: { icon: Brain, label: '🤗 Hugging Face', color: 'text-orange-400' },
   stats: { icon: Calculator, label: 'Statistics', color: 'text-orange-400' },
   utils: { icon: Settings, label: 'Utilities', color: 'text-gray-400' },
 } as const;
@@ -83,11 +84,10 @@ const ScriptTemplates: React.FC = () => {
 
   const handleUseTemplate = (template: ScriptTemplate) => {
     // First, create a markdown cell with explanation
-    const markdownContent = `## ${template.name}
+    const markdownContent = `# ${template.name}
 
 ${template.description}
 
-${template.tags ? `**Tags:** ${template.tags.join(', ')}\n` : ''}
 ${
   template.requiredPackages
     ? `**Required packages:** ${template.requiredPackages.join(', ')}\n`
@@ -246,21 +246,6 @@ Run the code cell below to execute this template.`;
                               </Button>
                             </div>
                           </div>
-
-                          {/* Tags */}
-                          {template.tags && template.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {template.tags.map((tag, index) => (
-                                <span
-                                  key={index}
-                                  className="text-xs bg-white/10 text-white/70 px-2 py-0.5 rounded flex items-center gap-1"
-                                >
-                                  <Tag className="w-2 h-2" />
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
 
                           {/* Required packages */}
                           {template.requiredPackages &&

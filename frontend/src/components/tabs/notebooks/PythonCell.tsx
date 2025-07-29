@@ -499,9 +499,9 @@ const PythonCell: React.FC<PythonCellProps> = ({
               onChange={(value) => debouncedUpdateCell(cell.id, value || "")}
               onExecute={() => handleExecute()}
               language={cell.type === 'code' ? 'python' : 'markdown'}
-              height={150}
-              minHeight={100}
-              maxHeight={400}
+              height="auto"
+              minHeight={80}
+              maxHeight={600}
             />
           </MonacoErrorBoundary>
         ) : (

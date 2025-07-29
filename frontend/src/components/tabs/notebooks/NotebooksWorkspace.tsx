@@ -311,7 +311,7 @@ const NotebooksWorkspace: React.FC = () => {
           <div className="text-sm text-white/60">
             <div className="flex items-center justify-center gap-2">
               <Package className="w-4 h-4 text-secondary" />
-              <span>Loading numpy, pandas, matplotlib...</span>
+              <span>Loading numpy, pandas, matplotlib, transformers...</span>
             </div>
           </div>
         </div>
@@ -628,7 +628,6 @@ const NotebooksWorkspace: React.FC = () => {
 
             {/* Download Button */}
             <div className="relative" ref={downloadMenuRef}>
-              <Tooltip content="Download Notebook" placement="left">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -640,7 +639,7 @@ const NotebooksWorkspace: React.FC = () => {
                 >
                   <Download size={16} />
                 </Button>
-              </Tooltip>
+  
 
               {/* Download Dropdown Menu */}
               {showDownloadMenu && (

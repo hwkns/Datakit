@@ -1,14 +1,16 @@
-import type { PyodideInterface } from "pyodide";
-import type { PythonExecutionResult, CellOutput, DataFrameInfo } from "./types";
-import { getPyodide } from "./init";
+import type { PyodideInterface } from 'pyodide';
+import type { PythonExecutionResult, CellOutput, DataFrameInfo } from './types';
+import { getPyodide } from './init';
 
 /**
  * Execute Python code and capture outputs
  */
-export async function executePythonCode(code: string): Promise<PythonExecutionResult> {
+export async function executePythonCode(
+  code: string
+): Promise<PythonExecutionResult> {
   const pyodide = getPyodide();
   if (!pyodide) {
-    throw new Error("Pyodide not initialized");
+    throw new Error('Pyodide not initialized');
   }
 
   const startTime = performance.now();
@@ -41,17 +43,24 @@ export async function executePythonCode(code: string): Promise<PythonExecutionRe
     // Execute the user code
     let result;
     try {
-      // Check if code uses sql() or query() functions and needs async handling
-      if (code.includes('sql(') || code.includes('query(') || code.includes('sql_bridge.')) {
+      // Check if code needs async handling
+      const needsAsync =
+        code.includes('sql(') ||
+        code.includes('query(') ||
+        code.includes('sql_bridge.') ||
+        code.includes('await ') ||
+        code.includes('micropip.install');
+
+      if (needsAsync) {
         // Use runPythonAsync for code that might call async functions
         result = await pyodide.runPythonAsync(code);
       } else {
         // Use regular runPython for synchronous code
-        result = await pyodide.runPython(code);
+        result = pyodide.runPython(code);
       }
     } catch (pythonError: any) {
       error = `${pythonError.name}: ${pythonError.message}`;
-      
+
       outputs.push({
         id: crypto.randomUUID(),
         type: 'error',
@@ -146,10 +155,9 @@ export async function executePythonCode(code: string): Promise<PythonExecutionRe
     await pyodide.runPython(`
       print = _original_print
     `);
-
   } catch (executionError: any) {
     error = `Execution Error: ${executionError.message}`;
-    
+
     outputs.push({
       id: crypto.randomUUID(),
       type: 'error',
@@ -218,7 +226,7 @@ export async function getPythonVariables(): Promise<Record<string, any>> {
 
     return JSON.parse(variables);
   } catch (error) {
-    console.error("[Python] Failed to get variables:", error);
+    console.error('[Python] Failed to get variables:', error);
     return {};
   }
 }
@@ -266,7 +274,7 @@ export function formatDataFrame(dfInfoStr: string): {
   try {
     return JSON.parse(dfInfoStr);
   } catch (error) {
-    console.error("[Python] Failed to parse DataFrame info:", error);
+    console.error('[Python] Failed to parse DataFrame info:', error);
     return {
       shape: [0, 0],
       columns: [],
@@ -289,16 +297,18 @@ export function containsPlotting(code: string): boolean {
     /\.scatter\(/,
   ];
 
-  return plottingPatterns.some(pattern => pattern.test(code));
+  return plottingPatterns.some((pattern) => pattern.test(code));
 }
 
 /**
  * Validate Python code syntax
  */
-export async function validatePythonSyntax(code: string): Promise<{ isValid: boolean; error?: string }> {
+export async function validatePythonSyntax(
+  code: string
+): Promise<{ isValid: boolean; error?: string }> {
   const pyodide = getPyodide();
   if (!pyodide) {
-    return { isValid: false, error: "Pyodide not initialized" };
+    return { isValid: false, error: 'Pyodide not initialized' };
   }
 
   try {

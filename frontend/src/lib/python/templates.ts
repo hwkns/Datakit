@@ -7,7 +7,7 @@ export const SCRIPT_TEMPLATES: ScriptTemplate[] = [
     name: "Sample Employees Analysis",
     description: "Get started quickly with the built-in employees sample table",
     category: "data_analysis",
-    tags: ["quickstart", "duckdb", "employees"],
+    tags: ["quickstart", "duckdb"],
     code: `# Working with the sample employees table
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -810,6 +810,478 @@ print(f"\\nOverall Quality Score: {quality_score}/{total_checks} ({(quality_scor
 
 print("\\nExport complete! Use the outputs above as needed.")`,
     requiredPackages: ["pandas", "numpy"]
+  },
+
+  // Hugging Face Template 1: Sentiment Analysis with Data Integration
+  {
+    id: "hf_sentiment_analysis",
+    name: "🎭 Sentiment Analysis + Data",
+    description: "Analyze sentiment of text data from your database using DistilBERT",
+    category: "hf",
+    tags: ["huggingface", "sentiment", "nlp", "data-analysis"],
+    code: `# 🎭 Sentiment Analysis with Database Integration
+# Using Xenova/distilbert-base-uncased-finetuned-sst-2-english
+
+print("🎭 Sentiment Analysis Demo")
+print("=" * 40)
+
+# Load the sentiment analysis pipeline
+pipeline = transformers.pipeline
+sentiment_pipe = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english')
+
+# Sample customer feedback data (you can replace with your own table)
+sample_feedback = [
+    "The product quality is excellent and delivery was fast!",
+    "Terrible customer service, very disappointed.",
+    "It's okay, nothing special but does the job.",
+    "Amazing experience! Will definitely buy again.",
+    "Poor quality, broke after two days of use.",
+    "Good value for money, satisfied with purchase.",
+    "Outstanding support team, very helpful!",
+    "The interface is confusing and hard to navigate."
+]
+
+print("\\n📊 Analyzing customer feedback...")
+results = []
+
+for i, text in enumerate(sample_feedback, 1):
+    result = await sentiment_pipe(text)
+    sentiment = result[0]
+    
+    results.append({
+        'id': i,
+        'text': text[:50] + "..." if len(text) > 50 else text,
+        'sentiment': sentiment['label'],
+        'confidence': sentiment['score']
+    })
+    
+    emoji = "😊" if sentiment['label'] == 'POSITIVE' else "😞"
+    print(f"{i:2d}. {emoji} {sentiment['label']:<8} ({sentiment['score']:.1%}) | {text[:40]}...")
+
+# Convert to pandas for analysis
+import pandas as pd
+df = pd.DataFrame(results)
+
+print("\\n📈 Sentiment Summary:")
+sentiment_counts = df['sentiment'].value_counts()
+print(f"  Positive: {sentiment_counts.get('POSITIVE', 0)} ({sentiment_counts.get('POSITIVE', 0)/len(df)*100:.1f}%)")
+print(f"  Negative: {sentiment_counts.get('NEGATIVE', 0)} ({sentiment_counts.get('NEGATIVE', 0)/len(df)*100:.1f}%)")
+
+print(f"\\n🎯 Average Confidence: {df['confidence'].mean():.1%}")
+print(f"📝 Total Feedback Analyzed: {len(df)}")
+
+# Display the DataFrame
+print("\\n📊 Detailed Results:")
+df`,
+    requiredPackages: ["transformers-js-py", "pandas"]
+  },
+
+  // Hugging Face Template 2: Text Generation Stories
+  {
+    id: "hf_text_generation",
+    name: "📝 AI Story Generator",
+    description: "Generate creative stories and text using Llama2.c tiny model",
+    category: "hf",
+    tags: ["huggingface", "text-generation", "creative", "stories"],
+    code: `# 📝 AI Story Generator using Llama2.c
+# Using Xenova/llama2.c-stories42M - lightweight story generation model
+
+print("📝 AI Story Generator")
+print("=" * 35)
+
+# Load text generation pipeline
+pipeline = transformers.pipeline
+generator = await pipeline('text-generation', 'Xenova/llama2.c-stories42M')
+
+# Story prompts to try
+story_prompts = [
+    "Once upon a time, in a magical forest,",
+    "The old wizard opened his spellbook and",
+    "In the year 2150, robots discovered",
+    "The detective found a mysterious clue",
+    "Deep in the ocean, mermaids were"
+]
+
+print("🎨 Generating stories from different prompts...")
+print("=" * 50)
+
+generated_stories = []
+
+for i, prompt in enumerate(story_prompts, 1):
+    print(f"\\n{i}. 📖 Prompt: '{prompt}'")
+    print("   🤖 Generated story:")
+    
+    # Generate story continuation
+    result = await generator(prompt, {
+        'max_length': 80,
+        'temperature': 0.8,
+        'do_sample': True,
+        'top_p': 0.9
+    })
+    
+    generated_text = result[0]['generated_text']
+    story_continuation = generated_text[len(prompt):].strip()
+    
+    print(f"   '{prompt} {story_continuation}'")
+    
+    generated_stories.append({
+        'prompt': prompt,
+        'full_story': generated_text,
+        'continuation': story_continuation,
+        'word_count': len(generated_text.split())
+    })
+
+# Create analysis of generated content
+import pandas as pd
+df = pd.DataFrame(generated_stories)
+
+print("\\n\\n📊 Story Generation Analysis:")
+print(f"📝 Total stories generated: {len(df)}")
+print(f"📏 Average story length: {df['word_count'].mean():.1f} words")
+print(f"📈 Longest story: {df['word_count'].max()} words")
+print(f"📉 Shortest story: {df['word_count'].min()} words")
+
+print("\\n🎯 Tips for better generation:")
+print("  • Adjust temperature (0.1-1.0) for creativity vs coherence")
+print("  • Use top_p for nucleus sampling")
+print("  • Increase max_length for longer stories")
+
+# Display the stories DataFrame
+print("\\n📚 All Generated Stories:")
+df[['prompt', 'word_count']]`,
+    requiredPackages: ["transformers-js-py", "pandas"]
+  },
+
+  // Hugging Face Template 3: Zero-Shot Classification
+  {
+    id: "hf_zero_shot_classification",
+    name: "🏷️ Smart Text Classifier",
+    description: "Classify any text into custom categories without training data",
+    category: "hf",
+    tags: ["huggingface", "classification", "zero-shot", "categories"],
+    code: `# 🏷️ Zero-Shot Text Classification
+# Using Xenova/distilbert-base-uncased-mnli for flexible classification
+
+print("🏷️ Smart Text Classifier")
+print("=" * 30)
+
+# Load zero-shot classification pipeline
+pipeline = transformers.pipeline
+classifier = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncased-mnli')
+
+# Sample texts to classify (could be from your database)
+sample_texts = [
+    "The new iPhone has amazing camera quality and great battery life",
+    "Bitcoin price surged 15% after the Fed announcement",
+    "Scientists discover new species in Amazon rainforest",
+    "Manchester United wins 3-1 against Liverpool",
+    "New AI model breaks language understanding records",
+    "Netflix releases trailer for upcoming sci-fi series",
+    "Healthy eating tips for busy professionals",
+    "Real estate market shows signs of recovery"
+]
+
+# Define custom categories for classification
+categories = {
+    "Business Topics": ["technology", "finance", "business", "economy"],
+    "Science & Research": ["science", "research", "health", "environment"],
+    "Entertainment": ["sports", "movies", "entertainment", "gaming"],
+    "Lifestyle": ["food", "travel", "lifestyle", "fitness"]
+}
+
+print("📊 Classifying texts into custom categories...")
+print("Categories:", list(categories.keys()))
+print("=" * 50)
+
+classification_results = []
+
+for i, text in enumerate(sample_texts, 1):
+    print(f"\\n{i}. 📝 Text: '{text[:60]}...'")
+    
+    # Classify against all category labels
+    all_labels = [label for cat_labels in categories.values() for label in cat_labels]
+    result = await classifier(text, all_labels)
+    
+    # Get top 3 predictions
+    top_predictions = list(zip(result['labels'][:3], result['scores'][:3]))
+    
+    # Find which main category this belongs to
+    top_label = result['labels'][0]
+    main_category = None
+    for cat_name, cat_labels in categories.items():
+        if top_label in cat_labels:
+            main_category = cat_name
+            break
+    
+    print(f"   🎯 Main Category: {main_category}")
+    print(f"   📊 Top predictions:")
+    for label, score in top_predictions:
+        print(f"      {label}: {score:.1%}")
+    
+    classification_results.append({
+        'text': text[:50] + "..." if len(text) > 50 else text,
+        'main_category': main_category,
+        'top_label': top_label,
+        'confidence': result['scores'][0],
+        'all_predictions': dict(zip(result['labels'][:5], result['scores'][:5]))
+    })
+
+# Analysis of classification results
+import pandas as pd
+df = pd.DataFrame(classification_results)
+
+print("\\n\\n📈 Classification Summary:")
+category_counts = df['main_category'].value_counts()
+for category, count in category_counts.items():
+    print(f"  {category}: {count} texts ({count/len(df)*100:.1f}%)")
+
+print(f"\\n🎯 Average Confidence: {df['confidence'].mean():.1%}")
+print(f"🔍 High Confidence (>80%): {sum(df['confidence'] > 0.8)} texts")
+
+print("\\n💡 Use Cases:")
+print("  • Customer support ticket routing")
+print("  • Content categorization")  
+print("  • News article classification")
+print("  • Social media monitoring")
+
+# Display results
+df[['text', 'main_category', 'confidence']]`,
+    requiredPackages: ["transformers-js-py", "pandas"]
+  },
+
+  // Hugging Face Template 4: Question Answering with Context
+  {
+    id: "hf_question_answering",
+    name: "🤔 Smart Q&A System",
+    description: "Answer questions based on your document content using BERT",
+    category: "hf",
+    tags: ["huggingface", "question-answering", "information-extraction"],
+    code: `# 🤔 Smart Question Answering System
+# Using Xenova/distilbert-base-cased-distilled-squad for document Q&A
+
+print("🤔 Smart Question Answering System")
+print("=" * 40)
+
+# Load question-answering pipeline
+pipeline = transformers.pipeline
+qa_pipe = await pipeline('question-answering', 'Xenova/distilbert-base-cased-distilled-squad')
+
+# Sample document context (replace with your actual documents/data)
+company_context = """
+DataKit is a modern data analysis platform that combines the power of SQL and Python. 
+Built on DuckDB, it provides lightning-fast analytical queries on large datasets. 
+The platform supports multiple data formats including CSV, JSON, Parquet, and Excel files.
+DataKit features an integrated notebook environment where users can seamlessly switch 
+between SQL queries and Python data analysis. The platform now includes Hugging Face 
+transformers for advanced NLP capabilities, enabling sentiment analysis, text generation, 
+and document question answering directly in the workflow. DataKit is designed for 
+data scientists, analysts, and researchers who need powerful yet user-friendly tools.
+The platform runs entirely in the browser using WebAssembly, requiring no server setup.
+"""
+
+# Questions to ask about the context
+questions = [
+    "What database engine does DataKit use?",
+    "What file formats does DataKit support?",
+    "Who is DataKit designed for?",
+    "Does DataKit require server setup?",
+    "What NLP capabilities does DataKit include?",
+    "Where does DataKit run?",
+    "What can users do in the notebook environment?"
+]
+
+print("📄 Document Context Preview:")
+print(f"'{company_context[:100]}...'")
+print(f"📏 Context length: {len(company_context.split())} words")
+
+print("\\n🔍 Asking questions about the document...")
+print("=" * 50)
+
+qa_results = []
+
+for i, question in enumerate(questions, 1):
+    print(f"\\n{i}. ❓ Q: {question}")
+    
+    # Get answer from the context
+    result = await qa_pipe({
+        'question': question,
+        'context': company_context
+    })
+    
+    answer = result['answer']
+    confidence = result['score']
+    
+    # Determine confidence level
+    conf_emoji = "🎯" if confidence > 0.8 else "🤔" if confidence > 0.5 else "❓"
+    conf_level = "High" if confidence > 0.8 else "Medium" if confidence > 0.5 else "Low"
+    
+    print(f"   {conf_emoji} A: {answer}")
+    print(f"   📊 Confidence: {confidence:.1%} ({conf_level})")
+    
+    qa_results.append({
+        'question': question,
+        'answer': answer,  
+        'confidence': confidence,
+        'confidence_level': conf_level
+    })
+
+# Analysis of Q&A performance
+import pandas as pd
+df = pd.DataFrame(qa_results)
+
+print("\\n\\n📈 Q&A System Performance:")
+print(f"❓ Total questions answered: {len(df)}")
+print(f"🎯 High confidence answers (>80%): {sum(df['confidence'] > 0.8)}")
+print(f"🤔 Medium confidence answers (50-80%): {sum((df['confidence'] > 0.5) & (df['confidence'] <= 0.8))}")
+print(f"❓ Low confidence answers (<50%): {sum(df['confidence'] <= 0.5)}")
+print(f"📊 Average confidence: {df['confidence'].mean():.1%}")
+
+print("\\n💡 Tips for better Q&A:")
+print("  • Provide clear, detailed context")
+print("  • Ask specific, direct questions")
+print("  • Context should contain the answer information")
+print("  • Longer contexts may reduce accuracy")
+
+# Display all Q&A pairs
+print("\\n📋 Complete Q&A Results:")
+df[['question', 'answer', 'confidence_level']]`,
+    requiredPackages: ["transformers-js-py", "pandas"]
+  },
+
+  // Hugging Face Template 5: Feature Extraction + Data Analysis
+  {
+    id: "hf_feature_extraction",
+    name: "🧠 Text Feature Extraction",
+    description: "Extract semantic features from text and perform similarity analysis",
+    category: "hf",
+    tags: ["huggingface", "feature-extraction", "embeddings", "similarity"],
+    code: `# 🧠 Text Feature Extraction & Similarity Analysis
+# Using Xenova/all-MiniLM-L6-v2 for sentence embeddings
+
+print("🧠 Text Feature Extraction & Similarity Analysis")
+print("=" * 50)
+
+# Load feature extraction pipeline
+pipeline = transformers.pipeline
+feature_extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2')
+
+# Sample product descriptions (replace with your text data)
+product_descriptions = [
+    "High-quality wireless headphones with noise cancellation",
+    "Bluetooth earbuds with excellent sound quality", 
+    "Professional gaming keyboard with RGB lighting",
+    "Mechanical keyboard for coding and gaming",
+    "Lightweight laptop for business and travel",
+    "Powerful desktop computer for video editing",
+    "Smartphone with advanced camera features",
+    "Digital camera for professional photography",
+    "Fitness tracker with heart rate monitor",
+    "Smartwatch with health monitoring features"
+]
+
+print("📝 Extracting features from product descriptions...")
+print(f"🔢 Processing {len(product_descriptions)} items...")
+
+# Extract embeddings for all descriptions
+embeddings = []
+for i, description in enumerate(product_descriptions):
+    print(f"  {i+1:2d}. Processing: '{description[:40]}...'")
+    
+    # Get embedding (feature vector)
+    embedding = await feature_extractor(description)
+    # Extract the pooled embedding (mean pooling)
+    import numpy as np
+    pooled_embedding = np.array(embedding[0]).mean(axis=0)
+    embeddings.append(pooled_embedding)
+
+embeddings = np.array(embeddings)
+print(f"✅ Extracted embeddings shape: {embeddings.shape}")
+
+# Calculate similarity matrix
+print("\\n🔍 Calculating similarity matrix...")
+from sklearn.metrics.pairwise import cosine_similarity
+similarity_matrix = cosine_similarity(embeddings)
+
+# Find most similar pairs
+print("\\n🎯 Most Similar Product Pairs:")
+import pandas as pd
+
+similarities = []
+for i in range(len(product_descriptions)):
+    for j in range(i+1, len(product_descriptions)):
+        similarities.append({
+            'product_1': product_descriptions[i][:30] + "...",
+            'product_2': product_descriptions[j][:30] + "...",
+            'similarity': similarity_matrix[i][j],
+            'index_1': i,
+            'index_2': j
+        })
+
+# Sort by similarity and show top 5
+similarities_df = pd.DataFrame(similarities)
+top_similar = similarities_df.nlargest(5, 'similarity')
+
+for idx, row in top_similar.iterrows():
+    print(f"  📊 {row['similarity']:.1%} | {row['product_1']} ↔ {row['product_2']}")
+
+# Find products similar to a query
+print("\\n🔎 Query-based Similarity Search:")
+query = "wireless audio device"
+print(f"Query: '{query}'")
+
+# Get query embedding
+query_embedding = await feature_extractor(query)
+query_pooled = np.array(query_embedding[0]).mean(axis=0).reshape(1, -1)
+
+# Calculate similarities to query
+query_similarities = cosine_similarity(query_pooled, embeddings)[0]
+
+# Create results dataframe
+results_df = pd.DataFrame({
+    'product': [desc[:40] + "..." if len(desc) > 40 else desc for desc in product_descriptions],
+    'similarity_to_query': query_similarities
+}).sort_values('similarity_to_query', ascending=False)
+
+print("\\nTop 3 matches:")
+for idx, row in results_df.head(3).iterrows():
+    print(f"  🎯 {row['similarity_to_query']:.1%} | {row['product']}")
+
+# Clustering analysis
+print("\\n🔬 Clustering Analysis:")
+from sklearn.cluster import KMeans
+
+# Perform k-means clustering
+n_clusters = 3
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+clusters = kmeans.fit_predict(embeddings)
+
+# Show cluster assignments
+cluster_df = pd.DataFrame({
+    'product': product_descriptions,
+    'cluster': clusters
+})
+
+for cluster_id in range(n_clusters):
+    cluster_products = cluster_df[cluster_df['cluster'] == cluster_id]['product'].tolist()
+    print(f"\\n  📦 Cluster {cluster_id + 1}:")
+    for product in cluster_products:
+        print(f"    • {product}")
+
+print("\\n💡 Use Cases:")
+print("  • Product recommendation systems")
+print("  • Document similarity search")
+print("  • Content deduplication")
+print("  • Semantic search engines")
+
+# Display final results
+print("\\n📊 Similarity Matrix (first 5x5):")
+similarity_df = pd.DataFrame(
+    similarity_matrix[:5, :5], 
+    columns=[f"P{i+1}" for i in range(5)],
+    index=[f"P{i+1}" for i in range(5)]
+)
+similarity_df.round(3)`,
+    requiredPackages: ["transformers-js-py", "pandas", "numpy", "scikit-learn"]
   }
 ];
 

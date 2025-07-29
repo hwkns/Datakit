@@ -76,7 +76,7 @@ export interface ScriptTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'data_analysis' | 'visualization' | 'ml' | 'stats' | 'utils';
+  category: 'data_analysis' | 'visualization' | 'ml' | 'hf' | 'stats' | 'utils';
   code: string;
   tags: string[];
   requiredPackages?: string[];
