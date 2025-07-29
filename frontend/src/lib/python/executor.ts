@@ -41,7 +41,14 @@ export async function executePythonCode(code: string): Promise<PythonExecutionRe
     // Execute the user code
     let result;
     try {
-      result = await pyodide.runPython(code);
+      // Check if code uses sql() or query() functions and needs async handling
+      if (code.includes('sql(') || code.includes('query(') || code.includes('sql_bridge.')) {
+        // Use runPythonAsync for code that might call async functions
+        result = await pyodide.runPythonAsync(code);
+      } else {
+        // Use regular runPython for synchronous code
+        result = await pyodide.runPython(code);
+      }
     } catch (pythonError: any) {
       error = `${pythonError.name}: ${pythonError.message}`;
       

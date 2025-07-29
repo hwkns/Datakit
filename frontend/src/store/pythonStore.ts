@@ -124,13 +124,7 @@ const createInitialCells = (): PythonCell[] => [
     type: 'markdown',
     code: `# Welcome to DataKit Notebooks
 
-DataKit Notebooks provide a environment for data analysis and visualization right in your browser. Here's what you can do:
-
-### Features
-- **Python Code Cells**: Execute Python code with numpy, pandas, matplotlib, and more
-- **Markdown Text Cells**: Create rich documentation with formatted text
-- **Data Integration**: Seamlessly work with your DuckDB data
-- **Interactive Visualizations**: Create plots and charts that update in real-time
+DataKit Notebooks provide a environment for data analysis and visualization right in your browser.
 
 ### Getting Started
 1. Use the buttons below cells to add new **Code** or **Text** cells
@@ -717,6 +711,73 @@ export const usePythonStore = create<PythonState>()(
         const bridge = createDuckDBBridge(duckDBStore);
 
         set({ duckDBBridge: bridge });
+
+        // Inject the bridge into Python environment
+        const pyodide = getPyodide();
+        if (pyodide) {
+          try {
+            // Create proxy functions that can be called from Python
+            pyodide.runPython(`
+              import js
+              import pandas as pd
+              from pyodide.ffi import to_js
+              
+              class SQLBridge:
+                  async def query_to_pandas(self, sql):
+                      """Execute a SQL query on DuckDB and return results as a pandas DataFrame"""
+                      # Call the JavaScript async function
+                      result = await _sql_query_to_pandas(sql)
+                      return result
+                  
+                  async def pandas_to_table(self, df, table_name):
+                      """Save a pandas DataFrame to DuckDB as a table"""
+                      await _sql_pandas_to_table(df, table_name)
+                  
+                  def get_table_names(self):
+                      """Get list of available tables in DuckDB"""
+                      return _sql_get_table_names()
+                  
+                  async def get_table_schema(self, table_name):
+                      """Get schema information for a table"""
+                      result = await _sql_get_table_schema(table_name)
+                      return result
+              
+              # Create global instance
+              sql_bridge = SQLBridge()
+              
+              # Create async convenience functions
+              async def query(sql_str):
+                  """Query DuckDB and return pandas DataFrame"""
+                  return await sql_bridge.query_to_pandas(sql_str)
+              
+              async def sql(query_str):
+                  """Execute SQL query and return pandas DataFrame"""
+                  return await sql_bridge.query_to_pandas(query_str)
+            `);
+
+            // Register the JavaScript async functions
+            pyodide.globals.set('_sql_query_to_pandas', async (sql: string) => {
+              const result = await bridge.queryToPandas(sql);
+              return result;
+            });
+
+            pyodide.globals.set('_sql_pandas_to_table', async (df: any, tableName: string) => {
+              await bridge.pandasToTable(df, tableName);
+            });
+
+            pyodide.globals.set('_sql_get_table_names', () => {
+              return bridge.getTableNames();
+            });
+
+            pyodide.globals.set('_sql_get_table_schema', async (tableName: string) => {
+              return await bridge.getTableSchema(tableName);
+            });
+
+            console.log('[PythonStore] DuckDB bridge injected into Python environment');
+          } catch (error) {
+            console.error('[PythonStore] Failed to inject DuckDB bridge:', error);
+          }
+        }
 
         console.log('[PythonStore] DuckDB bridge initialized');
       },

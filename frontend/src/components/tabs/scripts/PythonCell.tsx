@@ -328,6 +328,20 @@ const PythonCell: React.FC<PythonCellProps> = ({
             </Button>
           )}
 
+          {/* Delete Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteCell(cell.id);
+            }}
+            title="Delete Cell"
+          >
+            <Trash2 size={14} />
+          </Button>
+
           {/* Menu Button */}
           <div className="relative" ref={menuRef}>
             <Button
@@ -386,17 +400,6 @@ const PythonCell: React.FC<PythonCellProps> = ({
                 >
                   <Square size={14} />
                   Clear Output
-                </button>
-                <div className="border-t border-white/10" />
-                <button
-                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
-                  onClick={() => {
-                    deleteCell(cell.id);
-                    setShowMenu(false);
-                  }}
-                >
-                  <Trash2 size={14} />
-                  Delete Cell
                 </button>
               </div>
             )}

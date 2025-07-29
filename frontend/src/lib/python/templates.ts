@@ -1,6 +1,62 @@
 import type { ScriptTemplate } from "./types";
 
 export const SCRIPT_TEMPLATES: ScriptTemplate[] = [
+  // Quick Start Template
+  {
+    id: "sample_employees_analysis",
+    name: "Sample Employees Analysis",
+    description: "Get started quickly with the built-in employees sample table",
+    category: "data_analysis",
+    tags: ["quickstart", "duckdb", "employees"],
+    code: `# Working with the sample employees table
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Query the sample employees table using the sql() function
+df = await sql("SELECT * FROM employees_sample")
+
+print("Sample Employees Data:")
+print(df)
+print(f"\\nTotal employees: {len(df)}")
+
+# Group by department and calculate average salary
+dept_summary = await sql("""
+    SELECT 
+        department,
+        COUNT(*) as employee_count,
+        AVG(salary) as avg_salary,
+        MIN(salary) as min_salary,
+        MAX(salary) as max_salary
+    FROM employees_sample
+    GROUP BY department
+    ORDER BY avg_salary DESC
+""")
+
+print("\\nDepartment Summary:")
+print(dept_summary)
+
+# Create a bar chart of average salaries by department
+plt.figure(figsize=(10, 6))
+bars = plt.bar(dept_summary['department'], dept_summary['avg_salary'], color=['#1f77b4', '#ff7f0e', '#2ca02c'])
+
+# Add value labels on bars
+for bar in bars:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height,
+             '$' + f'{height:,.0f}', ha='center', va='bottom')
+
+plt.xlabel('Department')
+plt.ylabel('Average Salary ($)')
+plt.title('Average Salary by Department')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# You can also use query() or sql_bridge.query_to_pandas() for more explicit calls
+# employees_hr = await query("SELECT * FROM employees_sample WHERE department = 'HR'")`,
+    requiredPackages: ["pandas", "matplotlib"]
+  },
+
   // Data Analysis Templates
   {
     id: "basic_data_exploration",
@@ -12,23 +68,30 @@ export const SCRIPT_TEMPLATES: ScriptTemplate[] = [
 import pandas as pd
 import numpy as np
 
-# Replace 'your_table' with an actual table name
-# You can see available tables in the left panel
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+# List available tables
+print("Available tables:", sql_bridge.get_table_names())
+
+# Load the sample employees table
+df = await sql("SELECT * FROM employees_sample")
 
 # Basic information about the dataset
-print("Dataset shape:", df.shape)
+print("\\nDataset shape:", df.shape)
 print("\\nColumn information:")
 print(df.info())
 
 print("\\nFirst few rows:")
-display(df.head())
+df.head()
 
 print("\\nBasic statistics:")
-display(df.describe())
+df.describe()
 
 print("\\nMissing values:")
-print(df.isnull().sum())`,
+print(df.isnull().sum())
+
+# Group by department
+dept_counts = df['department'].value_counts()
+print("\\nEmployees per department:")
+print(dept_counts)`,
     requiredPackages: ["pandas", "numpy"]
   },
 
@@ -39,29 +102,57 @@ print(df.isnull().sum())`,
     category: "data_analysis", 
     tags: ["duckdb", "pandas", "sql"],
     code: `# Execute SQL query and get results as DataFrame
-sql_query = """
+# Example 1: Filter employees by salary
+high_earners = await sql("""
 SELECT * 
-FROM your_table 
-WHERE column_name > 100
-ORDER BY another_column
-LIMIT 500
-"""
+FROM employees_sample 
+WHERE salary > 70000
+ORDER BY salary DESC
+""")
 
-# Execute query through DuckDB bridge
-df = query_to_pandas(sql_query)
+print(f"High earners: {len(high_earners)} employees")
+print(high_earners)
 
-print(f"Query returned {len(df)} rows")
-print("\\nColumns:", df.columns.tolist())
-print("\\nData types:")
-print(df.dtypes)
+# Example 2: Aggregate query with grouping
+dept_stats = await sql("""
+SELECT 
+    department,
+    COUNT(*) as employee_count,
+    AVG(salary) as avg_salary,
+    MIN(salary) as min_salary,
+    MAX(salary) as max_salary,
+    SUM(salary) as total_salary
+FROM employees_sample
+GROUP BY department
+ORDER BY avg_salary DESC
+""")
 
-# Now you can use pandas operations
-df_summary = df.groupby('category_column').agg({
-    'numeric_column': ['mean', 'sum', 'count']
-}).round(2)
+print("\\nDepartment Statistics:")
+print(dept_stats)
 
-print("\\nGrouped summary:")
-display(df_summary)`,
+# Example 3: Using CTEs (Common Table Expressions)
+salary_analysis = await sql("""
+WITH salary_categories AS (
+    SELECT 
+        *,
+        CASE 
+            WHEN salary < 60000 THEN 'Junior'
+            WHEN salary BETWEEN 60000 AND 80000 THEN 'Mid-level'
+            ELSE 'Senior'
+        END as level
+    FROM employees_sample
+)
+SELECT 
+    level,
+    COUNT(*) as count,
+    AVG(salary) as avg_salary
+FROM salary_categories
+GROUP BY level
+ORDER BY avg_salary
+""")
+
+print("\\nSalary Level Analysis:")
+print(salary_analysis)`,
     requiredPackages: ["pandas"]
   },
 
@@ -75,25 +166,44 @@ display(df_summary)`,
 import pandas as pd
 import numpy as np
 
-# Generate sample data
+# First, let's analyze the existing employees data
+employees = await sql("SELECT * FROM employees_sample")
+
+# Create a performance review DataFrame based on employees
 np.random.seed(42)
-df = pd.DataFrame({
-    'id': range(1, 101),
-    'name': [f'Item_{i}' for i in range(1, 101)],
-    'category': np.random.choice(['A', 'B', 'C'], 100),
-    'value': np.random.normal(100, 20, 100).round(2),
-    'date': pd.date_range('2024-01-01', periods=100, freq='D')
+performance_reviews = pd.DataFrame({
+    'employee_id': employees['id'],
+    'employee_name': employees['name'],
+    'department': employees['department'],
+    'review_score': np.random.normal(3.5, 0.5, len(employees)).round(1).clip(1, 5),
+    'projects_completed': np.random.poisson(5, len(employees)),
+    'review_date': pd.date_range('2024-01-01', periods=len(employees), freq='D')
 })
 
-print("Created DataFrame:")
-display(df.head(10))
+print("Created Performance Reviews DataFrame:")
+print(performance_reviews.head(10))
 
 # Save to DuckDB table
-table_name = "python_generated_data"
-pandas_to_table(df, table_name)
+table_name = "performance_reviews"
+await sql_bridge.pandas_to_table(performance_reviews, table_name)
 
 print(f"\\nDataFrame saved to DuckDB table: {table_name}")
-print("You can now query it with SQL in the Query tab!")`,
+
+# Now we can join the tables!
+employee_performance = await sql("""
+SELECT 
+    e.*,
+    p.review_score,
+    p.projects_completed,
+    p.review_date
+FROM employees_sample e
+JOIN performance_reviews p ON e.id = p.employee_id
+WHERE p.review_score >= 4.0
+ORDER BY p.review_score DESC
+""")
+
+print(f"\\nTop performers (review score >= 4.0): {len(employee_performance)} employees")
+print(employee_performance)`,
     requiredPackages: ["pandas", "numpy"]
   },
 
@@ -108,37 +218,45 @@ print("You can now query it with SQL in the Query tab!")`,
 import numpy as np
 import pandas as pd
 
-# Load some data first
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+# Load employees data
+df = await sql("SELECT * FROM employees_sample")
 
 # Create figure with subplots
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-fig.suptitle('Data Analysis Dashboard', fontsize=16)
+fig.suptitle('Employee Data Analysis Dashboard', fontsize=16)
 
-# 1. Histogram
-axes[0, 0].hist(df['numeric_column'], bins=30, alpha=0.7, color='skyblue')
-axes[0, 0].set_title('Distribution of Values')
-axes[0, 0].set_xlabel('Value')
-axes[0, 0].set_ylabel('Frequency')
+# 1. Salary distribution histogram
+axes[0, 0].hist(df['salary'], bins=15, alpha=0.7, color='skyblue', edgecolor='black')
+axes[0, 0].set_title('Salary Distribution')
+axes[0, 0].set_xlabel('Salary ($)')
+axes[0, 0].set_ylabel('Number of Employees')
+axes[0, 0].axvline(df['salary'].mean(), color='red', linestyle='--', label=f'Mean: $' + f'{df["salary"].mean():,.0f}')
+axes[0, 0].legend()
 
-# 2. Bar plot (top categories)
-category_counts = df['category_column'].value_counts().head(10)
-axes[0, 1].bar(category_counts.index, category_counts.values, color='lightcoral')
-axes[0, 1].set_title('Top Categories')
-axes[0, 1].tick_params(axis='x', rotation=45)
+# 2. Department bar plot
+dept_counts = df['department'].value_counts()
+bars = axes[0, 1].bar(dept_counts.index, dept_counts.values, color=['#1f77b4', '#ff7f0e', '#2ca02c'])
+axes[0, 1].set_title('Employees by Department')
+axes[0, 1].set_xlabel('Department')
+axes[0, 1].set_ylabel('Count')
+for bar in bars:
+    height = bar.get_height()
+    axes[0, 1].text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(height)}', ha='center', va='bottom')
 
-# 3. Line plot (if you have time series data)
-if 'date_column' in df.columns:
-    daily_counts = df.groupby('date_column').size()
-    axes[1, 0].plot(daily_counts.index, daily_counts.values, marker='o')
-    axes[1, 0].set_title('Trend Over Time')
-    axes[1, 0].tick_params(axis='x', rotation=45)
+# 3. Salary by department box plot
+departments = df['department'].unique()
+salary_data = [df[df['department'] == dept]['salary'].values for dept in departments]
+axes[1, 0].boxplot(salary_data, labels=departments)
+axes[1, 0].set_title('Salary Distribution by Department')
+axes[1, 0].set_xlabel('Department')
+axes[1, 0].set_ylabel('Salary ($)')
 
-# 4. Scatter plot
-axes[1, 1].scatter(df['x_column'], df['y_column'], alpha=0.6, color='green')
-axes[1, 1].set_title('Correlation Plot')
-axes[1, 1].set_xlabel('X Variable')
-axes[1, 1].set_ylabel('Y Variable')
+# 4. ID vs Salary scatter plot (to show any patterns)
+axes[1, 1].scatter(df['id'], df['salary'], alpha=0.6, c=df['department'].astype('category').cat.codes, cmap='viridis')
+axes[1, 1].set_title('Employee ID vs Salary (colored by department)')
+axes[1, 1].set_xlabel('Employee ID')
+axes[1, 1].set_ylabel('Salary ($)')
 
 plt.tight_layout()
 plt.show()`,
@@ -154,57 +272,71 @@ plt.show()`,
     code: `import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 # Set seaborn style
 sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (12, 8)
 
-# Load your data
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+# Load employees data
+df = await sql("SELECT * FROM employees_sample")
 
 # Create a comprehensive analysis plot
 fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-fig.suptitle('Advanced Data Analysis with Seaborn', fontsize=16)
+fig.suptitle('Employee Data Analysis with Seaborn', fontsize=16)
 
-# 1. Distribution plot with KDE
-sns.histplot(data=df, x='numeric_column', kde=True, ax=axes[0, 0])
-axes[0, 0].set_title('Distribution with KDE')
+# 1. Salary distribution with KDE
+sns.histplot(data=df, x='salary', kde=True, ax=axes[0, 0], color='skyblue')
+axes[0, 0].set_title('Salary Distribution with KDE')
+axes[0, 0].set_xlabel('Salary ($)')
 
-# 2. Box plot by category
-sns.boxplot(data=df, x='category_column', y='numeric_column', ax=axes[0, 1])
-axes[0, 1].set_title('Box Plot by Category')
-axes[0, 1].tick_params(axis='x', rotation=45)
+# 2. Box plot by department
+sns.boxplot(data=df, x='department', y='salary', ax=axes[0, 1], palette='Set2')
+axes[0, 1].set_title('Salary Box Plot by Department')
+axes[0, 1].set_xlabel('Department')
+axes[0, 1].set_ylabel('Salary ($)')
 
-# 3. Correlation heatmap
-numeric_cols = df.select_dtypes(include=[np.number]).columns
+# 3. Create a correlation matrix with additional metrics
+# Add some calculated fields for correlation
+df['salary_rank'] = df['salary'].rank()
+df['id_group'] = pd.cut(df['id'], bins=5, labels=['1-20', '21-40', '41-60', '61-80', '81-100'])
+numeric_cols = ['id', 'salary', 'salary_rank']
 corr_matrix = df[numeric_cols].corr()
 sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0, ax=axes[0, 2])
 axes[0, 2].set_title('Correlation Matrix')
 
 # 4. Violin plot
-sns.violinplot(data=df, x='category_column', y='numeric_column', ax=axes[1, 0])
-axes[1, 0].set_title('Violin Plot')
-axes[1, 0].tick_params(axis='x', rotation=45)
+sns.violinplot(data=df, x='department', y='salary', ax=axes[1, 0], palette='muted')
+axes[1, 0].set_title('Salary Distribution (Violin Plot)')
+axes[1, 0].set_xlabel('Department')
+axes[1, 0].set_ylabel('Salary ($)')
 
-# 5. Pairplot (subset of columns)
-if len(numeric_cols) >= 2:
-    # Create separate figure for pairplot
-    plt.figure(figsize=(10, 8))
-    sns.pairplot(df[numeric_cols[:4]], diag_kind='kde')
-    plt.suptitle('Pairwise Relationships', y=1.02)
-    plt.show()
+# 5. Count plot for departments
+sns.countplot(data=df, x='department', ax=axes[1, 1], palette='pastel')
+axes[1, 1].set_title('Employee Count by Department')
+axes[1, 1].set_xlabel('Department')
+axes[1, 1].set_ylabel('Count')
 
-# 6. Count plot
-sns.countplot(data=df, x='category_column', ax=axes[1, 1])
-axes[1, 1].set_title('Category Counts')
-axes[1, 1].tick_params(axis='x', rotation=45)
+# Add value labels on bars
+for container in axes[1, 1].containers:
+    axes[1, 1].bar_label(container)
 
-# 7. Regression plot
-if len(numeric_cols) >= 2:
-    sns.regplot(data=df, x=numeric_cols[0], y=numeric_cols[1], ax=axes[1, 2])
-    axes[1, 2].set_title('Regression Plot')
+# 6. Swarm plot for detailed view
+sns.swarmplot(data=df, x='department', y='salary', ax=axes[1, 2], alpha=0.7)
+axes[1, 2].set_title('Individual Salaries by Department')
+axes[1, 2].set_xlabel('Department')
+axes[1, 2].set_ylabel('Salary ($)')
 
 plt.tight_layout()
+plt.show()
+
+# Create a separate pairplot for salary analysis
+plt.figure(figsize=(10, 8))
+# Add some derived features for better visualization
+df['salary_percentile'] = df['salary'].rank(pct=True) * 100
+pairplot_df = df[['salary', 'salary_percentile', 'department']].copy()
+sns.pairplot(pairplot_df, hue='department', diag_kind='kde', palette='Set1')
+plt.suptitle('Salary Analysis Pairplot', y=1.02)
 plt.show()`,
     requiredPackages: ["seaborn", "matplotlib", "pandas", "numpy"]
   },
@@ -217,75 +349,107 @@ plt.show()`,
     category: "ml",
     tags: ["scikit-learn", "machine-learning", "classification"],
     code: `# Note: scikit-learn needs to be installed first
-# Run: await micropip.install('scikit-learn')
+# Run: import micropip; await micropip.install('scikit-learn')
 
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import classification_report, mean_squared_error, r2_score
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 
-# Load data
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+# Load employee data
+df = await sql("SELECT * FROM employees_sample")
 
-# Prepare data for ML
-# Select features (numeric columns)
-numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+print("Employee Dataset:")
+print(df.head())
+print(f"\\nShape: {df.shape}")
 
-print(f"Numeric columns: {numeric_cols}")
-print(f"Categorical columns: {categorical_cols}")
+# ML Task 1: Predict department based on salary and ID
+print("\\n" + "="*50)
+print("CLASSIFICATION: Predicting Department")
+print("="*50)
 
-# Assume the first categorical column is the target
-if categorical_cols:
-    target_col = categorical_cols[0]
-    feature_cols = numeric_cols
-    
-    # Prepare features and target
-    X = df[feature_cols].fillna(0)  # Handle missing values
-    y = df[target_col].fillna('unknown')
-    
-    # Encode target if it's categorical
-    le = LabelEncoder()
-    y_encoded = le.fit_transform(y)
-    
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y_encoded, test_size=0.2, random_state=42
-    )
-    
-    # Train model
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
-    
-    # Make predictions
-    y_pred = rf.predict(X_test)
-    
-    # Results
-    print("\\nClassification Report:")
-    print(classification_report(y_test, y_pred, target_names=le.classes_))
-    
-    # Feature importance
-    feature_importance = pd.DataFrame({
-        'feature': feature_cols,
-        'importance': rf.feature_importances_
-    }).sort_values('importance', ascending=False)
-    
-    print("\\nFeature Importance:")
-    print(feature_importance)
-    
-    # Plot feature importance
-    plt.figure(figsize=(10, 6))
-    plt.barh(feature_importance['feature'], feature_importance['importance'])
-    plt.title('Feature Importance')
-    plt.xlabel('Importance')
-    plt.tight_layout()
-    plt.show()
-    
-else:
-    print("No categorical columns found for classification task")`,
+# Features for classification
+X_class = df[['id', 'salary']]
+y_class = df['department']
+
+# Encode the target
+le = LabelEncoder()
+y_class_encoded = le.fit_transform(y_class)
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(
+    X_class, y_class_encoded, test_size=0.3, random_state=42
+)
+
+# Train Random Forest classifier
+rf = RandomForestClassifier(n_estimators=50, random_state=42)
+rf.fit(X_train, y_train)
+
+# Make predictions
+y_pred = rf.predict(X_test)
+
+# Results
+print("\\nClassification Results:")
+print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+# Feature importance
+feature_importance = pd.DataFrame({
+    'feature': ['Employee ID', 'Salary'],
+    'importance': rf.feature_importances_
+}).sort_values('importance', ascending=False)
+
+print("\\nFeature Importance for Department Prediction:")
+print(feature_importance)
+
+# ML Task 2: Predict salary based on ID (regression)
+print("\\n" + "="*50)
+print("REGRESSION: Predicting Salary from Employee ID")
+print("="*50)
+
+# Features for regression
+X_reg = df[['id']].values
+y_reg = df['salary'].values
+
+# Split the data
+X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(
+    X_reg, y_reg, test_size=0.3, random_state=42
+)
+
+# Train Linear Regression
+lr = LinearRegression()
+lr.fit(X_train_reg, y_train_reg)
+
+# Make predictions
+y_pred_reg = lr.predict(X_test_reg)
+
+# Results
+mse = mean_squared_error(y_test_reg, y_pred_reg)
+r2 = r2_score(y_test_reg, y_pred_reg)
+
+print(f"Mean Squared Error: {mse:.2f}")
+print(f"R² Score: {r2:.4f}")
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+
+# Plot 1: Feature importance
+axes[0].barh(feature_importance['feature'], feature_importance['importance'])
+axes[0].set_title('Feature Importance for Department Prediction')
+axes[0].set_xlabel('Importance')
+
+# Plot 2: Regression results
+axes[1].scatter(y_test_reg, y_pred_reg, alpha=0.7)
+axes[1].plot([y_test_reg.min(), y_test_reg.max()], [y_test_reg.min(), y_test_reg.max()], 'r--', lw=2)
+axes[1].set_xlabel('Actual Salary')
+axes[1].set_ylabel('Predicted Salary')
+axes[1].set_title(f'Salary Prediction (R² = {r2:.4f})')
+
+plt.tight_layout()
+plt.show()`,
     requiredPackages: ["pandas", "numpy", "matplotlib"]
   },
 
@@ -301,74 +465,108 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 
-# Load your data
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+# Load employee data
+df = await sql("SELECT * FROM employees_sample")
 
-print("Statistical Analysis Report")
+print("Employee Statistical Analysis Report")
 print("=" * 50)
 
-# Basic descriptive statistics
-numeric_cols = df.select_dtypes(include=[np.number]).columns
-print(f"\\nAnalyzing {len(numeric_cols)} numeric columns")
+# Basic descriptive statistics for salary
+salary_data = df['salary'].dropna()
 
-for col in numeric_cols:
-    data = df[col].dropna()
-    
-    print(f"\\n{col.upper()}:")
-    print(f"  Mean: {data.mean():.2f}")
-    print(f"  Median: {data.median():.2f}")
-    print(f"  Std Dev: {data.std():.2f}")
-    print(f"  Skewness: {stats.skew(data):.2f}")
-    print(f"  Kurtosis: {stats.kurtosis(data):.2f}")
-    
-    # Normality test
-    if len(data) > 3:
-        stat, p_value = stats.shapiro(data[:5000])  # Limit for Shapiro-Wilk
-        print(f"  Normality test p-value: {p_value:.4f}")
-        print(f"  Normal distribution: {'Yes' if p_value > 0.05 else 'No'}")
+print("\\nSALARY ANALYSIS:")
+print(f"  Mean: $" + f"{salary_data.mean():,.2f}")
+print(f"  Median: $" + f"{salary_data.median():,.2f}")
+print(f"  Std Dev: $" + f"{salary_data.std():,.2f}")
+print(f"  Min: $" + f"{salary_data.min():,.2f}")
+print(f"  Max: $" + f"{salary_data.max():,.2f}")
+print(f"  Skewness: {stats.skew(salary_data):.2f}")
+print(f"  Kurtosis: {stats.kurtosis(salary_data):.2f}")
 
-# Correlation analysis
-if len(numeric_cols) > 1:
-    print("\\nCorrelation Analysis:")
-    corr_matrix = df[numeric_cols].corr()
-    
-    # Find strongest correlations
-    corr_pairs = []
-    for i in range(len(corr_matrix)):
-        for j in range(i+1, len(corr_matrix)):
-            corr_pairs.append({
-                'var1': corr_matrix.index[i],
-                'var2': corr_matrix.columns[j], 
-                'correlation': corr_matrix.iloc[i, j]
-            })
-    
-    corr_df = pd.DataFrame(corr_pairs)
-    corr_df = corr_df.reindex(corr_df['correlation'].abs().sort_values(ascending=False).index)
-    
-    print("Strongest correlations:")
-    for _, row in corr_df.head(5).iterrows():
-        print(f"  {row['var1']} <-> {row['var2']}: {row['correlation']:.3f}")
+# Normality test for salary
+stat, p_value = stats.shapiro(salary_data)
+print(f"  Normality test p-value: {p_value:.4f}")
+print(f"  Normal distribution: {'Yes' if p_value > 0.05 else 'No'}")
 
-# Group analysis (if categorical columns exist)
-categorical_cols = df.select_dtypes(include=['object']).columns
-if len(categorical_cols) > 0 and len(numeric_cols) > 0:
-    cat_col = categorical_cols[0]
-    num_col = numeric_cols[0]
+# Department-wise analysis
+print("\\nDEPARTMENT COMPARISON:")
+departments = df['department'].unique()
+
+dept_stats = []
+for dept in departments:
+    dept_salaries = df[df['department'] == dept]['salary']
+    dept_stats.append({
+        'department': dept,
+        'count': len(dept_salaries),
+        'mean': dept_salaries.mean(),
+        'median': dept_salaries.median(),
+        'std': dept_salaries.std()
+    })
+
+dept_df = pd.DataFrame(dept_stats).sort_values('mean', ascending=False)
+print(dept_df.round(2))
+
+# Statistical tests
+print("\\nSTATISTICAL TESTS:")
+
+# 1. ANOVA test for salary differences between departments
+dept_groups = [df[df['department'] == dept]['salary'].values for dept in departments]
+f_stat, anova_p = stats.f_oneway(*dept_groups)
+print(f"\\nANOVA Test (salary differences between departments):")
+print(f"  F-statistic: {f_stat:.4f}")
+print(f"  p-value: {anova_p:.4f}")
+print(f"  Significant difference: {'Yes' if anova_p < 0.05 else 'No'}")
+
+# 2. T-test between highest and lowest paying departments
+if len(departments) >= 2:
+    high_dept = dept_df.iloc[0]['department']
+    low_dept = dept_df.iloc[-1]['department']
     
-    print(f"\\nGroup Analysis: {num_col} by {cat_col}")
-    groups = [group[num_col].dropna() for name, group in df.groupby(cat_col)]
+    high_salaries = df[df['department'] == high_dept]['salary']
+    low_salaries = df[df['department'] == low_dept]['salary']
     
-    if len(groups) > 1:
-        # ANOVA test
-        f_stat, p_value = stats.f_oneway(*groups)
-        print(f"  ANOVA F-statistic: {f_stat:.3f}")
-        print(f"  ANOVA p-value: {p_value:.4f}")
-        print(f"  Significant difference: {'Yes' if p_value < 0.05 else 'No'}")
-        
-        # Group statistics
-        group_stats = df.groupby(cat_col)[num_col].agg(['mean', 'std', 'count'])
-        print("\\nGroup Statistics:")
-        print(group_stats.round(2))
+    t_stat, t_p = stats.ttest_ind(high_salaries, low_salaries)
+    print(f"\\nT-test ({high_dept} vs {low_dept}):")
+    print(f"  t-statistic: {t_stat:.4f}")
+    print(f"  p-value: {t_p:.4f}")
+    print(f"  Significant difference: {'Yes' if t_p < 0.05 else 'No'}")
+
+# 3. Correlation between ID and salary
+id_salary_corr, corr_p = stats.pearsonr(df['id'], df['salary'])
+print(f"\\nCorrelation (ID vs Salary):")
+print(f"  Pearson r: {id_salary_corr:.4f}")
+print(f"  p-value: {corr_p:.4f}")
+print(f"  Significant correlation: {'Yes' if corr_p < 0.05 else 'No'}")
+
+# Visualization
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+
+# Salary histogram
+axes[0, 0].hist(salary_data, bins=15, alpha=0.7, color='skyblue', edgecolor='black')
+axes[0, 0].axvline(salary_data.mean(), color='red', linestyle='--', label=f'Mean: $' + f'{salary_data.mean():,.0f}')
+axes[0, 0].set_title('Salary Distribution')
+axes[0, 0].set_xlabel('Salary ($)')
+axes[0, 0].set_ylabel('Frequency')
+axes[0, 0].legend()
+
+# Q-Q plot for normality
+stats.probplot(salary_data, dist="norm", plot=axes[0, 1])
+axes[0, 1].set_title('Q-Q Plot (Salary Normality)')
+
+# Department comparison
+dept_df.plot(x='department', y='mean', kind='bar', ax=axes[1, 0], color='lightcoral')
+axes[1, 0].set_title('Average Salary by Department')
+axes[1, 0].set_ylabel('Average Salary ($)')
+axes[1, 0].tick_params(axis='x', rotation=45)
+
+# ID vs Salary scatter
+axes[1, 1].scatter(df['id'], df['salary'], alpha=0.6, c=df['department'].astype('category').cat.codes)
+axes[1, 1].set_title(f'ID vs Salary (r = {id_salary_corr:.3f})')
+axes[1, 1].set_xlabel('Employee ID')
+axes[1, 1].set_ylabel('Salary ($)')
+
+plt.tight_layout()
+plt.show()
 
 print("\\nAnalysis complete!")`,
     requiredPackages: ["pandas", "numpy", "matplotlib", "scipy"]
@@ -385,7 +583,7 @@ print("\\nAnalysis complete!")`,
 import numpy as np
 
 # Load your data
-df = pd.read_sql("SELECT * FROM your_table", connection)
+df = await sql("SELECT * FROM employees_sample")
 
 print("Data Cleaning Report")
 print("=" * 40)
@@ -491,7 +689,7 @@ import json
 from datetime import datetime
 
 # Load your data
-df = pd.read_sql("SELECT * FROM your_table LIMIT 1000", connection)
+df = await sql("SELECT * FROM employees_sample")
 
 print("Data Export Utilities")
 print("=" * 30)

@@ -352,21 +352,12 @@ const ScriptsWorkspace: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${showScriptHistory ? 'bg-primary/20 text-primary' : ''}`}
+                className={`h-8 w-8 ${
+                  showScriptHistory ? 'bg-primary/20 text-primary' : ''
+                }`}
                 onClick={() => handlePanelToggle('notebooks')}
               >
                 <Notebook size={16} />
-              </Button>
-            </Tooltip>
-
-            <Tooltip content="Schema Browser" placement="bottom">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 ${showSchemaBrowser ? 'bg-primary/20 text-primary' : ''}`}
-                onClick={() => handlePanelToggle('schema')}
-              >
-                <Database size={16} />
               </Button>
             </Tooltip>
 
@@ -374,10 +365,25 @@ const ScriptsWorkspace: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${showTemplates ? 'bg-primary/20 text-primary' : ''}`}
+                className={`h-8 w-8 ${
+                  showTemplates ? 'bg-primary/20 text-primary' : ''
+                }`}
                 onClick={() => handlePanelToggle('templates')}
               >
                 <FileText size={16} />
+              </Button>
+            </Tooltip>
+
+            <Tooltip content="Schema Browser" placement="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${
+                  showSchemaBrowser ? 'bg-primary/20 text-primary' : ''
+                }`}
+                onClick={() => handlePanelToggle('schema')}
+              >
+                <Database size={16} />
               </Button>
             </Tooltip>
 
@@ -385,7 +391,9 @@ const ScriptsWorkspace: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${showPackageManager ? 'bg-primary/20 text-primary' : ''}`}
+                className={`h-8 w-8 ${
+                  showPackageManager ? 'bg-primary/20 text-primary' : ''
+                }`}
                 onClick={() => handlePanelToggle('packages')}
               >
                 <Package size={16} />
@@ -497,7 +505,7 @@ const ScriptsWorkspace: React.FC = () => {
 
         {/* Cells Area */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto overflow-x-visible p-4">
+          <div className="flex-1 overflow-y-auto overflow-x-visible p-8">
             {cells.map((cell, index) => (
               <React.Fragment key={cell.id}>
                 <PythonCell

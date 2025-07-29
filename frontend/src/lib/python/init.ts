@@ -212,7 +212,7 @@ export async function getInstalledPackages(): Promise<Map<string, string>> {
  * Create DuckDB bridge for Python
  */
 export function createDuckDBBridge(duckDBStore: any): DuckDBBridge {
-  return {
+  const bridge = {
     async queryToPandas(sql: string): Promise<any> {
       if (!pyodideInstance) {
         throw new Error("Pyodide not initialized");
@@ -231,20 +231,18 @@ export function createDuckDBBridge(duckDBStore: any): DuckDBBridge {
         data: result.data
       });
 
-      pyodideInstance.globals.set("query_data", dataJson);
-      
-      await pyodideInstance.runPython(`
-        import pandas as pd
-        import json
-        
-        data = json.loads(query_data)
-        df = pd.DataFrame(data['data'], columns=data['columns'])
-        
-        # Store in global namespace
-        globals()['_last_query_df'] = df
-      `);
+      // Create DataFrame directly in Python
+      const pyCode = `
+import pandas as pd
+import json
 
-      return pyodideInstance.globals.get('_last_query_df');
+_query_result_data = json.loads('''${dataJson}''')
+_query_result_df = pd.DataFrame(_query_result_data['data'], columns=_query_result_data['columns'])
+_query_result_df
+      `;
+      
+      const df = await pyodideInstance.runPythonAsync(pyCode);
+      return df;
     },
 
     async pandasToTable(df: any, tableName: string): Promise<void> {
@@ -276,6 +274,49 @@ export function createDuckDBBridge(duckDBStore: any): DuckDBBridge {
       return await duckDBStore.getTableSchema(tableName);
     }
   };
+  
+  // Expose the bridge to Python when it's created
+  if (pyodideInstance) {
+    // Create a Python wrapper class for the bridge
+    pyodideInstance.runPython(`
+      class DuckDBBridge:
+          def __init__(self):
+              pass
+              
+          def query_to_pandas(self, sql):
+              """Execute a SQL query on DuckDB and return results as a pandas DataFrame"""
+              # This will be replaced with the actual implementation
+              pass
+              
+          def pandas_to_table(self, df, table_name):
+              """Save a pandas DataFrame to DuckDB as a table"""
+              # This will be replaced with the actual implementation
+              pass
+              
+          def get_table_names(self):
+              """Get list of available tables in DuckDB"""
+              # This will be replaced with the actual implementation
+              pass
+              
+          def get_table_schema(self, table_name):
+              """Get schema information for a table"""
+              # This will be replaced with the actual implementation
+              pass
+      
+      # Create global instance
+      duckdb_bridge = DuckDBBridge()
+    `);
+    
+    // Inject JavaScript functions into Python bridge
+    pyodideInstance.registerJsModule("duckdb_js_bridge", {
+      queryToPandas: bridge.queryToPandas.bind(bridge),
+      pandasToTable: bridge.pandasToTable.bind(bridge),
+      getTableNames: bridge.getTableNames.bind(bridge),
+      getTableSchema: bridge.getTableSchema.bind(bridge)
+    });
+  }
+  
+  return bridge;
 }
 
 /**

@@ -17,6 +17,7 @@ import {
 
 import { usePythonStore } from '@/store/pythonStore';
 import { Button } from '@/components/ui/Button';
+import { SaveDialog } from '@/components/ui/SaveDialog';
 import type { PythonScript } from '@/lib/python/types';
 
 /**
@@ -26,12 +27,14 @@ const ScriptHistory: React.FC = () => {
   const {
     savedScripts,
     currentScript,
+    cells,
     loadScript,
     deleteScript,
     duplicateScript,
     importScript,
     exportScript,
     createNewScript,
+    saveScript,
   } = usePythonStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +42,9 @@ const ScriptHistory: React.FC = () => {
   const [showMenu, setShowMenu] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showNewNotebookConfirm, setShowNewNotebookConfirm] = useState(false);
 
   // Filter scripts based on search query
   const filteredScripts = savedScripts.filter(
@@ -141,6 +147,51 @@ const ScriptHistory: React.FC = () => {
     setNewName('');
   };
 
+  const hasUnsavedChanges = () => {
+    if (!cells || cells.length === 0) return false;
+    
+    // Check if this is a new unsaved notebook or has changes
+    if (!currentScript) {
+      return cells.length > 0 && cells.some(cell => cell.code.trim() !== '');
+    }
+    
+    // Compare current cells with saved script cells
+    const currentCellsJson = JSON.stringify(cells);
+    const savedCellsJson = JSON.stringify(currentScript.cells);
+    return currentCellsJson !== savedCellsJson;
+  };
+
+  const handleNewNotebook = () => {
+    if (hasUnsavedChanges()) {
+      setShowNewNotebookConfirm(true);
+    } else {
+      createNewScript();
+    }
+  };
+
+  const handleConfirmNewNotebook = () => {
+    setShowNewNotebookConfirm(false);
+    createNewScript();
+  };
+
+  const handleSaveAndCreateNew = () => {
+    setShowNewNotebookConfirm(false);
+    if (currentScript) {
+      // Save existing script
+      saveScript(currentScript.name);
+      setTimeout(() => createNewScript(), 100);
+    } else {
+      // Show save dialog for new script
+      setShowSaveDialog(true);
+    }
+  };
+
+  const handleSaveScript = (name: string) => {
+    saveScript(name);
+    setShowSaveDialog(false);
+    setTimeout(() => createNewScript(), 100);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -166,7 +217,7 @@ const ScriptHistory: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => createNewScript()}
+          onClick={handleNewNotebook}
           className="w-full mb-3 h-8 border-white/30 text-white/80 hover:bg-white/10 hover:border-white/30"
           title="Create New Notebook"
         >
@@ -373,6 +424,57 @@ const ScriptHistory: React.FC = () => {
       {showMenu && (
         <div className="fixed inset-0 z-10" onClick={() => setShowMenu(null)} />
       )}
+
+      {/* New Notebook Confirmation Dialog */}
+      {showNewNotebookConfirm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-darkNav p-6 rounded-lg shadow-lg w-96 max-w-[90vw]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                <span className="text-yellow-400 text-sm">!</span>
+              </div>
+              <h3 className="text-lg font-medium text-white">Unsaved Changes</h3>
+            </div>
+            
+            <p className="text-white/70 mb-6 leading-relaxed">
+              You have unsaved changes in your current notebook. What would you like to do?
+            </p>
+            
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="border border-primary hover:bg-primary/20 justify-center"
+                onClick={handleSaveAndCreateNew}
+              >
+                Save and Create New
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-center"
+                onClick={handleConfirmNewNotebook}
+              >
+                Discard Changes
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-center"
+                onClick={() => setShowNewNotebookConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Dialog */}
+      <SaveDialog
+        isOpen={showSaveDialog}
+        title="Save Notebook"
+        placeholder="Enter notebook name"
+        onSave={handleSaveScript}
+        onClose={() => setShowSaveDialog(false)}
+      />
     </div>
   );
 };
