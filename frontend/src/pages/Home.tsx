@@ -7,7 +7,7 @@ import DataPreviewTab from "@/components/tabs/DataPreviewTab";
 import QueryTab from "@/components/tabs/QueryTab";
 import VisualizationTab from "@/components/tabs/VisualizationTab";
 import AITab from "@/components/tabs/AITab";
-import ScriptsTab from "@/components/tabs/ScriptsTab";
+import NotebooksTab from "@/components/tabs/NotebooksTab";
 import ActionButtons from "@/components/common/ActionButtons";
 import { SEO } from "@/components/common/SEO";
 
@@ -129,7 +129,7 @@ const Home = () => {
               >
                 {activeTab === "preview" && <DataPreviewTab />}
                 {activeTab === "query" && <QueryTab />}
-                {activeTab === "scripts" && <ScriptsTab />}
+                {activeTab === "scripts" && <NotebooksTab />}
                 {activeTab === "visualization" && <VisualizationTab />}
                 {activeTab === "ai" && <AITab />}
               </motion.div>

@@ -50,7 +50,7 @@ const MAX_PANEL_WIDTH = 400;
 /**
  * Main container for the Python scripts workspace with resizable panels
  */
-const ScriptsWorkspace: React.FC = () => {
+const NotebooksWorkspace: React.FC = () => {
   const {
     pyodide,
     cells,
@@ -756,4 +756,4 @@ const ScriptsWorkspace: React.FC = () => {
   );
 };
 
-export default ScriptsWorkspace;
+export default NotebooksWorkspace;
