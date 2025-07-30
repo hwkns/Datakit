@@ -1,13 +1,13 @@
-import type { ScriptTemplate } from "./types";
+import type { ScriptTemplate } from './types';
 
 export const SCRIPT_TEMPLATES: ScriptTemplate[] = [
   // Quick Start Template
   {
-    id: "sample_employees_analysis",
-    name: "Sample Employees Analysis",
-    description: "Get started quickly with the built-in employees sample table",
-    category: "data_analysis",
-    tags: ["quickstart", "duckdb"],
+    id: 'sample_employees_analysis',
+    name: 'Sample Employees Analysis',
+    description: 'Get started quickly with the built-in employees sample table',
+    category: 'data_analysis',
+    tags: ['quickstart', 'duckdb'],
     code: `# Working with the sample employees table
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -54,16 +54,16 @@ plt.show()
 
 # You can also use query() or sql_bridge.query_to_pandas() for more explicit calls
 # employees_hr = await query("SELECT * FROM employees_sample WHERE department = 'HR'")`,
-    requiredPackages: ["pandas", "matplotlib"]
+    requiredPackages: ['pandas', 'matplotlib'],
   },
 
   // Data Analysis Templates
   {
-    id: "basic_data_exploration",
-    name: "Basic Data Exploration",
-    description: "Load data from DuckDB and perform basic exploration",
-    category: "data_analysis",
-    tags: ["pandas", "exploration", "duckdb"],
+    id: 'basic_data_exploration',
+    name: 'Basic Data Exploration',
+    description: 'Load data from DuckDB and perform basic exploration',
+    category: 'data_analysis',
+    tags: ['pandas', 'exploration', 'duckdb'],
     code: `# Load data from DuckDB table
 import pandas as pd
 import numpy as np
@@ -92,128 +92,130 @@ print(df.isnull().sum())
 dept_counts = df['department'].value_counts()
 print("\\nEmployees per department:")
 print(dept_counts)`,
-    requiredPackages: ["pandas", "numpy"]
+    requiredPackages: ['pandas', 'numpy'],
   },
 
-  {
-    id: "duckdb_to_pandas",
-    name: "DuckDB to Pandas",
-    description: "Execute SQL queries and work with results in pandas",
-    category: "data_analysis", 
-    tags: ["duckdb", "pandas", "sql"],
-    code: `# Execute SQL query and get results as DataFrame
-# Example 1: Filter employees by salary
-high_earners = await sql("""
-SELECT * 
-FROM employees_sample 
-WHERE salary > 70000
-ORDER BY salary DESC
-""")
+  // TODO: To make this work
+  //
+  //   {
+  //     id: "duckdb_to_pandas",
+  //     name: "DuckDB to Pandas",
+  //     description: "Execute SQL queries and work with results in pandas",
+  //     category: "data_analysis",
+  //     tags: ["duckdb", "pandas", "sql"],
+  //     code: `# Execute SQL query and get results as DataFrame
+  // # Example 1: Filter employees by salary
+  // high_earners = await sql("""
+  // SELECT *
+  // FROM employees_sample
+  // WHERE salary > 70000
+  // ORDER BY salary DESC
+  // """)
 
-print(f"High earners: {len(high_earners)} employees")
-print(high_earners)
+  // print(f"High earners: {len(high_earners)} employees")
+  // print(high_earners)
 
-# Example 2: Aggregate query with grouping
-dept_stats = await sql("""
-SELECT 
-    department,
-    COUNT(*) as employee_count,
-    AVG(salary) as avg_salary,
-    MIN(salary) as min_salary,
-    MAX(salary) as max_salary,
-    SUM(salary) as total_salary
-FROM employees_sample
-GROUP BY department
-ORDER BY avg_salary DESC
-""")
+  // # Example 2: Aggregate query with grouping
+  // dept_stats = await sql("""
+  // SELECT
+  //     department,
+  //     COUNT(*) as employee_count,
+  //     AVG(salary) as avg_salary,
+  //     MIN(salary) as min_salary,
+  //     MAX(salary) as max_salary,
+  //     SUM(salary) as total_salary
+  // FROM employees_sample
+  // GROUP BY department
+  // ORDER BY avg_salary DESC
+  // """)
 
-print("\\nDepartment Statistics:")
-print(dept_stats)
+  // print("\\nDepartment Statistics:")
+  // print(dept_stats)
 
-# Example 3: Using CTEs (Common Table Expressions)
-salary_analysis = await sql("""
-WITH salary_categories AS (
-    SELECT 
-        *,
-        CASE 
-            WHEN salary < 60000 THEN 'Junior'
-            WHEN salary BETWEEN 60000 AND 80000 THEN 'Mid-level'
-            ELSE 'Senior'
-        END as level
-    FROM employees_sample
-)
-SELECT 
-    level,
-    COUNT(*) as count,
-    AVG(salary) as avg_salary
-FROM salary_categories
-GROUP BY level
-ORDER BY avg_salary
-""")
+  // # Example 3: Using CTEs (Common Table Expressions)
+  // salary_analysis = await sql("""
+  // WITH salary_categories AS (
+  //     SELECT
+  //         *,
+  //         CASE
+  //             WHEN salary < 60000 THEN 'Junior'
+  //             WHEN salary BETWEEN 60000 AND 80000 THEN 'Mid-level'
+  //             ELSE 'Senior'
+  //         END as level
+  //     FROM employees_sample
+  // )
+  // SELECT
+  //     level,
+  //     COUNT(*) as count,
+  //     AVG(salary) as avg_salary
+  // FROM salary_categories
+  // GROUP BY level
+  // ORDER BY avg_salary
+  // """)
 
-print("\\nSalary Level Analysis:")
-print(salary_analysis)`,
-    requiredPackages: ["pandas"]
-  },
+  // print("\\nSalary Level Analysis:")
+  // print(salary_analysis)`,
+  //     requiredPackages: ["pandas"]
+  //   },
 
-  {
-    id: "pandas_to_duckdb", 
-    name: "Pandas to DuckDB",
-    description: "Create DataFrames in Python and save to DuckDB tables",
-    category: "data_analysis",
-    tags: ["pandas", "duckdb", "data-export"],
-    code: `# Create a sample DataFrame
-import pandas as pd
-import numpy as np
+  //   {
+  //     id: "pandas_to_duckdb",
+  //     name: "Pandas to DuckDB",
+  //     description: "Create DataFrames in Python and save to DuckDB tables",
+  //     category: "data_analysis",
+  //     tags: ["pandas", "duckdb", "data-export"],
+  //     code: `# Create a sample DataFrame
+  // import pandas as pd
+  // import numpy as np
 
-# First, let's analyze the existing employees data
-employees = await sql("SELECT * FROM employees_sample")
+  // # First, let's analyze the existing employees data
+  // employees = await sql("SELECT * FROM employees_sample")
 
-# Create a performance review DataFrame based on employees
-np.random.seed(42)
-performance_reviews = pd.DataFrame({
-    'employee_id': employees['id'],
-    'employee_name': employees['name'],
-    'department': employees['department'],
-    'review_score': np.random.normal(3.5, 0.5, len(employees)).round(1).clip(1, 5),
-    'projects_completed': np.random.poisson(5, len(employees)),
-    'review_date': pd.date_range('2024-01-01', periods=len(employees), freq='D')
-})
+  // # Create a performance review DataFrame based on employees
+  // np.random.seed(42)
+  // performance_reviews = pd.DataFrame({
+  //     'employee_id': employees['id'],
+  //     'employee_name': employees['name'],
+  //     'department': employees['department'],
+  //     'review_score': np.random.normal(3.5, 0.5, len(employees)).round(1).clip(1, 5),
+  //     'projects_completed': np.random.poisson(5, len(employees)),
+  //     'review_date': pd.date_range('2024-01-01', periods=len(employees), freq='D')
+  // })
 
-print("Created Performance Reviews DataFrame:")
-print(performance_reviews.head(10))
+  // print("Created Performance Reviews DataFrame:")
+  // print(performance_reviews.head(10))
 
-# Save to DuckDB table
-table_name = "performance_reviews"
-await sql_bridge.pandas_to_table(performance_reviews, table_name)
+  // # Save to DuckDB table
+  // table_name = "performance_reviews"
+  // await sql_bridge.pandas_to_table(performance_reviews, table_name)
 
-print(f"\\nDataFrame saved to DuckDB table: {table_name}")
+  // print(f"\\nDataFrame saved to DuckDB table: {table_name}")
 
-# Now we can join the tables!
-employee_performance = await sql("""
-SELECT 
-    e.*,
-    p.review_score,
-    p.projects_completed,
-    p.review_date
-FROM employees_sample e
-JOIN performance_reviews p ON e.id = p.employee_id
-WHERE p.review_score >= 4.0
-ORDER BY p.review_score DESC
-""")
+  // # Now we can join the tables!
+  // employee_performance = await sql("""
+  // SELECT
+  //     e.*,
+  //     p.review_score,
+  //     p.projects_completed,
+  //     p.review_date
+  // FROM employees_sample e
+  // JOIN performance_reviews p ON e.id = p.employee_id
+  // WHERE p.review_score >= 4.0
+  // ORDER BY p.review_score DESC
+  // """)
 
-print(f"\\nTop performers (review score >= 4.0): {len(employee_performance)} employees")
-print(employee_performance)`,
-    requiredPackages: ["pandas", "numpy"]
-  },
+  // print(f"\\nTop performers (review score >= 4.0): {len(employee_performance)} employees")
+  // print(employee_performance)`,
+  //     requiredPackages: ["pandas", "numpy"]
+  //   },
 
   // Visualization Templates
   {
-    id: "basic_plotting",
-    name: "Basic Data Visualization",
-    description: "Create common plots with matplotlib",
-    category: "visualization",
-    tags: ["matplotlib", "plotting", "visualization"], 
+    id: 'basic_plotting',
+    name: 'Basic Data Visualization',
+    description: 'Create common plots with matplotlib',
+    category: 'visualization',
+    tags: ['matplotlib', 'plotting', 'visualization'],
     code: `import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -260,15 +262,15 @@ axes[1, 1].set_ylabel('Salary ($)')
 
 plt.tight_layout()
 plt.show()`,
-    requiredPackages: ["matplotlib", "pandas", "numpy"]
+    requiredPackages: ['matplotlib', 'pandas', 'numpy'],
   },
 
   {
-    id: "seaborn_advanced",
-    name: "Advanced Plots with Seaborn",
-    description: "Create publication-ready plots with seaborn",
-    category: "visualization",
-    tags: ["seaborn", "statistical-plots", "advanced"],
+    id: 'seaborn_advanced',
+    name: 'Advanced Plots with Seaborn',
+    description: 'Create publication-ready plots with seaborn',
+    category: 'visualization',
+    tags: ['seaborn', 'statistical-plots', 'advanced'],
     code: `import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -338,18 +340,19 @@ pairplot_df = df[['salary', 'salary_percentile', 'department']].copy()
 sns.pairplot(pairplot_df, hue='department', diag_kind='kde', palette='Set1')
 plt.suptitle('Salary Analysis Pairplot', y=1.02)
 plt.show()`,
-    requiredPackages: ["seaborn", "matplotlib", "pandas", "numpy"]
+    requiredPackages: ['seaborn', 'matplotlib', 'pandas', 'numpy'],
   },
 
   // Machine Learning Templates
   {
-    id: "basic_ml_analysis",
-    name: "Basic Machine Learning",
-    description: "Simple ML analysis with scikit-learn",
-    category: "ml",
-    tags: ["scikit-learn", "machine-learning", "classification"],
+    id: 'basic_ml_analysis',
+    name: 'Basic Machine Learning',
+    description: 'Simple ML analysis with scikit-learn',
+    category: 'ml',
+    tags: ['scikit-learn', 'machine-learning', 'classification'],
     code: `# Note: scikit-learn needs to be installed first
 # Run: import micropip; await micropip.install('scikit-learn')
+await micropip.install('scikit-learn')
 
 import pandas as pd
 import numpy as np
@@ -450,16 +453,16 @@ axes[1].set_title(f'Salary Prediction (R² = {r2:.4f})')
 
 plt.tight_layout()
 plt.show()`,
-    requiredPackages: ["pandas", "numpy", "matplotlib"]
+    requiredPackages: ['pandas', 'numpy', 'matplotlib'],
   },
 
   // Statistical Analysis Templates
   {
-    id: "statistical_analysis",
-    name: "Statistical Analysis",
-    description: "Perform statistical tests and analysis",
-    category: "stats",
-    tags: ["statistics", "scipy", "analysis"],
+    id: 'statistical_analysis',
+    name: 'Statistical Analysis',
+    description: 'Perform statistical tests and analysis',
+    category: 'stats',
+    tags: ['statistics', 'scipy', 'analysis'],
     code: `import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -569,16 +572,16 @@ plt.tight_layout()
 plt.show()
 
 print("\\nAnalysis complete!")`,
-    requiredPackages: ["pandas", "numpy", "matplotlib", "scipy"]
+    requiredPackages: ['pandas', 'numpy', 'matplotlib', 'scipy'],
   },
 
   // Utility Templates
   {
-    id: "data_cleaning",
-    name: "Data Cleaning Utilities",
-    description: "Common data cleaning and preprocessing operations",
-    category: "utils",
-    tags: ["data-cleaning", "preprocessing", "utilities"],
+    id: 'data_cleaning',
+    name: 'Data Cleaning Utilities',
+    description: 'Common data cleaning and preprocessing operations',
+    category: 'utils',
+    tags: ['data-cleaning', 'preprocessing', 'utilities'],
     code: `import pandas as pd
 import numpy as np
 
@@ -675,15 +678,15 @@ print(f"Rows removed: {df.shape[0] - df_cleaned.shape[0]}")
 # Optional: Save cleaned data back to DuckDB
 # pandas_to_table(df_cleaned, "cleaned_data")
 # print("\\nCleaned data saved as 'cleaned_data' table")`,
-    requiredPackages: ["pandas", "numpy"]
+    requiredPackages: ['pandas', 'numpy'],
   },
 
   {
-    id: "export_utilities", 
-    name: "Data Export Utilities",
-    description: "Export data to various formats and create summaries",
-    category: "utils",
-    tags: ["export", "csv", "json", "utilities"],
+    id: 'export_utilities',
+    name: 'Data Export Utilities',
+    description: 'Export data to various formats and create summaries',
+    category: 'utils',
+    tags: ['export', 'csv', 'json', 'utilities'],
     code: `import pandas as pd
 import json
 from datetime import datetime
@@ -809,16 +812,17 @@ print(f"Data type consistency: {'✓' if consistent_types else '⚠'}")
 print(f"\\nOverall Quality Score: {quality_score}/{total_checks} ({(quality_score/total_checks)*100:.0f}%)")
 
 print("\\nExport complete! Use the outputs above as needed.")`,
-    requiredPackages: ["pandas", "numpy"]
+    requiredPackages: ['pandas', 'numpy'],
   },
 
   // Hugging Face Template 1: Sentiment Analysis with Data Integration
   {
-    id: "hf_sentiment_analysis",
-    name: "Sentiment Analysis + Data",
-    description: "Analyze sentiment of text data from your database using DistilBERT",
-    category: "hf",
-    tags: ["huggingface", "sentiment", "nlp", "data-analysis"],
+    id: 'hf_sentiment_analysis',
+    name: 'Sentiment Analysis + Data',
+    description:
+      'Analyze sentiment of text data from your database using DistilBERT',
+    category: 'hf',
+    tags: ['huggingface', 'sentiment', 'nlp', 'data-analysis'],
     code: `# Sentiment Analysis with Database Integration
 # Using Xenova/distilbert-base-uncased-finetuned-sst-2-english
 
@@ -873,17 +877,365 @@ print(f"📝 Total Feedback Analyzed: {len(df)}")
 # Display the DataFrame
 print("\\n📊 Detailed Results:")
 df`,
-    requiredPackages: ["transformers-js-py", "pandas"]
+    requiredPackages: ['transformers-js-py', 'pandas'],
+  },
+
+  // Advanced Hugging Face Template: ML Pipeline with Web Data
+  {
+    id: 'hf_advanced_ml_pipeline',
+    name: 'ML Pipeline',
+    description:
+      'Fetch web data, analyze with HuggingFace models, and build ML classifiers with scikit-learn',
+    category: 'hf',
+    tags: [
+      'huggingface',
+      'scikit-learn',
+      'requests',
+      'web-scraping',
+      'machine-learning',
+      'pipeline',
+    ],
+    code: `# ML Pipeline: Web Data + HuggingFace + Scikit-Learn
+    # Demonstrates fetching data, NLP analysis, and traditional ML integration
+    
+    print(" Advanced ML Pipeline Demo")
+    print("=" * 50)
+    
+    # Step 1: Install required packages and setup
+    print(" Setting up packages...")
+    try:
+        # Check if requests is available, install if needed
+        import requests
+        print("✅ requests available")
+    except ImportError:
+        print("📥 Installing requests...")
+        await micropip.install('requests')
+        import requests
+        print("✅ requests installed")
+    
+    try:
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import classification_report, accuracy_score
+        from sklearn.preprocessing import StandardScaler
+        print("✅ scikit-learn available")
+    except ImportError:
+        print("📥 Installing scikit-learn...")
+        await micropip.install('scikit-learn')
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import classification_report, accuracy_score
+        from sklearn.preprocessing import StandardScaler
+        print("✅ scikit-learn installed")
+    
+    import pandas as pd
+    import numpy as np
+    import json
+    
+    # Step 2: Simulate fetching news articles (replace with real API)
+    print("\\n📰 Fetching sample news data...")
+    
+    # Sample news articles (in real scenario, you'd fetch from news API)
+    sample_news = [
+        # Business articles
+        {
+            "title": "Stock Market Reaches New Highs Amid Economic Recovery",
+            "content": "The stock market surged today as investors showed confidence in the economic recovery. Tech stocks led the gains with Apple and Microsoft posting strong quarterly results.",
+            "category": "business"
+        },
+        {
+            "title": "Federal Reserve Announces Interest Rate Decision",
+            "content": "The Federal Reserve maintained interest rates at current levels, citing steady economic growth. Markets responded positively to the announcement with moderate gains across sectors.",
+            "category": "business"
+        },
+        {
+            "title": "Major Merger Creates Banking Giant",
+            "content": "Two of the nation's largest banks announced a merger worth $50 billion. The combined entity will become the second-largest financial institution in the country.",
+            "category": "business"
+        },
+        # Science articles
+        {
+            "title": "Scientists Discover New Species in Amazon Rainforest", 
+            "content": "Researchers have identified a new species of colorful frog in the Amazon basin. The discovery highlights the rich biodiversity of the rainforest and the urgent need for conservation.",
+            "category": "science"
+        },
+        {
+            "title": "Breakthrough in Quantum Computing Achieved",
+            "content": "Scientists have successfully demonstrated quantum supremacy with a new quantum processor. This achievement could revolutionize computing and solve complex problems impossible for classical computers.",
+            "category": "science"
+        },
+        {
+            "title": "Mars Rover Finds Evidence of Ancient Water",
+            "content": "NASA's latest Mars rover has discovered mineral deposits that could only form in the presence of water. This finding supports theories about Mars having a wet past billions of years ago.",
+            "category": "science"
+        },
+        # Sports articles
+        {
+            "title": "Championship Game Breaks Viewership Records",
+            "content": "Last night's championship game attracted over 100 million viewers, making it the most-watched sporting event of the year. The thrilling overtime finish kept fans on the edge of their seats.",
+            "category": "sports"
+        },
+        {
+            "title": "Olympic Athlete Sets New World Record",
+            "content": "In a stunning performance, the young athlete shattered the previous world record by over two seconds. This achievement marks a new era in the sport.",
+            "category": "sports"
+        },
+        {
+            "title": "Team Wins First Championship in 50 Years",
+            "content": "The underdog team completed their miracle season by winning their first championship in five decades. Fans celebrated in the streets as history was made.",
+            "category": "sports"
+        },
+        # Technology articles
+        {
+            "title": "New AI Model Revolutionizes Medical Diagnosis",
+            "content": "A groundbreaking artificial intelligence model developed by researchers can now diagnose rare diseases with 95% accuracy. This breakthrough could transform healthcare delivery worldwide.",
+            "category": "technology"
+        },
+        {
+            "title": "Major Tech Company Unveils Revolutionary Smartphone",
+            "content": "The new smartphone features breakthrough battery technology that lasts up to a week on a single charge. Industry experts predict this could change mobile computing forever.",
+            "category": "technology"
+        },
+        {
+            "title": "Cybersecurity Firm Discovers Major Vulnerability",
+            "content": "Security researchers have uncovered a critical vulnerability affecting millions of devices worldwide. Companies are rushing to patch their systems before hackers can exploit the flaw.",
+            "category": "technology"
+        },
+        # Politics articles
+        {
+            "title": "Climate Summit Reaches Historic Agreement",
+            "content": "World leaders at the climate summit have agreed to ambitious new targets for carbon reduction. The agreement includes binding commitments and substantial funding for renewable energy projects.",
+            "category": "politics"
+        },
+        {
+            "title": "New Healthcare Bill Passes Congress",
+            "content": "After months of debate, Congress has passed comprehensive healthcare reform. The bill promises to expand coverage to millions of uninsured Americans.",
+            "category": "politics"
+        },
+        {
+            "title": "International Trade Deal Signed",
+            "content": "Representatives from multiple nations signed a historic trade agreement today. The deal is expected to boost economic growth and create thousands of new jobs.",
+            "category": "politics"
+        },
+        # Entertainment articles
+        {
+            "title": "Hollywood Blockbuster Breaks Box Office Records",
+            "content": "The latest superhero movie has shattered opening weekend records, earning over $300 million globally. Critics praise the film's stunning visual effects and compelling storyline.",
+            "category": "entertainment"
+        },
+        {
+            "title": "Music Festival Announces Star-Studded Lineup",
+            "content": "The annual music festival revealed its lineup featuring top artists from around the world. Tickets sold out within minutes of going on sale.",
+            "category": "entertainment"
+        },
+        {
+            "title": "Streaming Service Wins Multiple Awards",
+            "content": "The popular streaming platform dominated the awards ceremony, taking home prizes in multiple categories. Their original content continues to reshape the entertainment industry.",
+            "category": "entertainment"
+        }
+    ]
+    
+    print(f"Loaded {len(sample_news)} sample articles")
+    
+    # Step 3: Use HuggingFace for NLP analysis
+    print("\\n🤗 Analyzing articles with HuggingFace models...")
+    
+    # Load multiple HF pipelines
+    pipeline = transformers.pipeline
+    
+    # Sentiment analysis
+    print("  Loading sentiment analysis...")
+    sentiment_pipe = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english')
+    
+    # Feature extraction - skip for now due to format issues
+    # We'll use other features instead
+    print("  Skipping embeddings (using text features instead)...")
+    
+    # Zero-shot classification
+    print("  Loading zero-shot classifier...")
+    classifier_pipe = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncased-mnli')
+    
+    # Categories for classification
+    hf_categories = ["finance", "science", "sports", "technology", "politics", "entertainment"]
+    
+    print("All HuggingFace models loaded!")
+    
+    # Step 4: Process articles with HF models
+    print("\\n🔄 Processing articles...")
+    processed_articles = []
+    
+    for i, article in enumerate(sample_news):
+        print(f"  Processing article {i+1}/{len(sample_news)}: '{article['title'][:50]}...'")
+        
+        text = f"{article['title']} {article['content']}"
+        
+        # Sentiment analysis
+        sentiment_result = await sentiment_pipe(text)
+        sentiment = sentiment_result[0]
+        
+        # Calculate text-based features instead of embeddings
+        # Count words by category keywords
+        tech_words = ['tech', 'technology', 'AI', 'software', 'digital', 'computer', 'data']
+        business_words = ['market', 'stock', 'finance', 'economy', 'investor', 'company', 'business']
+        science_words = ['research', 'scientist', 'study', 'discovery', 'species', 'medical']
+        
+        text_lower = text.lower()
+        tech_score = sum(1 for word in tech_words if word.lower() in text_lower)
+        business_score = sum(1 for word in business_words if word.lower() in text_lower)
+        science_score = sum(1 for word in science_words if word.lower() in text_lower)
+        
+        # Zero-shot classification
+        classification_result = await classifier_pipe(text, hf_categories)
+        predicted_category = classification_result['labels'][0]
+        category_confidence = classification_result['scores'][0]
+        
+        processed_articles.append({
+            'title': article['title'],
+            'content': article['content'][:100] + "..." if len(article['content']) > 100 else article['content'],
+            'true_category': article['category'],
+            'predicted_category': predicted_category,
+            'category_confidence': category_confidence,
+            'sentiment_label': sentiment['label'],
+            'sentiment_score': sentiment['score'],
+            'tech_score': tech_score,
+            'business_score': business_score,
+            'science_score': science_score,
+            'text_length': len(text),
+            'word_count': len(text.split())
+        })
+    
+    print("✅ All articles processed!")
+    
+    # Step 5: Create dataset for machine learning
+    print("\\nCreating ML dataset...")
+    
+    # Create DataFrame
+    df = pd.DataFrame(processed_articles)
+    
+    # Extract features for ML
+    features_df = pd.DataFrame({
+        'sentiment_score': df['sentiment_score'],
+        'category_confidence': df['category_confidence'], 
+        'text_length': df['text_length'],
+        'word_count': df['word_count'],
+        'sentiment_positive': (df['sentiment_label'] == 'POSITIVE').astype(int),
+        'tech_score': df['tech_score'],
+        'business_score': df['business_score'],
+        'science_score': df['science_score']
+    })
+    
+    print(f" Created feature matrix: {features_df.shape}")
+    
+    # Step 6: Train ML classifier to predict true category
+    print("\\n Training scikit-learn classifier...")
+    
+    # Prepare data
+    X = features_df.values
+    y = df['true_category'].values
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Train Random Forest
+    rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf_classifier.fit(X_train_scaled, y_train)
+    
+    # Make predictions
+    y_pred = rf_classifier.predict(X_test_scaled)
+    
+    # Evaluate
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f" Random Forest Accuracy: {accuracy:.2%}")
+    
+    # Step 7: Compare HuggingFace vs Scikit-Learn predictions
+    print("\\n Model Comparison Analysis:")
+    
+    # Create comparison DataFrame
+    comparison_df = df[['title', 'true_category', 'predicted_category', 'category_confidence']].copy()
+    
+    # Add scikit-learn predictions for full dataset
+    X_full_scaled = scaler.transform(features_df.values)
+    sklearn_predictions = rf_classifier.predict(X_full_scaled)
+    sklearn_probabilities = rf_classifier.predict_proba(X_full_scaled)
+    
+    comparison_df['sklearn_category'] = sklearn_predictions
+    comparison_df['sklearn_confidence'] = np.max(sklearn_probabilities, axis=1)
+    
+    # Calculate accuracies
+    hf_accuracy = (comparison_df['predicted_category'] == comparison_df['true_category']).mean()
+    sklearn_accuracy = (comparison_df['sklearn_category'] == comparison_df['true_category']).mean()
+    
+    print(f"HuggingFace Zero-Shot Accuracy: {hf_accuracy:.2%}")
+    print(f"Scikit-Learn RF Accuracy: {sklearn_accuracy:.2%}")
+    
+    # Step 8: Feature importance analysis
+    print("\\n🔍 Feature Importance Analysis:")
+    feature_names = features_df.columns.tolist()
+    importances = rf_classifier.feature_importances_
+    
+    feature_importance_df = pd.DataFrame({
+        'feature': feature_names,
+        'importance': importances
+    }).sort_values('importance', ascending=False)
+    
+    print("Top 5 most important features:")
+    for idx, row in feature_importance_df.head().iterrows():
+        print(f"  {row['feature']}: {row['importance']:.3f}")
+    
+    # Step 9: Final results and insights
+    print("\\n Pipeline Results Summary:")
+    print("=" * 40)
+    print(f" Articles processed: {len(sample_news)}")
+    print(f" Sentiment distribution:")
+    sentiment_counts = df['sentiment_label'].value_counts()
+    for sentiment, count in sentiment_counts.items():
+        print(f"   {sentiment}: {count} ({count/len(df)*100:.1f}%)")
+    
+    print(f"\\nCategory prediction comparison:")
+    print(f"   HuggingFace accuracy: {hf_accuracy:.1%}")
+    print(f"   Scikit-Learn accuracy: {sklearn_accuracy:.1%}")
+    
+    print(f"\\n ML Model Performance:")
+    print(f"   Features used: {features_df.shape[1]}")
+    print(f"   Training samples: {len(X_train)}")
+    print(f"   Test accuracy: {accuracy:.1%}")
+    
+    # Display detailed results
+    print("\\n Detailed Article Analysis:")
+    display_df = comparison_df[['title', 'true_category', 'predicted_category', 'sklearn_category']].copy()
+    display_df.columns = ['Article Title', 'True Category', 'HF Prediction', 'SKLearn Prediction']
+    
+    print("\\n Use Cases for this Pipeline:")
+    print("  • News article classification and routing")
+    print("  • Content recommendation systems") 
+    print("  • Automated content tagging")
+    print("  • Market sentiment analysis")
+    print("  • Research paper categorization")
+    print("  • Social media content analysis")
+    
+    display_df`,
+    requiredPackages: [
+      'transformers-js-py',
+      'pandas',
+      'numpy',
+      'scikit-learn',
+      'requests',
+    ],
   },
 
   // Hugging Face Template 2: Text Generation Stories
   {
-    id: "hf_text_generation",
-    name: "AI Story Generator",
-    description: "Generate creative stories and text using Llama2.c tiny model",
-    category: "hf",
-    tags: ["huggingface", "text-generation", "creative", "stories"],
-    code: `# AI Story Generator using Llama2.c
+    id: 'hf_text_generation',
+    name: 'Story Generator',
+    description: 'Generate creative stories and text using Llama2.c tiny model',
+    category: 'hf',
+    tags: ['huggingface', 'text-generation', 'creative', 'stories'],
+    code: `# Story Generator using Llama2.c
 # Using Xenova/llama2.c-stories42M - lightweight story generation model
 
 print("📝 AI Story Generator")
@@ -949,20 +1301,21 @@ print("  • Increase max_length for longer stories")
 # Display the stories DataFrame
 print("\\n📚 All Generated Stories:")
 df[['prompt', 'word_count']]`,
-    requiredPackages: ["transformers-js-py", "pandas"]
+    requiredPackages: ['transformers-js-py', 'pandas'],
   },
 
   // Hugging Face Template 3: Zero-Shot Classification
   {
-    id: "hf_zero_shot_classification",
-    name: "Smart Text Classifier",
-    description: "Classify any text into custom categories without training data",
-    category: "hf",
-    tags: ["huggingface", "classification", "zero-shot", "categories"],
+    id: 'hf_zero_shot_classification',
+    name: 'Text Classifier',
+    description:
+      'Classify any text into custom categories without training data',
+    category: 'hf',
+    tags: ['huggingface', 'classification', 'zero-shot', 'categories'],
     code: `# Zero-Shot Text Classification
 # Using Xenova/distilbert-base-uncased-mnli for flexible classification
 
-print("🏷️ Smart Text Classifier")
+print("🏷️ Text Classifier")
 print("=" * 30)
 
 # Load zero-shot classification pipeline
@@ -1046,20 +1399,20 @@ print("  • Social media monitoring")
 
 # Display results
 df[['text', 'main_category', 'confidence']]`,
-    requiredPackages: ["transformers-js-py", "pandas"]
+    requiredPackages: ['transformers-js-py', 'pandas'],
   },
 
   // Hugging Face Template 4: Question Answering with Context
   {
-    id: "hf_question_answering",
-    name: "Smart Q&A System",
-    description: "Answer questions based on your document content using BERT",
-    category: "hf",
-    tags: ["huggingface", "question-answering", "information-extraction"],
-    code: `# Smart Question Answering System
+    id: 'hf_question_answering',
+    name: 'Q&A System',
+    description: 'Answer questions based on your document content using BERT',
+    category: 'hf',
+    tags: ['huggingface', 'question-answering', 'information-extraction'],
+    code: `# Question Answering System
 # Using Xenova/distilbert-base-cased-distilled-squad for document Q&A
 
-print("🤔 Smart Question Answering System")
+print("Question Answering System")
 print("=" * 40)
 
 # Load question-answering pipeline
@@ -1145,17 +1498,18 @@ print("  • Longer contexts may reduce accuracy")
 # Display all Q&A pairs
 print("\\n📋 Complete Q&A Results:")
 df[['question', 'answer', 'confidence_level']]`,
-    requiredPackages: ["transformers-js-py", "pandas"]
+    requiredPackages: ['transformers-js-py', 'pandas'],
   },
 
   // Hugging Face Template 5: Feature Extraction + Data Analysis
   {
-    id: "hf_feature_extraction",
-    name: " Text Feature Extraction",
-    description: "Extract semantic features from text and perform similarity analysis",
-    category: "hf",
-    tags: ["huggingface", "feature-extraction", "embeddings", "similarity"],
-    code: `# 🧠 Text Feature Extraction & Similarity Analysis
+    id: 'hf_feature_extraction',
+    name: ' Text Feature Extraction',
+    description:
+      'Extract semantic features from text and perform similarity analysis',
+    category: 'hf',
+    tags: ['huggingface', 'feature-extraction', 'embeddings', 'similarity'],
+    code: `# Text Feature Extraction & Similarity Analysis
 # Using Xenova/all-MiniLM-L6-v2 for sentence embeddings
 
 print("🧠 Text Feature Extraction & Similarity Analysis")
@@ -1288,349 +1642,17 @@ similarity_df = pd.DataFrame(
     index=[f"P{i+1}" for i in range(5)]
 )
 similarity_df.round(3)`,
-    requiredPackages: ["transformers-js-py", "pandas", "numpy", "scikit-learn"]
+    requiredPackages: ['transformers-js-py', 'pandas', 'numpy', 'scikit-learn'],
   },
-
-  // Advanced Hugging Face Template: ML Pipeline with Web Data
-  {
-    id: "hf_advanced_ml_pipeline",
-    name: "ML Pipeline",
-    description: "Fetch web data, analyze with HuggingFace models, and build ML classifiers with scikit-learn",
-    category: "hf",
-    tags: ["huggingface", "scikit-learn", "requests", "web-scraping", "machine-learning", "pipeline"],
-    code: `# ML Pipeline: Web Data + HuggingFace + Scikit-Learn
-# Demonstrates fetching data, NLP analysis, and traditional ML integration
-
-print(" Advanced ML Pipeline Demo")
-print("=" * 50)
-
-# Step 1: Install required packages and setup
-print(" Setting up packages...")
-try:
-    # Check if requests is available, install if needed
-    import requests
-    print("✅ requests available")
-except ImportError:
-    print("📥 Installing requests...")
-    await micropip.install('requests')
-    import requests
-    print("✅ requests installed")
-
-try:
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import classification_report, accuracy_score
-    from sklearn.preprocessing import StandardScaler
-    print("✅ scikit-learn available")
-except ImportError:
-    print("📥 Installing scikit-learn...")
-    await micropip.install('scikit-learn')
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import classification_report, accuracy_score
-    from sklearn.preprocessing import StandardScaler
-    print("✅ scikit-learn installed")
-
-import pandas as pd
-import numpy as np
-import json
-
-# Step 2: Simulate fetching news articles (replace with real API)
-print("\\n📰 Fetching sample news data...")
-
-# Sample news articles (in real scenario, you'd fetch from news API)
-sample_news = [
-    # Business articles
-    {
-        "title": "Stock Market Reaches New Highs Amid Economic Recovery",
-        "content": "The stock market surged today as investors showed confidence in the economic recovery. Tech stocks led the gains with Apple and Microsoft posting strong quarterly results.",
-        "category": "business"
-    },
-    {
-        "title": "Federal Reserve Announces Interest Rate Decision",
-        "content": "The Federal Reserve maintained interest rates at current levels, citing steady economic growth. Markets responded positively to the announcement with moderate gains across sectors.",
-        "category": "business"
-    },
-    {
-        "title": "Major Merger Creates Banking Giant",
-        "content": "Two of the nation's largest banks announced a merger worth $50 billion. The combined entity will become the second-largest financial institution in the country.",
-        "category": "business"
-    },
-    # Science articles
-    {
-        "title": "Scientists Discover New Species in Amazon Rainforest", 
-        "content": "Researchers have identified a new species of colorful frog in the Amazon basin. The discovery highlights the rich biodiversity of the rainforest and the urgent need for conservation.",
-        "category": "science"
-    },
-    {
-        "title": "Breakthrough in Quantum Computing Achieved",
-        "content": "Scientists have successfully demonstrated quantum supremacy with a new quantum processor. This achievement could revolutionize computing and solve complex problems impossible for classical computers.",
-        "category": "science"
-    },
-    {
-        "title": "Mars Rover Finds Evidence of Ancient Water",
-        "content": "NASA's latest Mars rover has discovered mineral deposits that could only form in the presence of water. This finding supports theories about Mars having a wet past billions of years ago.",
-        "category": "science"
-    },
-    # Sports articles
-    {
-        "title": "Championship Game Breaks Viewership Records",
-        "content": "Last night's championship game attracted over 100 million viewers, making it the most-watched sporting event of the year. The thrilling overtime finish kept fans on the edge of their seats.",
-        "category": "sports"
-    },
-    {
-        "title": "Olympic Athlete Sets New World Record",
-        "content": "In a stunning performance, the young athlete shattered the previous world record by over two seconds. This achievement marks a new era in the sport.",
-        "category": "sports"
-    },
-    {
-        "title": "Team Wins First Championship in 50 Years",
-        "content": "The underdog team completed their miracle season by winning their first championship in five decades. Fans celebrated in the streets as history was made.",
-        "category": "sports"
-    },
-    # Technology articles
-    {
-        "title": "New AI Model Revolutionizes Medical Diagnosis",
-        "content": "A groundbreaking artificial intelligence model developed by researchers can now diagnose rare diseases with 95% accuracy. This breakthrough could transform healthcare delivery worldwide.",
-        "category": "technology"
-    },
-    {
-        "title": "Major Tech Company Unveils Revolutionary Smartphone",
-        "content": "The new smartphone features breakthrough battery technology that lasts up to a week on a single charge. Industry experts predict this could change mobile computing forever.",
-        "category": "technology"
-    },
-    {
-        "title": "Cybersecurity Firm Discovers Major Vulnerability",
-        "content": "Security researchers have uncovered a critical vulnerability affecting millions of devices worldwide. Companies are rushing to patch their systems before hackers can exploit the flaw.",
-        "category": "technology"
-    },
-    # Politics articles
-    {
-        "title": "Climate Summit Reaches Historic Agreement",
-        "content": "World leaders at the climate summit have agreed to ambitious new targets for carbon reduction. The agreement includes binding commitments and substantial funding for renewable energy projects.",
-        "category": "politics"
-    },
-    {
-        "title": "New Healthcare Bill Passes Congress",
-        "content": "After months of debate, Congress has passed comprehensive healthcare reform. The bill promises to expand coverage to millions of uninsured Americans.",
-        "category": "politics"
-    },
-    {
-        "title": "International Trade Deal Signed",
-        "content": "Representatives from multiple nations signed a historic trade agreement today. The deal is expected to boost economic growth and create thousands of new jobs.",
-        "category": "politics"
-    },
-    # Entertainment articles
-    {
-        "title": "Hollywood Blockbuster Breaks Box Office Records",
-        "content": "The latest superhero movie has shattered opening weekend records, earning over $300 million globally. Critics praise the film's stunning visual effects and compelling storyline.",
-        "category": "entertainment"
-    },
-    {
-        "title": "Music Festival Announces Star-Studded Lineup",
-        "content": "The annual music festival revealed its lineup featuring top artists from around the world. Tickets sold out within minutes of going on sale.",
-        "category": "entertainment"
-    },
-    {
-        "title": "Streaming Service Wins Multiple Awards",
-        "content": "The popular streaming platform dominated the awards ceremony, taking home prizes in multiple categories. Their original content continues to reshape the entertainment industry.",
-        "category": "entertainment"
-    }
-]
-
-print(f"Loaded {len(sample_news)} sample articles")
-
-# Step 3: Use HuggingFace for NLP analysis
-print("\\n🤗 Analyzing articles with HuggingFace models...")
-
-# Load multiple HF pipelines
-pipeline = transformers.pipeline
-
-# Sentiment analysis
-print("  Loading sentiment analysis...")
-sentiment_pipe = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english')
-
-# Feature extraction - skip for now due to format issues
-# We'll use other features instead
-print("  Skipping embeddings (using text features instead)...")
-
-# Zero-shot classification
-print("  Loading zero-shot classifier...")
-classifier_pipe = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncased-mnli')
-
-# Categories for classification
-hf_categories = ["finance", "science", "sports", "technology", "politics", "entertainment"]
-
-print("All HuggingFace models loaded!")
-
-# Step 4: Process articles with HF models
-print("\\n🔄 Processing articles...")
-processed_articles = []
-
-for i, article in enumerate(sample_news):
-    print(f"  Processing article {i+1}/{len(sample_news)}: '{article['title'][:50]}...'")
-    
-    text = f"{article['title']} {article['content']}"
-    
-    # Sentiment analysis
-    sentiment_result = await sentiment_pipe(text)
-    sentiment = sentiment_result[0]
-    
-    # Calculate text-based features instead of embeddings
-    # Count words by category keywords
-    tech_words = ['tech', 'technology', 'AI', 'software', 'digital', 'computer', 'data']
-    business_words = ['market', 'stock', 'finance', 'economy', 'investor', 'company', 'business']
-    science_words = ['research', 'scientist', 'study', 'discovery', 'species', 'medical']
-    
-    text_lower = text.lower()
-    tech_score = sum(1 for word in tech_words if word.lower() in text_lower)
-    business_score = sum(1 for word in business_words if word.lower() in text_lower)
-    science_score = sum(1 for word in science_words if word.lower() in text_lower)
-    
-    # Zero-shot classification
-    classification_result = await classifier_pipe(text, hf_categories)
-    predicted_category = classification_result['labels'][0]
-    category_confidence = classification_result['scores'][0]
-    
-    processed_articles.append({
-        'title': article['title'],
-        'content': article['content'][:100] + "..." if len(article['content']) > 100 else article['content'],
-        'true_category': article['category'],
-        'predicted_category': predicted_category,
-        'category_confidence': category_confidence,
-        'sentiment_label': sentiment['label'],
-        'sentiment_score': sentiment['score'],
-        'tech_score': tech_score,
-        'business_score': business_score,
-        'science_score': science_score,
-        'text_length': len(text),
-        'word_count': len(text.split())
-    })
-
-print("✅ All articles processed!")
-
-# Step 5: Create dataset for machine learning
-print("\\nCreating ML dataset...")
-
-# Create DataFrame
-df = pd.DataFrame(processed_articles)
-
-# Extract features for ML
-features_df = pd.DataFrame({
-    'sentiment_score': df['sentiment_score'],
-    'category_confidence': df['category_confidence'], 
-    'text_length': df['text_length'],
-    'word_count': df['word_count'],
-    'sentiment_positive': (df['sentiment_label'] == 'POSITIVE').astype(int),
-    'tech_score': df['tech_score'],
-    'business_score': df['business_score'],
-    'science_score': df['science_score']
-})
-
-print(f" Created feature matrix: {features_df.shape}")
-
-# Step 6: Train ML classifier to predict true category
-print("\\n Training scikit-learn classifier...")
-
-# Prepare data
-X = features_df.values
-y = df['true_category'].values
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-
-# Scale features
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# Train Random Forest
-rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_classifier.fit(X_train_scaled, y_train)
-
-# Make predictions
-y_pred = rf_classifier.predict(X_test_scaled)
-
-# Evaluate
-accuracy = accuracy_score(y_test, y_pred)
-print(f" Random Forest Accuracy: {accuracy:.2%}")
-
-# Step 7: Compare HuggingFace vs Scikit-Learn predictions
-print("\\n Model Comparison Analysis:")
-
-# Create comparison DataFrame
-comparison_df = df[['title', 'true_category', 'predicted_category', 'category_confidence']].copy()
-
-# Add scikit-learn predictions for full dataset
-X_full_scaled = scaler.transform(features_df.values)
-sklearn_predictions = rf_classifier.predict(X_full_scaled)
-sklearn_probabilities = rf_classifier.predict_proba(X_full_scaled)
-
-comparison_df['sklearn_category'] = sklearn_predictions
-comparison_df['sklearn_confidence'] = np.max(sklearn_probabilities, axis=1)
-
-# Calculate accuracies
-hf_accuracy = (comparison_df['predicted_category'] == comparison_df['true_category']).mean()
-sklearn_accuracy = (comparison_df['sklearn_category'] == comparison_df['true_category']).mean()
-
-print(f"HuggingFace Zero-Shot Accuracy: {hf_accuracy:.2%}")
-print(f"Scikit-Learn RF Accuracy: {sklearn_accuracy:.2%}")
-
-# Step 8: Feature importance analysis
-print("\\n🔍 Feature Importance Analysis:")
-feature_names = features_df.columns.tolist()
-importances = rf_classifier.feature_importances_
-
-feature_importance_df = pd.DataFrame({
-    'feature': feature_names,
-    'importance': importances
-}).sort_values('importance', ascending=False)
-
-print("Top 5 most important features:")
-for idx, row in feature_importance_df.head().iterrows():
-    print(f"  {row['feature']}: {row['importance']:.3f}")
-
-# Step 9: Final results and insights
-print("\\n Pipeline Results Summary:")
-print("=" * 40)
-print(f" Articles processed: {len(sample_news)}")
-print(f" Sentiment distribution:")
-sentiment_counts = df['sentiment_label'].value_counts()
-for sentiment, count in sentiment_counts.items():
-    print(f"   {sentiment}: {count} ({count/len(df)*100:.1f}%)")
-
-print(f"\\nCategory prediction comparison:")
-print(f"   HuggingFace accuracy: {hf_accuracy:.1%}")
-print(f"   Scikit-Learn accuracy: {sklearn_accuracy:.1%}")
-
-print(f"\\n ML Model Performance:")
-print(f"   Features used: {features_df.shape[1]}")
-print(f"   Training samples: {len(X_train)}")
-print(f"   Test accuracy: {accuracy:.1%}")
-
-# Display detailed results
-print("\\n Detailed Article Analysis:")
-display_df = comparison_df[['title', 'true_category', 'predicted_category', 'sklearn_category']].copy()
-display_df.columns = ['Article Title', 'True Category', 'HF Prediction', 'SKLearn Prediction']
-
-print("\\n Use Cases for this Pipeline:")
-print("  • News article classification and routing")
-print("  • Content recommendation systems") 
-print("  • Automated content tagging")
-print("  • Market sentiment analysis")
-print("  • Research paper categorization")
-print("  • Social media content analysis")
-
-display_df`,
-    requiredPackages: ["transformers-js-py", "pandas", "numpy", "scikit-learn", "requests"]
-  }
 ];
 
 /**
  * Get templates by category
  */
-export function getTemplatesByCategory(category: ScriptTemplate['category']): ScriptTemplate[] {
-  return SCRIPT_TEMPLATES.filter(template => template.category === category);
+export function getTemplatesByCategory(
+  category: ScriptTemplate['category']
+): ScriptTemplate[] {
+  return SCRIPT_TEMPLATES.filter((template) => template.category === category);
 }
 
 /**
@@ -1638,10 +1660,11 @@ export function getTemplatesByCategory(category: ScriptTemplate['category']): Sc
  */
 export function searchTemplates(query: string): ScriptTemplate[] {
   const searchTerm = query.toLowerCase();
-  return SCRIPT_TEMPLATES.filter(template => 
-    template.name.toLowerCase().includes(searchTerm) ||
-    template.description.toLowerCase().includes(searchTerm) ||
-    template.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+  return SCRIPT_TEMPLATES.filter(
+    (template) =>
+      template.name.toLowerCase().includes(searchTerm) ||
+      template.description.toLowerCase().includes(searchTerm) ||
+      template.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
   );
 }
 
@@ -1649,5 +1672,5 @@ export function searchTemplates(query: string): ScriptTemplate[] {
  * Get template by ID
  */
 export function getTemplateById(id: string): ScriptTemplate | undefined {
-  return SCRIPT_TEMPLATES.find(template => template.id === id);
+  return SCRIPT_TEMPLATES.find((template) => template.id === id);
 }
