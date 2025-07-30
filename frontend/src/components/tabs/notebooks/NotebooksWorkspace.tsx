@@ -40,6 +40,7 @@ import PackageManager from './PackageManager';
 import ScriptTemplates from './ScriptTemplates';
 import VariableInspector from './VariableInspector';
 import SchemaBrowser from '../query/SchemaBrowser';
+import NotebookErrorBoundary from './NotebookErrorBoundary';
 import { createWelcomeCells } from '@/lib/python/welcomeCells';
 
 // Constants for panel dimensions
@@ -378,10 +379,11 @@ const NotebooksWorkspace: React.FC = () => {
 
   // Regular layout with panels
   return (
-    <div
-      ref={containerRef}
-      className="h-full w-full flex overflow-hidden relative"
-    >
+    <NotebookErrorBoundary>
+      <div
+        ref={containerRef}
+        className="h-full w-full flex overflow-hidden relative"
+      >
       {/* Resize Overlays */}
       {(isResizingLeft || isResizingRight) && (
         <div
@@ -751,7 +753,8 @@ const NotebooksWorkspace: React.FC = () => {
         onDiscard={handleDiscardAndContinue}
         saveButtonText="Save and Switch"
       />
-    </div>
+      </div>
+    </NotebookErrorBoundary>
   );
 };
 
