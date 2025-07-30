@@ -1,4 +1,4 @@
-import { Table, BarChart, Database, UserPen, Code2 } from "lucide-react";
+import { Table, BarChart, Database, UserPen, Notebook } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import MainLayout from "@/components/layout/MainLayout";
@@ -43,7 +43,7 @@ const Home = () => {
   const tabs: Tab[] = [
     { id: "preview", label: "Data Preview", icon: <Table size={16} /> },
     { id: "query", label: "Query", icon: <Database size={16} /> },
-    { id: "scripts", label: "Notebook", icon: <Code2 size={16} /> },
+    { id: "scripts", label: "Notebook", icon: <Notebook size={16} /> },
     { id: "visualization", label: "Visualize", icon: <BarChart size={16} /> },
     { id: "ai", label: "Assistant", icon: <UserPen size={16} /> }, 
   ];
