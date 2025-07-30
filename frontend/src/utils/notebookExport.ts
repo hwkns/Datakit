@@ -54,21 +54,68 @@ export const exportAsJupyterNotebook = (
     const jupyterCells: JupyterCell[] = cells.map(cell => {
       const baseCell = {
         cell_type: cell.type === 'markdown' ? 'markdown' as const : 'code' as const,
-        source: cell.code.split('\n'),
+        source: cell.code.split('\n').map((line, index, array) => 
+          index === array.length - 1 ? line : line + '\n'
+        ),
         metadata: {},
       };
 
       if (cell.type === 'code') {
+        const mapDataKitToJupyterOutput = (output: any): JupyterOutput => {
+          switch (output.type) {
+            case 'error':
+              return {
+                output_type: 'error',
+                ename: 'Error',
+                evalue: output.content,
+                traceback: [output.content]
+              };
+            case 'text':
+              return {
+                output_type: 'stream',
+                name: 'stdout',
+                text: Array.isArray(output.content) ? output.content : [output.content]
+              };
+            case 'image':
+              return {
+                output_type: 'display_data',
+                data: {
+                  'image/png': output.content.includes(',') ? output.content.split(',')[1] : output.content
+                },
+                metadata: {}
+              };
+            case 'html':
+              return {
+                output_type: 'display_data',
+                data: {
+                  'text/html': Array.isArray(output.content) ? output.content : [output.content]
+                },
+                metadata: {}
+              };
+            case 'dataframe':
+              return {
+                output_type: 'execute_result',
+                data: {
+                  'text/plain': Array.isArray(output.content) ? output.content : [output.content]
+                },
+                metadata: {},
+                execution_count: cell.executionCount
+              };
+            default:
+              return {
+                output_type: 'display_data',
+                data: {
+                  'text/plain': Array.isArray(output.content) ? output.content : [output.content]
+                },
+                metadata: {}
+              };
+          }
+        };
+
         return {
           ...baseCell,
           execution_count: cell.executionCount,
-          outputs: cell.output.map(output => ({
-            output_type: output.type === 'error' ? 'error' : 'display_data',
-            data: output.type === 'image' 
-              ? { 'image/png': output.content.split(',')[1] }
-              : { 'text/plain': output.content.split('\n') },
-            metadata: {}
-          }))
+          outputs: cell.output.map(mapDataKitToJupyterOutput)
         };
       }
 

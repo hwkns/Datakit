@@ -634,17 +634,34 @@ export const usePythonStore = create<PythonState>()(
               
               // Validate Jupyter notebook format
               if (!notebookData.cells || !Array.isArray(notebookData.cells)) {
-                throw new Error('Invalid Jupyter notebook format');
+                throw new Error('Invalid Jupyter notebook format: missing cells array');
+              }
+              
+              if (!notebookData.nbformat || typeof notebookData.nbformat !== 'number') {
+                console.warn('Jupyter notebook missing nbformat, assuming nbformat 4');
+              }
+              
+              // Validate that cells have required properties
+              for (const cell of notebookData.cells) {
+                if (!cell.cell_type || !['code', 'markdown', 'raw'].includes(cell.cell_type)) {
+                  throw new Error(`Invalid cell type: ${cell.cell_type}`);
+                }
+                if (cell.source === undefined) {
+                  throw new Error('Cell missing source property');
+                }
               }
 
               // Convert Jupyter cells to DataKit format
-              const cells: PythonCell[] = notebookData.cells.map((jupyterCell: any) => {
+              const cells: PythonCell[] = notebookData.cells
+                .filter((jupyterCell: any) => jupyterCell.cell_type !== 'raw') // Skip raw cells
+                .map((jupyterCell: any) => {
                 const cellType = jupyterCell.cell_type === 'code' ? 'code' : 'markdown';
                 
-                // Handle source as array or string
+                // Handle source as array or string, preserving formatting
                 let code = '';
                 if (Array.isArray(jupyterCell.source)) {
-                  code = jupyterCell.source.join('');
+                  // Join array elements, preserving newlines that might be embedded
+                  code = jupyterCell.source.join('').replace(/\n$/, ''); // Remove trailing newline if present
                 } else if (typeof jupyterCell.source === 'string') {
                   code = jupyterCell.source;
                 }
