@@ -43,7 +43,7 @@ export async function initializePyodide(): Promise<PyodideInterface> {
         "numpy",
         "pandas", 
         "matplotlib",
-        "micropip",
+        "micropip"
       ]);
       console.log("[Python] Core packages loaded successfully");
     } catch (error) {
@@ -61,7 +61,7 @@ export async function initializePyodide(): Promise<PyodideInterface> {
             try:
                 # Install basic packages first
                 await micropip.install(['plotly', 'seaborn'])
-                
+
                 # Try to install and setup transformers-js-py
                 try:
                     await micropip.install('transformers-js-py')
@@ -222,14 +222,45 @@ export async function getInstalledPackages(): Promise<Map<string, string>> {
     const result = await pyodideInstance.runPython(`
       import sys
       import json
+      import micropip
       
       packages = {}
+      
+      # Get packages from sys.modules (already imported)
       for name, module in sys.modules.items():
           if hasattr(module, '__version__'):
               packages[name] = module.__version__
-          elif name in ['numpy', 'pandas', 'matplotlib', 'plotly', 'seaborn']:
+          elif name in ['numpy', 'pandas', 'matplotlib', 'plotly', 'seaborn', 'scipy', 'requests', 'pillow', 'lxml', 'statsmodels']:
               # For packages that might not have __version__ but are important
               packages[name] = 'installed'
+      
+      # Check for packages that are available but not yet imported
+      import importlib.util
+      common_packages = ['scipy', 'requests', 'pillow', 'lxml', 'statsmodels', 'plotly', 'seaborn']
+      for pkg_name in common_packages:
+          if pkg_name not in packages:
+              try:
+                  spec = importlib.util.find_spec(pkg_name)
+                  if spec is not None:
+                      packages[pkg_name] = 'available'
+              except (ImportError, ModuleNotFoundError):
+                  pass
+      
+      # Also check installed packages via micropip
+      try:
+          installed = micropip.list()
+          for pkg in installed:
+              # micropip.list() returns a list of strings (package names)
+              if isinstance(pkg, str) and pkg not in packages:
+                  packages[pkg] = 'installed'
+              # Handle case where it might return dict-like objects
+              elif hasattr(pkg, 'get'):
+                  pkg_name = pkg.get('name', '')
+                  pkg_version = pkg.get('version', 'installed')
+                  if pkg_name and pkg_name not in packages:
+                      packages[pkg_name] = pkg_version
+      except Exception as e:
+          print(f"Could not get micropip package list: {e}")
       
       json.dumps(packages)
     `);

@@ -80,6 +80,8 @@ interface PythonState {
   ) => string;
   updateCell: (cellId: string, code: string) => void;
   toggleCellEditMode: (cellId: string) => void;
+  toggleCellInputCollapse: (cellId: string) => void;
+  toggleCellOutputCollapse: (cellId: string) => void;
   convertCellType: (cellId: string, newType: CellType) => void;
   deleteCell: (cellId: string) => void;
   moveCell: (cellId: string, direction: 'up' | 'down') => void;
@@ -315,6 +317,26 @@ export const usePythonStore = create<PythonState>()(
           cells: state.cells.map((cell) =>
             cell.id === cellId
               ? { ...cell, isEditing: !cell.isEditing, updatedAt: new Date() }
+              : cell
+          ),
+        }));
+      },
+
+      toggleCellInputCollapse: (cellId) => {
+        set((state) => ({
+          cells: state.cells.map((cell) =>
+            cell.id === cellId
+              ? { ...cell, isInputCollapsed: !cell.isInputCollapsed, updatedAt: new Date() }
+              : cell
+          ),
+        }));
+      },
+
+      toggleCellOutputCollapse: (cellId) => {
+        set((state) => ({
+          cells: state.cells.map((cell) =>
+            cell.id === cellId
+              ? { ...cell, isOutputCollapsed: !cell.isOutputCollapsed, updatedAt: new Date() }
               : cell
           ),
         }));
@@ -605,7 +627,65 @@ export const usePythonStore = create<PythonState>()(
         try {
           const content = await file.text();
 
-          // Try to parse as JSON first (DataKit script format)
+          // Check if it's a Jupyter notebook (.ipynb)
+          if (file.name.endsWith('.ipynb')) {
+            try {
+              const notebookData = JSON.parse(content);
+              
+              // Validate Jupyter notebook format
+              if (!notebookData.cells || !Array.isArray(notebookData.cells)) {
+                throw new Error('Invalid Jupyter notebook format');
+              }
+
+              // Convert Jupyter cells to DataKit format
+              const cells: PythonCell[] = notebookData.cells.map((jupyterCell: any) => {
+                const cellType = jupyterCell.cell_type === 'code' ? 'code' : 'markdown';
+                
+                // Handle source as array or string
+                let code = '';
+                if (Array.isArray(jupyterCell.source)) {
+                  code = jupyterCell.source.join('');
+                } else if (typeof jupyterCell.source === 'string') {
+                  code = jupyterCell.source;
+                }
+
+                return {
+                  id: createId(),
+                  type: cellType,
+                  code,
+                  output: [], // We don't import outputs from Jupyter notebooks
+                  executionCount: jupyterCell.execution_count || null,
+                  isExecuting: false,
+                  isEditing: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                };
+              });
+
+              const script: PythonScript = {
+                id: createId(),
+                name: file.name.replace('.ipynb', ''),
+                description: notebookData.metadata?.description,
+                cells,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+
+              set({
+                currentScript: script,
+                cells: script.cells,
+                activeCellId: script.cells[0]?.id || null,
+              });
+
+              console.log(`[PythonStore] Jupyter notebook imported: ${script.name}`);
+              return;
+            } catch (error) {
+              console.error('[PythonStore] Failed to parse Jupyter notebook:', error);
+              throw new Error('Invalid Jupyter notebook format');
+            }
+          }
+
+          // Try to parse as JSON (DataKit script format)
           try {
             const scriptData = JSON.parse(content);
             const script: PythonScript = {

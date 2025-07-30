@@ -32,7 +32,7 @@ const CATEGORY_CONFIG = {
     color: 'text-green-400',
   },
   ml: { icon: Brain, label: 'Machine Learning', color: 'text-purple-400' },
-  hf: { icon: Brain, label: '🤗 Hugging Face', color: 'text-orange-400' },
+  hf: { icon: null, label: 'Hugging Face', color: 'text-orange-400' },
   stats: { icon: Calculator, label: 'Statistics', color: 'text-orange-400' },
   utils: { icon: Settings, label: 'Utilities', color: 'text-gray-400' },
 } as const;
@@ -189,14 +189,14 @@ Run the code cell below to execute this template.`;
               ([category, templates]) => {
                 const config =
                   CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG];
-                const Icon = config.icon;
+                const Icon = config?.icon;
 
                 return (
                   <div key={category} className="space-y-2">
                     {/* Category header (only show if not filtering by category) */}
                     {selectedCategory === null && (
                       <div className="flex items-center gap-2 px-2 py-1">
-                        <Icon className={`w-4 h-4 ${config.color}`} />
+                        {Icon && <Icon className={`w-4 h-4 ${config.color}`} /> }
                         <h4 className="font-medium text-white text-sm">
                           {config.label}
                         </h4>

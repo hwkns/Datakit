@@ -85,17 +85,36 @@ export const useKeyboardShortcuts = (
 // Utility for common workspace shortcuts
 export const useWorkspaceShortcuts = (handlers: {
   onExecute?: () => void;
+  onExecuteCell?: () => void;
+  onExecuteAll?: () => void;
   onSave?: () => void;
   onEscape?: () => void;
+  canExecuteCell?: boolean;
+  canSave?: boolean;
 }, options: UseKeyboardShortcutsOptions = {}) => {
   const shortcuts: KeyboardShortcuts = {};
   
+  // Single cell execution with Shift+Enter (notebook standard)
+  if (handlers.onExecuteCell && handlers.canExecuteCell) {
+    shortcuts['shift+enter'] = handlers.onExecuteCell;
+  }
+  
+  // Keep existing Cmd/Ctrl+Enter for backward compatibility
   if (handlers.onExecute) {
     shortcuts['ctrl+enter'] = handlers.onExecute;
     shortcuts['cmd+enter'] = handlers.onExecute;
+  } else if (handlers.onExecuteCell && handlers.canExecuteCell) {
+    shortcuts['ctrl+enter'] = handlers.onExecuteCell;
+    shortcuts['cmd+enter'] = handlers.onExecuteCell;
   }
   
-  if (handlers.onSave) {
+  // Execute all cells with Cmd/Ctrl+Shift+Enter
+  if (handlers.onExecuteAll) {
+    shortcuts['ctrl+shift+enter'] = handlers.onExecuteAll;
+    shortcuts['cmd+shift+enter'] = handlers.onExecuteAll;
+  }
+  
+  if (handlers.onSave && handlers.canSave) {
     shortcuts['ctrl+s'] = handlers.onSave;
     shortcuts['cmd+s'] = handlers.onSave;
   }

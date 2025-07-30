@@ -15,6 +15,7 @@ import {
   Check,
   Clock,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 import { usePythonStore } from '@/store/pythonStore';
@@ -71,10 +72,10 @@ const NotebooksWorkspace: React.FC = () => {
     toggleScriptHistory,
     togglePackageManager,
     toggleTemplates,
-    saveScript,
-    loadScript,
     createNewScript,
     toggleVariableInspector,
+    clearAllCells,
+    clearPythonNamespace,
   } = usePythonStore();
 
   const { isInitialized: isDuckDBInitialized } = useDuckDBStore();
@@ -273,6 +274,16 @@ const NotebooksWorkspace: React.FC = () => {
     }
   };
 
+  // Restart notebook function
+  const handleRestartNotebook = async () => {
+    if (confirm('Are you sure you want to restart the notebook? This will clear all variables and outputs.')) {
+      // Clear all cell outputs
+      clearAllCells();
+      // Clear Python namespace (variables)
+      await clearPythonNamespace();
+    }
+  };
+
   // Show initialization state
   if (!pyodide.isInitialized) {
     if (pyodide.error) {
@@ -307,12 +318,12 @@ const NotebooksWorkspace: React.FC = () => {
           <p className="text-white/70 mb-4">
             {pyodide.isInitializing
               ? ''
-              : 'Preparing your Python data analysis environment...'}
+              : 'Preparing your Python data analysis environment'}
           </p>
           <div className="text-sm text-white/60">
             <div className="flex items-center justify-center gap-2">
               <Package className="w-4 h-4 text-secondary" />
-              <span>Loading numpy, pandas, matplotlib, transformers...</span>
+              <span>Loading pandas, plotly, matplotlib, transformers...</span>
             </div>
           </div>
         </div>
@@ -627,6 +638,22 @@ const NotebooksWorkspace: React.FC = () => {
                 </div>
               </Button>
             </Tooltip>
+
+            {/* TODO: To make it work */}
+            {/* <Tooltip
+              content="Clear all variables and outputs"
+              placement="bottom-left"
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRestartNotebook}
+                disabled={isExecuting}
+                className="h-8"
+              >
+                <RefreshCw size={14} className="mr-1" />
+              </Button>
+            </Tooltip> */}
 
             {/* Download Button */}
             <div className="relative" ref={downloadMenuRef}>

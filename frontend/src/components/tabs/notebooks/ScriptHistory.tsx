@@ -138,7 +138,7 @@ const ScriptHistory: React.FC = () => {
           <div className="relative">
             <input
               type="file"
-              accept=".json,.py"
+              accept=".ipynb,.py"
               onChange={handleImportScript}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               title="Import script"

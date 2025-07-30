@@ -3,12 +3,10 @@ import {
   Package,
   Download,
   Check,
-  X,
   Search,
   Loader2,
   AlertCircle,
   Info,
-  Trash2,
 } from "lucide-react";
 
 import { usePythonStore } from "@/store/pythonStore";
@@ -25,15 +23,13 @@ interface PackageInfo {
 // Common data science packages
 const POPULAR_PACKAGES: Omit<PackageInfo, 'isInstalled' | 'isInstalling'>[] = [
   { name: "scikit-learn", description: "Machine learning library" },
-  { name: "seaborn", description: "Statistical data visualization" },
-  { name: "plotly", description: "Interactive plotting library" },
   { name: "scipy", description: "Scientific computing library" },
   { name: "requests", description: "HTTP library" },
-  { name: "beautifulsoup4", description: "HTML/XML parsing" },
-  { name: "openpyxl", description: "Excel file handling" },
   { name: "pillow", description: "Image processing library" },
   { name: "lxml", description: "XML processing library" },
   { name: "statsmodels", description: "Statistical modeling" },
+  // { name: "beautifulsoup4", description: "HTML/XML parsing" },
+  // { name: "openpyxl", description: "Excel file handling" },
 ];
 
 /**

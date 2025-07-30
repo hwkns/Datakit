@@ -99,7 +99,7 @@ export const exportAsJupyterNotebook = (
     };
 
     // Download as .ipynb file
-    downloadJSON(notebook, notebookName);
+    downloadJSON(notebook, notebookName, 'ipynb');
 
   } catch (error) {
     console.error('Failed to export Jupyter notebook:', error);

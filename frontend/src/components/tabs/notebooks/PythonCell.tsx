@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Play,
   Square,
@@ -20,16 +20,21 @@ import {
   List,
   Link,
   Quote,
-} from "lucide-react";
+  ChevronRight,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { usePythonStore } from "@/store/pythonStore";
-import { Button } from "@/components/ui/Button";
-import MonacoEditor from "../query/MonacoEditor";
-import MonacoErrorBoundary from "./MonacoErrorBoundary";
-import type { PythonCell as PythonCellType, CellOutput } from "@/lib/python/types";
-import { formatDataFrame } from "@/lib/python/executor";
+import { usePythonStore } from '@/store/pythonStore';
+import { Button } from '@/components/ui/Button';
+import MonacoEditor from '../query/MonacoEditor';
+import MonacoErrorBoundary from './MonacoErrorBoundary';
+import type {
+  PythonCell as PythonCellType,
+  CellOutput,
+} from '@/lib/python/types';
+import { formatDataFrame } from '@/lib/python/executor';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface PythonCellProps {
   cell: PythonCellType;
@@ -54,6 +59,8 @@ const PythonCell: React.FC<PythonCellProps> = ({
     moveCell,
     clearCell,
     toggleCellEditMode,
+    toggleCellInputCollapse,
+    toggleCellOutputCollapse,
     isExecuting: globalExecuting,
   } = usePythonStore();
 
@@ -69,16 +76,20 @@ const PythonCell: React.FC<PythonCellProps> = ({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowMenu(false);
       }
-      
+
       // Exit markdown edit mode if clicking outside the cell
-      if (cell.type === 'markdown' && cell.isEditing && 
-          cellRef.current && !cellRef.current.contains(event.target as Node)) {
+      if (
+        cell.type === 'markdown' &&
+        cell.isEditing &&
+        cellRef.current &&
+        !cellRef.current.contains(event.target as Node)
+      ) {
         toggleCellEditMode(cell.id);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [cell.type, cell.isEditing, cell.id, toggleCellEditMode]);
 
   const handleExecute = async () => {
@@ -111,7 +122,7 @@ const PythonCell: React.FC<PythonCellProps> = ({
       link: '[text](url)',
       code: '`code`',
     };
-    
+
     const insertion = formats[format as keyof typeof formats] || format;
     const newCode = cell.code + insertion;
     updateCell(cell.id, newCode);
@@ -144,7 +155,10 @@ const PythonCell: React.FC<PythonCellProps> = ({
         return (
           <div className="font-mono text-sm text-red-400 whitespace-pre-wrap bg-red-500/10 p-3 rounded border border-red-500/20">
             <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+              <AlertCircle
+                size={16}
+                className="text-red-400 mt-0.5 flex-shrink-0"
+              />
               <div>{output.content}</div>
             </div>
           </div>
@@ -180,7 +194,7 @@ const PythonCell: React.FC<PythonCellProps> = ({
                 </span>
               )}
             </div>
-            
+
             {/* Column info */}
             <div className="mb-3">
               <div className="text-xs text-white/60 mb-1">Columns:</div>
@@ -204,7 +218,10 @@ const PythonCell: React.FC<PythonCellProps> = ({
                   <thead>
                     <tr className="border-b border-white/10">
                       {dfInfo.columns.map((col, idx) => (
-                        <th key={idx} className="text-left p-2 text-white/80 font-medium">
+                        <th
+                          key={idx}
+                          className="text-left p-2 text-white/80 font-medium"
+                        >
                           {col}
                         </th>
                       ))}
@@ -216,7 +233,7 @@ const PythonCell: React.FC<PythonCellProps> = ({
                         {row.map((cell, cellIdx) => (
                           <td key={cellIdx} className="p-2 text-white/70">
                             {String(cell).length > 50
-                              ? String(cell).substring(0, 50) + "..."
+                              ? String(cell).substring(0, 50) + '...'
                               : String(cell)}
                           </td>
                         ))}
@@ -262,14 +279,31 @@ const PythonCell: React.FC<PythonCellProps> = ({
       ref={cellRef}
       className={`border rounded-lg overflow-visible transition-colors ${
         isActive
-          ? "border-primary/50 bg-primary/5"
-          : "border-white/10 bg-black/20"
+          ? 'border-primary/50 bg-primary/5'
+          : 'border-white/10 bg-black/20'
       }`}
       onClick={onActivate}
     >
       {/* Cell Header */}
       <div className="flex items-center justify-between px-2.5 py-1.5 bg-darkNav/50 border-b border-white/10 relative">
         <div className="flex items-center gap-3">
+          {/* Collapse/Expand Input Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCellInputCollapse(cell.id);
+            }}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title={cell.isInputCollapsed ? "Expand input" : "Collapse input"}
+          >
+            <ChevronRight 
+              size={14} 
+              className={`text-white/50 transition-transform ${
+                cell.isInputCollapsed ? '' : 'rotate-90'
+              }`}
+            />
+          </button>
+
           {/* Cell Number */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-white/50">In</span>
@@ -297,23 +331,23 @@ const PythonCell: React.FC<PythonCellProps> = ({
         <div className="flex items-center gap-2">
           {/* Execute Button (only for code cells) */}
           {cell.type === 'code' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleExecute();
-              }}
-              disabled={cell.isExecuting || globalExecuting || !cell.code.trim()}
-              title="Execute Cell (⌘+Enter)"
-            >
-              {cell.isExecuting ? (
-                <Square size={14} />
-              ) : (
-                <Play size={14} />
-              )}
-            </Button>
+            <Tooltip content="Execute Cell (Shift+Enter)" placement="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExecute();
+                }}
+                disabled={
+                  cell.isExecuting || globalExecuting || !cell.code.trim()
+                }
+                title=""
+              >
+                {cell.isExecuting ? <Square size={14} /> : <Play size={14} />}
+              </Button>
+            </Tooltip>
           )}
 
           {/* Edit/View Button (only for markdown cells) */}
@@ -326,13 +360,9 @@ const PythonCell: React.FC<PythonCellProps> = ({
                 e.stopPropagation();
                 handleToggleEdit();
               }}
-              title={cell.isEditing ? "Preview Markdown" : "Edit Markdown"}
+              title={cell.isEditing ? 'Preview Markdown' : 'Edit Markdown'}
             >
-              {cell.isEditing ? (
-                <Eye size={14} />
-              ) : (
-                <Edit3 size={14} />
-              )}
+              {cell.isEditing ? <Eye size={14} /> : <Edit3 size={14} />}
             </Button>
           )}
 
@@ -409,6 +439,29 @@ const PythonCell: React.FC<PythonCellProps> = ({
                   <Square size={14} />
                   Clear Output
                 </button>
+                <div className="border-t border-white/10" />
+                <button
+                  className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
+                  onClick={() => {
+                    toggleCellInputCollapse(cell.id);
+                    setShowMenu(false);
+                  }}
+                >
+                  <Eye size={14} />
+                  {cell.isInputCollapsed ? 'Show' : 'Hide'} Input
+                </button>
+                {cell.type === 'code' && cell.output.length > 0 && (
+                  <button
+                    className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
+                    onClick={() => {
+                      toggleCellOutputCollapse(cell.id);
+                      setShowMenu(false);
+                    }}
+                  >
+                    <Eye size={14} />
+                    {cell.isOutputCollapsed ? 'Show' : 'Hide'} Output
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -489,42 +542,91 @@ const PythonCell: React.FC<PythonCellProps> = ({
       )}
 
       {/* Code Editor or Markdown Content */}
-      <div className="border-b border-white/10">
-        {cell.type === 'code' || (cell.type === 'markdown' && cell.isEditing) ? (
-          <MonacoErrorBoundary cellId={cell.id}>
-            <MonacoEditor
-              key={`monaco-${cell.id}`}
-              value={cell.code}
-              onChange={(value) => debouncedUpdateCell(cell.id, value || "")}
-              onExecute={() => handleExecute()}
-              language={cell.type === 'code' ? 'python' : 'markdown'}
-              height="auto"
-              minHeight={80}
-              maxHeight={2000}
-            />
-          </MonacoErrorBoundary>
-        ) : (
-          <div 
-            className="p-4 min-h-[100px] cursor-text" 
-            onClick={handleToggleEdit}
-          >
+      {!cell.isInputCollapsed && (
+        <div className="border-b border-white/10">
+          {cell.type === 'code' ||
+          (cell.type === 'markdown' && cell.isEditing) ? (
+            <MonacoErrorBoundary cellId={cell.id}>
+              <MonacoEditor
+                key={`monaco-${cell.id}`}
+                value={cell.code}
+                onChange={(value) => debouncedUpdateCell(cell.id, value || '')}
+                onExecute={() => handleExecute()}
+                language={cell.type === 'code' ? 'python' : 'markdown'}
+                height="auto"
+                minHeight={80}
+                maxHeight={2000}
+              />
+            </MonacoErrorBoundary>
+          ) : (
+            <div
+              className="p-4 min-h-[100px] cursor-text"
+              onClick={handleToggleEdit}
+            >
             {cell.code.trim() ? (
               <div className="markdown-content">
-                <ReactMarkdown 
+                <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    h1: ({children}) => <h1 className="text-2xl font-bold text-white font-heading mb-4">{children}</h1>,
-                    h2: ({children}) => <h2 className="text-xl font-semibold text-white font-heading mb-3">{children}</h2>,
-                    h3: ({children}) => <h3 className="text-lg font-medium text-white font-heading mb-2">{children}</h3>,
-                    p: ({children}) => <p className="text-white/90 leading-relaxed mb-3">{children}</p>,
-                    strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
-                    em: ({children}) => <em className="text-white/80 italic">{children}</em>,
-                    ul: ({children}) => <ul className="text-white/90 list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                    ol: ({children}) => <ol className="text-white/90 list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                    li: ({children}) => <li className="text-white/90">{children}</li>,
-                    code: ({children}) => <code className="text-green-400 bg-white/10 px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
-                    blockquote: ({children}) => <blockquote className="border-l-4 border-primary bg-white/5 p-3 rounded-r mb-3">{children}</blockquote>,
-                    a: ({children, href}) => <a href={href} className="text-primary underline decoration-primary/50 hover:decoration-primary">{children}</a>,
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl font-bold text-white font-heading mb-4">
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl font-semibold text-white font-heading mb-3">
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg font-medium text-white font-heading mb-2">
+                        {children}
+                      </h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="text-white/90 leading-relaxed mb-3">
+                        {children}
+                      </p>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="text-white font-semibold">
+                        {children}
+                      </strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="text-white/80 italic">{children}</em>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="text-white/90 list-disc list-inside mb-3 space-y-1">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="text-white/90 list-decimal list-inside mb-3 space-y-1">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="text-white/90">{children}</li>
+                    ),
+                    code: ({ children }) => (
+                      <code className="text-green-400 bg-white/10 px-1 py-0.5 rounded text-sm font-mono">
+                        {children}
+                      </code>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary bg-white/5 p-3 rounded-r mb-3">
+                        {children}
+                      </blockquote>
+                    ),
+                    a: ({ children, href }) => (
+                      <a
+                        href={href}
+                        className="text-primary underline decoration-primary/50 hover:decoration-primary"
+                      >
+                        {children}
+                      </a>
+                    ),
                   }}
                 >
                   {cell.code}
@@ -536,18 +638,44 @@ const PythonCell: React.FC<PythonCellProps> = ({
               </div>
             )}
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Output Area (only for code cells) */}
       {cell.type === 'code' && cell.output.length > 0 && (
-        <div className="p-3 space-y-3">
-          {cell.output.map((output) => (
-            <div key={output.id} className="overflow-x-auto">
-              {renderOutput(output)}
+        <>
+          {/* Output Header with Collapse Button */}
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-darkNav/30 border-b border-white/10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCellOutputCollapse(cell.id);
+              }}
+              className="p-1 hover:bg-white/10 rounded transition-colors"
+              title={cell.isOutputCollapsed ? "Expand output" : "Collapse output"}
+            >
+              <ChevronRight 
+                size={14} 
+                className={`text-white/50 transition-transform ${
+                  cell.isOutputCollapsed ? '' : 'rotate-90'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-white/50">Output</span>
+          </div>
+
+          {/* Output Content */}
+          {!cell.isOutputCollapsed && (
+            <div className="p-3 space-y-3">
+              {cell.output.map((output) => (
+                <div key={output.id} className="overflow-x-auto">
+                  {renderOutput(output)}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

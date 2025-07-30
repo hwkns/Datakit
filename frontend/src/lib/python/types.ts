@@ -10,6 +10,8 @@ export interface PythonCell {
   executionCount: number | null;
   isExecuting: boolean;
   isEditing?: boolean; // For markdown cells, tracks if currently editing
+  isInputCollapsed?: boolean; // Whether the cell input is collapsed
+  isOutputCollapsed?: boolean; // Whether the cell output is collapsed
   createdAt: Date;
   updatedAt: Date;
 }

@@ -114,16 +114,22 @@ export const generatePDF = async (
  */
 export const downloadJSON = (
   data: any, 
-  filename: string = 'DataKit_Export'
+  filename: string = 'DataKit_Export',
+  extension: string = 'json'
 ): void => {
   try {
+    // Use specific MIME type for Jupyter notebooks
+    const mimeType = extension === 'ipynb' 
+      ? 'application/x-ipynb+json' 
+      : 'application/json';
+      
     const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json'
+      type: mimeType
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${filename}.json`;
+    a.download = `${filename}.${extension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
