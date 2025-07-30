@@ -36,20 +36,22 @@ export async function initializePyodide(): Promise<PyodideInterface> {
       throw new Error(`Failed to load Pyodide: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Install essential packages
+    // Install essential packages one by one with yield points
     console.log("[Python] Installing core packages...");
-    try {
-      await pyodide.loadPackage([
-        "numpy",
-        "pandas", 
-        "matplotlib",
-        "micropip"
-      ]);
-      console.log("[Python] Core packages loaded successfully");
-    } catch (error) {
-      console.error("[Python] Failed to load core packages:", error);
-      throw new Error(`Failed to load core packages: ${error instanceof Error ? error.message : String(error)}`);
+    const corePackages = ["numpy", "pandas", "matplotlib", "micropip"];
+    
+    for (const pkg of corePackages) {
+      try {
+        console.log(`[Python] Loading ${pkg}...`);
+        await pyodide.loadPackage([pkg]);
+        // Yield to browser to prevent freezing
+        await new Promise(resolve => setTimeout(resolve, 0));
+      } catch (error) {
+        console.error(`[Python] Failed to load ${pkg}:`, error);
+        throw new Error(`Failed to load ${pkg}: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
+    console.log("[Python] Core packages loaded successfully");
 
     // Install additional packages via micropip (optional)
     try {
@@ -94,10 +96,10 @@ export async function initializePyodide(): Promise<PyodideInterface> {
       // Don't throw here, these are optional packages
     }
 
-    // Setup matplotlib for web
+    // Setup matplotlib for web with yield point
     try {
       console.log("[Python] Setting up matplotlib...");
-      await pyodide.runPython(`
+      await pyodide.runPythonAsync(`
         import matplotlib
         matplotlib.use('Agg')  # Use non-interactive backend
         import matplotlib.pyplot as plt
@@ -125,16 +127,18 @@ export async function initializePyodide(): Promise<PyodideInterface> {
         import micropip
         builtins.micropip = micropip
       `);
+      // Yield to browser
+      await new Promise(resolve => setTimeout(resolve, 0));
       console.log("[Python] Matplotlib setup complete");
     } catch (error) {
       console.error("[Python] Failed to setup matplotlib:", error);
       throw new Error(`Failed to setup matplotlib: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Setup DataFrame display helpers
+    // Setup DataFrame display helpers with yield point
     try {
       console.log("[Python] Setting up DataFrame helpers...");
-      await pyodide.runPython(`
+      await pyodide.runPythonAsync(`
         import pandas as pd
         import json
         
@@ -152,6 +156,8 @@ export async function initializePyodide(): Promise<PyodideInterface> {
         import builtins
         builtins.df_to_dict = df_to_dict
       `);
+      // Yield to browser
+      await new Promise(resolve => setTimeout(resolve, 0));
       console.log("[Python] DataFrame helpers setup complete");
     } catch (error) {
       console.error("[Python] Failed to setup DataFrame helpers:", error);
