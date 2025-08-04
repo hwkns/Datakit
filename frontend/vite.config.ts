@@ -23,6 +23,7 @@ export default defineConfig({
     include: ['apache-arrow']
   },
   build: {
+    target: ['es2015', 'safari11'],
     rollupOptions: {
       external: [
         // Exclude WASM and worker files from the build
