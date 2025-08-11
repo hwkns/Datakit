@@ -222,13 +222,27 @@ const OllamaModelManager: React.FC<OllamaModelManagerProps> = ({
             </li>
             <li className="flex items-start gap-2">
               <Circle className="h-1 w-1 mt-1.5 flex-shrink-0" />
-              <span>Run <code className="bg-white/10 px-1 rounded">ollama serve</code> in terminal</span>
+              <span>Run <code className="bg-white/10 px-1 rounded">OLLAMA_ORIGINS="https://datakit.page" ollama serve</code> in terminal</span>
             </li>
             <li className="flex items-start gap-2">
               <Circle className="h-1 w-1 mt-1.5 flex-shrink-0" />
               <span>Make sure it's running on {baseUrl}</span>
             </li>
           </ul>
+          
+          <div className="mt-3 p-2 rounded-lg">
+            <p className="text-xs font-medium mb-1">Browser Compatibility Note:</p>
+            <a
+              href="https://firefox.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+            <p className="text-xs text-white/60">
+              If connection still fails, try using <span className="text-orange-300">Firefox</span> as it has better 
+              support for localhost connections from HTTPS sites.
+            </p>
+            </a>
+          </div>
         </div>
 
         <Button
