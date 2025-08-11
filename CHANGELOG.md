@@ -1,3 +1,6 @@
+# 0.3.7
+Connecting to ollama from assistant
+
 # 0.3.6
 Resolving the issue with white blank screen
 

@@ -144,10 +144,10 @@ export const ThemeColorPicker = ({
         ref={buttonRef}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="flex items-center gap-2 p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+        className="flex items-center gap-1 p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
         onClick={handleToggle}
       >
-        <Palette size={16} />
+        <Palette size={14} />
         <div
           className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
           style={{ backgroundColor: color }}

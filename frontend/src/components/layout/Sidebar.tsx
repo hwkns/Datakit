@@ -1,25 +1,21 @@
-import React from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Cloud,
-} from "lucide-react";
-import { FileUploadButton } from "@/components/common/FileUploadButton";
-import { ThemeColorPicker } from "@/components/common/ThemeColorPicker";
-import { useDuckDBStore } from "@/store/duckDBStore";
-import useDirectFileImport from "@/hooks/useDirectFileImport";
-import { useAppStore } from "@/store/appStore";
-import { motion, AnimatePresence } from "framer-motion";
-import usePopover from "@/hooks/usePopover";
-import { Button } from "@/components/ui/Button";
-import UserMenu from "@/components/auth/UserMenu";
+import React from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, Cloud } from 'lucide-react';
+import { FileUploadButton } from '@/components/common/FileUploadButton';
+import { ThemeColorPicker } from '@/components/common/ThemeColorPicker';
+import { useDuckDBStore } from '@/store/duckDBStore';
+import useDirectFileImport from '@/hooks/useDirectFileImport';
+import { useAppStore } from '@/store/appStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import usePopover from '@/hooks/usePopover';
+import { Button } from '@/components/ui/Button';
+import UserMenu from '@/components/auth/UserMenu';
+import DuckDBIcon from '@/assets/duckdb.svg';
 
-import RemoteDataImportModal from "@/components/common/RemoteDataImportPanel";
+import RemoteDataImportModal from '@/components/common/RemoteDataImportPanel';
 
-import { ColumnType } from "@/types/csv";
-import { DataSourceType } from "@/types/json";
-import { ImportProvider } from "@/types/remoteImport";
+import { ColumnType } from '@/types/csv';
+import { DataSourceType } from '@/types/json';
+import { ImportProvider } from '@/types/remoteImport';
 
 export interface DataLoadWithDuckDBResult {
   data: string[][];
@@ -77,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       uploadPopover.close();
       return await processFileStreaming(handle, file, onDataLoad);
     } catch (error) {
-      console.error("Error importing file with streaming:", error);
+      console.error('Error importing file with streaming:', error);
     }
   };
 
@@ -98,8 +94,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
 
   // Variants for framer-motion animations
   const sidebarVariants = {
-    expanded: { width: "16rem" }, // w-64 = 16rem
-    collapsed: { width: "4rem" }, // mini sidebar width
+    expanded: { width: '16rem' }, // w-64 = 16rem
+    collapsed: { width: '4rem' }, // mini sidebar width
   };
 
   // File upload popup for collapsed mode
@@ -185,15 +181,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-white/10">
         <UserMenu variant="collapsed" />
 
-        <a
-          href="https://amin.contact"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:text-primary-foreground transition-custom p-2 hover:bg-background hover:bg-opacity-30 rounded"
-          aria-label="Visit Amin"
-        >
-          <ExternalLink size={16} />
-        </a>
+        <div className="flex flex-col gap-2 items-center">
+          <ThemeColorPicker variant="sidebar" />
+          <a
+            href="https://amin.contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary-foreground transition-custom p-2 hover:bg-background hover:bg-opacity-30 rounded"
+            aria-label="Visit Amin"
+          >
+            <ExternalLink size={16} />
+          </a>
+        </div>
       </div>
     </>
   );
@@ -275,43 +274,50 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
 
       {/* UPDATE 06/07/2025: MOST RECENT FILES section just commented out */}
       {/* Recent Files section */}
-      <div className="px-5 py-3 flex-1 overflow-auto">
-      </div>
+      <div className="px-5 py-3 flex-1 overflow-auto"></div>
 
       {/* Footer area with UserMenu */}
       <div className="border-t border-white border-opacity-10">
         <div className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <UserMenu variant="sidebar" />
-            </div>
-            <div className="flex-shrink-0">
+          <UserMenu variant="sidebar" />
+        </div>
+
+        <div className="px-2 py-3 border-t border-white border-opacity-5">
+          <div className="flex items-center justify-end">
+            <p className="text-xs text-white text-opacity-50 flex items-center">
+              Powered by{' '}
+              <a
+                href="https://duckdb.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={DuckDBIcon}
+                  className="text-primary hover:text-primary-foreground transition-colors inline-flex items-center gap-0.5 mx-1 h-4 w-4"
+                />
+              </a>
+              <a
+                href="https://amin.contact"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                built
+              </a>
+              {' @ '}
+              <a
+                href="https://www.linkedin.com/company/datakitpage"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                DataKit
+              </a>
+            </p>
+            <div className="flex-shrink-0 ml-1">
               <ThemeColorPicker variant="sidebar" />
             </div>
           </div>
-        </div>
-
-        <div className="px-4 py-3 text-center border-t border-white border-opacity-5">
-          <p className="text-xs text-white text-opacity-50">
-            Powered by DuckDB {" | "}
-            <a
-              href="https://amin.contact"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              built
-            </a>
-            {" @ "}
-            <a
-              href="https://www.linkedin.com/company/datakitpage"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              DataKit
-            </a>
-          </p>
         </div>
       </div>
     </>
@@ -321,17 +327,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     <>
       <motion.div
         className="relative bg-darkNav flex flex-col h-full border-r border-white border-opacity-10 overflow-hidden"
-        initial={sidebarCollapsed ? "collapsed" : "expanded"}
-        animate={sidebarCollapsed ? "collapsed" : "expanded"}
+        initial={sidebarCollapsed ? 'collapsed' : 'expanded'}
+        animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
         variants={sidebarVariants}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {sidebarCollapsed ? renderCollapsedContent() : renderExpandedContent()}
-        
+
         <button
           onClick={toggleSidebar}
           className="absolute top-5 right-3 w-6 h-6 flex items-center justify-center text-white/70 hover:text-white hover:border-white/10 transition-colors shadow-lg"
-          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {sidebarCollapsed ? (
             <ChevronRight size={16} />

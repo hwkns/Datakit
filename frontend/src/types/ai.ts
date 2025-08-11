@@ -1,4 +1,4 @@
-export type AIProvider = "openai" | "anthropic" | "groq" | "datakit" | "local";
+export type AIProvider = "openai" | "anthropic" | "groq" | "datakit" | "local" | "ollama";
 export type ModelType = "chat" | "completion" | "embedding";
 
 export interface AIModel {
@@ -6,11 +6,11 @@ export interface AIModel {
   name: string;
   provider?: AIProvider;
   type?: ModelType;
-  contextWindow: number;
+  contextWindow: number | null;
   costPer1kTokens?: {
     input: number;
     output: number;
-  };
+  } | null;
   capabilities: string[];
   requiresApiKey?: boolean;
   isLocal?: boolean;
