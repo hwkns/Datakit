@@ -4,6 +4,7 @@ import { useAIStore } from "@/store/aiStore";
 import { useAppStore } from "@/store/appStore";
 import { selectTableName } from "@/store/selectors/appSelectors";
 import { useDuckDBStore } from "@/store/duckDBStore";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface ContextBarProps {
   onOpenApiKeyModal?: () => void;
@@ -71,8 +72,9 @@ const TableDropdown: React.FC<{
 
 const ContextBar: React.FC<ContextBarProps> = ({ onOpenApiKeyModal }) => {
   const tableName = useAppStore(selectTableName);
-  const { autoExecuteSQL, setAutoExecuteSQL } = useAIStore();
+  const { autoExecuteSQL, updateSettings } = useAIStore();
   const { setActiveFile, files } = useAppStore();
+  const { isAuthenticated } = useAuth();
   
 
   
@@ -96,29 +98,31 @@ const ContextBar: React.FC<ContextBarProps> = ({ onOpenApiKeyModal }) => {
       </div>
       
       <div className="flex items-center gap-4">
-        {/* Settings Button */}
-        {onOpenApiKeyModal && (
+        {/* Settings Button - Only show if authenticated */}
+        {onOpenApiKeyModal && isAuthenticated && (
           <button
             onClick={onOpenApiKeyModal}
             className="flex items-center gap-2 px-3 py-1 rounded-md text-sm bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 transition-colors"
           >
             <Settings className="h-3.5 w-3.5" />
-            <span>Settings</span>
+            <span>Configure models</span>
           </button>
         )}
         
-        {/* Auto-execute Toggle */}
-        <button
-          onClick={() => setAutoExecuteSQL(!autoExecuteSQL)}
-          className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors ${
-            autoExecuteSQL 
-              ? "bg-primary/20 text-primary border border-primary/30" 
-              : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
-          }`}
-        >
-          <Zap className="h-3.5 w-3.5" />
-          <span>Auto-execute: {autoExecuteSQL ? "ON" : "OFF"}</span>
-        </button>
+        {/* Auto-execute Toggle - Only show if authenticated */}
+        {isAuthenticated && (
+          <button
+            onClick={() => updateSettings({ autoExecuteSQL: !autoExecuteSQL })}
+            className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors cursor-pointer ${
+              autoExecuteSQL 
+                ? "bg-primary/20 text-primary border border-primary/30 hover:bg-primary/25" 
+                : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span>Auto-execute: {autoExecuteSQL ? "ON" : "OFF"}</span>
+          </button>
+        )}
       </div>
     </div>
   );

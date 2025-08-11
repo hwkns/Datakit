@@ -132,6 +132,10 @@ const AIWorkspace: React.FC = () => {
   };
 
   const handleOpenSettings = () => {
+    if (!isAuthenticated) {
+      handleOpenAuthModal("login");
+      return;
+    }
     setShowApiKeyModal(true);
   };
 
@@ -173,14 +177,22 @@ const AIWorkspace: React.FC = () => {
 
   // Check if current provider is ready to use
   const isProviderReady = () => {
+    // All AI functionality now requires authentication
+    if (!isAuthenticated) {
+      return false;
+    }
+    
     if (activeProvider === 'datakit') {
       return isAuthenticated; // DataKit requires authentication
     }
     if (activeProvider === 'local') {
-      return true; // Local models don't need setup
+      return isAuthenticated; // Local models
     }
-    // Other providers need API keys
-    return apiKeys.has(activeProvider) && !!apiKeys.get(activeProvider);
+    if (activeProvider === 'ollama') {
+      return isAuthenticated; // Ollama
+    }
+    // Other providers need both authentication and API keys
+    return isAuthenticated && apiKeys.has(activeProvider) && !!apiKeys.get(activeProvider);
   };
 
   const showSetupPrompt = !isProviderReady();

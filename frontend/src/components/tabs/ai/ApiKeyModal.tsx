@@ -11,18 +11,32 @@ import {
 } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";
+import { aiService } from "@/lib/ai/aiService";
 import { AIProvider } from "@/types/ai";
 import { Button } from "@/components/ui/Button";
 import LocalModelManager from "./LocalModelManager";
+import OllamaModelManager from "./OllamaModelManager";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 
 import OpenAILogo from "@/assets/openai.webp";
 import AnthropicLogo from "@/assets/anthropic.webp";
+import OllamaLogo from '@/assets/ollama.webp';
 import GroqLogo from "@/assets/groq.png";
 
 const PROVIDER_CONFIG = {
+  ollama: {
+    name: "Ollama",
+    icon: <img src={OllamaLogo} className="h-4 w-4" />,
+    color: "blue",
+    description: "Local Ollama server - runs models on your machine",
+    websiteUrl: "https://ollama.com",
+    helpText:
+      "Run AI models locally with complete privacy. Requires Ollama to be running at http://localhost:11434",
+    keyFormat: "http://localhost:11434",
+    isUrlInput: true,
+  },
   openai: {
     name: "OpenAI",
     icon: <img src={OpenAILogo} className="h-5 w-5" />,
@@ -51,7 +65,7 @@ const PROVIDER_CONFIG = {
     helpText:
       "Fastest inference speed, perfect for trying AI features. Completely free to start.",
     keyFormat: "gsk_...",
-  },
+  }
   // local: {
   //   name: "Local Models",
   //   icon: <Cpu className="h-5 w-5" />,
@@ -80,7 +94,9 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
 
   const {
     apiKeys,
+    activeModel,
     setActiveProvider: setActiveProviderToStore,
+    setActiveModel,
     autoExecuteSQL,
     showCostEstimates,
     setApiKey,
@@ -295,6 +311,43 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                 {activeProvider === "local" ? (
                   // Local Models Section
                   <LocalModelManager />
+                ) : activeProvider === "ollama" ? (
+                  // Ollama Configuration Section
+                  <div className="space-y-6">
+                    {/* URL Configuration */}
+                    <div>
+                      <h4 className="text-sm font-medium text-white mb-3">
+                        Server Configuration
+                      </h4>
+                      <div>
+                        <label className="block text-sm font-medium text-white/80 mb-2">
+                          Ollama Server URL
+                        </label>
+                        <input
+                          type="text"
+                          value={keyInputs.get('ollama') || ""}
+                          onChange={(e) => handleKeyChange('ollama', e.target.value)}
+                          placeholder="http://localhost:11434"
+                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
+                        />
+                        <p className="text-xs text-white/60 mt-1">
+                          The URL where your Ollama server is running
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Model Management */}
+                    <OllamaModelManager
+                      baseUrl={keyInputs.get('ollama') || 'http://localhost:11434'}
+                      selectedModel={activeModel || aiService.getOllamaModel() || undefined}
+                      onModelSelect={(modelName) => {
+                        // Set the active model in the AI service and store
+                        aiService.setOllamaModel(modelName);
+                        setActiveModel(modelName);
+                        console.log('Selected Ollama model:', modelName);
+                      }}
+                    />
+                  </div>
                 ) : (
                   // API Key Configuration
                   <div className="space-y-6">
@@ -306,12 +359,12 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-white/80 mb-2">
-                            API Key
+                            {activeProvider === 'ollama' ? 'Ollama Server URL' : 'API Key'}
                           </label>
                           <div className="relative">
                             <input
                               type={
-                                showKeys.get(activeProvider)
+                                activeProvider === 'ollama' || showKeys.get(activeProvider)
                                   ? "text"
                                   : "password"
                               }
@@ -319,25 +372,31 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                               onChange={(e) =>
                                 handleKeyChange(activeProvider, e.target.value)
                               }
-                              placeholder={`Enter your ${PROVIDER_CONFIG[activeProvider].name} API key`}
+                              placeholder={
+                                activeProvider === 'ollama'
+                                  ? "http://localhost:11434"
+                                  : `Enter your ${PROVIDER_CONFIG[activeProvider].name} API key`
+                              }
                               className="w-full px-3 py-2 pr-20 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
                             />
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleToggleKeyVisibility(activeProvider)
-                                }
-                                className="h-6 w-6 p-0"
-                              >
-                                {showKeys.get(activeProvider) ? (
-                                  <EyeOff className="h-3 w-3" />
-                                ) : (
-                                  <Eye className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
+                            {activeProvider !== 'ollama' && (
+                              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleToggleKeyVisibility(activeProvider)
+                                  }
+                                  className="h-6 w-6 p-0"
+                                >
+                                  {showKeys.get(activeProvider) ? (
+                                    <EyeOff className="h-3 w-3" />
+                                  ) : (
+                                    <Eye className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
 

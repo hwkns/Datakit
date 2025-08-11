@@ -79,6 +79,7 @@ interface AIState {
   setActiveModel: (model: string) => void;
   setApiKey: (provider: AIProvider, key: string) => void;
   validateApiKey: (provider: AIProvider) => Promise<boolean>;
+  updateOllamaModels: (models: any[]) => void;
   
   // Context Actions
   setContext: (context: AIState['context']) => void;
@@ -144,7 +145,7 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
       type: 'chat',
       contextWindow: 200000,
       costPer1kTokens: { input: 0.3, output: 1.5 }, // Credits per 1K tokens
-      capabilities: ['sql-generation', 'data-analysis'],
+      capabilities: [],
       requiresApiKey: false,
       description: 'Powered by Claude 3.5 Sonnet - Best for complex analysis',
     },
@@ -155,9 +156,47 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
       type: 'chat',
       contextWindow: 200000,
       costPer1kTokens: { input: 0.08, output: 0.4 }, // Credits per 1K tokens
-      capabilities: ['sql-generation', 'data-analysis'],
+      capabilities: [],
       requiresApiKey: false,
       description: 'Powered by Claude 3.5 Haiku - Economical',
+    },
+  ]],
+  ['ollama', [
+    {
+      id: 'llama3.2',
+      name: 'Llama 3.2',
+      provider: 'ollama',
+      type: 'chat',
+      contextWindow: 128000,
+      costPer1kTokens: { input: 0, output: 0 },
+      capabilities: [],
+      requiresApiKey: false,
+      isLocal: true,
+      description: 'Latest Llama model - Great for general tasks',
+    },
+    {
+      id: 'mistral',
+      name: 'Mistral',
+      provider: 'ollama',
+      type: 'chat',
+      contextWindow: 8192,
+      costPer1kTokens: { input: 0, output: 0 },
+      capabilities: [],
+      requiresApiKey: false,
+      isLocal: true,
+      description: 'Fast and efficient model',
+    },
+    {
+      id: 'codellama',
+      name: 'Code Llama',
+      provider: 'ollama',
+      type: 'chat',
+      contextWindow: 16384,
+      costPer1kTokens: { input: 0, output: 0 },
+      capabilities: [],
+      requiresApiKey: false,
+      isLocal: true,
+      description: 'Specialized for code and SQL generation',
     },
   ]],
   ['openai', [
@@ -225,7 +264,7 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
       capabilities: [],
       requiresApiKey: true,
     },
-  ]],
+  ]]
 ]);
 
 export const useAIStore = create<AIState>()(
@@ -290,6 +329,41 @@ export const useAIStore = create<AIState>()(
         
         // Placeholder for actual validation
         return true;
+      },
+      
+      updateOllamaModels: (models) => {
+        set((state) => {
+          const newAvailableModels = new Map(state.availableModels);
+          
+          // Convert Ollama models to AIModel format
+          const ollamaAIModels: AIModel[] = models.map(model => ({
+            id: model.name || model.model,
+            name: model.name || model.model,
+            provider: 'ollama' as AIProvider,
+            type: 'chat',
+            contextWindow: null,
+            costPer1kTokens: null,
+            capabilities: [],
+            requiresApiKey: false,
+            isLocal: true,
+            description: `${formatSize(model.size)} - Modified ${formatDate(model.modified_at)}`,
+          }));
+          
+          // Update the models for Ollama provider
+          newAvailableModels.set('ollama', ollamaAIModels);
+          
+          return { availableModels: newAvailableModels };
+        });
+        
+        // Helper functions for formatting
+        function formatSize(bytes: number): string {
+          const gb = bytes / (1024 * 1024 * 1024);
+          return gb.toFixed(1) + " GB";
+        }
+        
+        function formatDate(dateString: string): string {
+          return new Date(dateString).toLocaleDateString();
+        }
       },
       
       setCurrentPrompt: (prompt) => set({ currentPrompt: prompt }),

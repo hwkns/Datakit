@@ -2,6 +2,7 @@ import { OpenAIProvider } from "./providers/openai";
 import { AnthropicProvider } from "./providers/anthropic";
 import { GroqProvider } from "./providers/groq";
 import { WebLLMProvider } from "./providers/webllm";
+import { OllamaProvider } from "./providers/ollama";
 
 import { 
   AIProvider, 
@@ -53,6 +54,11 @@ export class AIService {
       case 'datakit':
         // DataKit provider is set via setProvider method
         break;
+      case 'ollama':
+        // Ollama doesn't need API key, apiKey parameter can be base URL
+        const baseUrl = apiKey || 'http://localhost:11434';
+        this.providers.set(provider, new OllamaProvider(baseUrl, model));
+        break;
       default:
         throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -70,6 +76,11 @@ export class AIService {
 
     if (provider === 'local') {
       return true; // Local models don't need API key validation
+    }
+
+    if (provider === 'ollama') {
+      // For Ollama, validate connection instead of API key
+      return await providerInstance.validateConnection();
     }
 
     return await providerInstance.validateApiKey();
@@ -184,6 +195,10 @@ export class AIService {
       // DataKit provider availability is handled by authentication
       return this.providers.has(provider);
     }
+    if (provider === 'ollama') {
+      // Ollama is ready if provider exists (connection validated separately)
+      return this.providers.has(provider);
+    }
     return this.providers.has(provider);
   }
 
@@ -223,6 +238,42 @@ export class AIService {
 
   isLocalModelLoaded(): boolean {
     return this.webllmProvider?.isModelLoaded() || false;
+  }
+
+  // Ollama-specific methods
+  async getOllamaModels(): Promise<any[]> {
+    const provider = this.providers.get('ollama') as OllamaProvider;
+    if (!provider) {
+      throw new Error('Ollama provider not initialized');
+    }
+    return await provider.listModels();
+  }
+
+  async pullOllamaModel(modelName: string, onProgress?: (progress: number) => void): Promise<void> {
+    const provider = this.providers.get('ollama') as OllamaProvider;
+    if (!provider) {
+      throw new Error('Ollama provider not initialized');
+    }
+    await provider.pullModel(modelName, onProgress);
+  }
+
+  setOllamaModel(model: string): void {
+    const provider = this.providers.get('ollama') as OllamaProvider;
+    if (provider) {
+      provider.setModel(model);
+    }
+  }
+
+  getOllamaModel(): string | null {
+    const provider = this.providers.get('ollama') as OllamaProvider;
+    return provider ? provider.getModel() : null;
+  }
+
+  setOllamaBaseUrl(url: string): void {
+    const provider = this.providers.get('ollama') as OllamaProvider;
+    if (provider) {
+      provider.setBaseUrl(url);
+    }
   }
 
   // Helper methods to convert between type systems

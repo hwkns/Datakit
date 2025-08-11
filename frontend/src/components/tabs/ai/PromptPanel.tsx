@@ -1,6 +1,10 @@
 import React, { useState, useEffect, RefObject } from "react";
-import { Send, ChevronRight, ChevronLeft, RefreshCw, Command } from "lucide-react";
+import { Send, ChevronRight, ChevronLeft, RefreshCw, Command, Server } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+import OpenAILogo from "@/assets/openai.webp";
+import AnthropicLogo from "@/assets/anthropic.webp";
+import OllamaLogo from '@/assets/ollama.webp';
 
 import { useAIStore } from "@/store/aiStore";
 import { useAIOperations } from "@/hooks/ai/useAIOperations";
@@ -419,7 +423,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
                     onClick={onSignUpClick}
                     variant="outline"
                     size="sm"
-                    className="flex-1 animate-pulse-border"
+                    className="animate-pulse-border px-3 py-3 h-auto"
                   >
                     Sign Up for Free Credits
                   </Button>
@@ -428,9 +432,14 @@ const PromptPanel: React.FC<PromptPanelProps> = ({
                     onClick={onConfigureClick}
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 h-auto"
                   >
-                    Configure Your Own Model
+                    <span>Use Your Own API Keys</span>
+                    <div className="flex items-center gap-1">
+                      <img src={OpenAILogo} className="h-4 w-4 opacity-60" alt="OpenAI" />
+                      <img src={AnthropicLogo} className="h-4 w-4 opacity-60" alt="Anthropic" />
+                      <img src={OllamaLogo} className="h-4 w-4 opacity-60" alt="Ollama" />
+                    </div>
                   </Button>
                 </div>
 
