@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
   Eye,
@@ -9,17 +9,17 @@ import {
   AlertCircle,
   Check,
   ExternalLink,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/hooks/auth/useAuth";
-import { PasswordValidator } from "@/lib/utils/passwordValidator";
-import { useNotifications } from "@/hooks/useNotifications";
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { PasswordValidator } from '@/lib/utils/passwordValidator';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: "login" | "signup";
+  defaultMode?: 'login' | 'signup';
   onLoginSuccess?: () => void;
 }
 
@@ -50,15 +50,21 @@ interface PasswordRequirements {
 const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  defaultMode = "login",
+  defaultMode = 'login',
   onLoginSuccess,
 }) => {
-  const [mode, setMode] = useState<"login" | "signup">(defaultMode);
+  const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
+
+  // Update mode when defaultMode prop changes
+  useEffect(() => {
+    setMode(defaultMode);
+  }, [defaultMode]);
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    name: "",
+    email: '',
+    password: '',
+    name: '',
   });
 
   const [passwordStrength, setPasswordStrength] =
@@ -77,23 +83,29 @@ const AuthModal: React.FC<AuthModalProps> = ({
   }, [isOpen]);
 
   // Instant password strength checker using frontend validator
-  const checkPasswordStrength = useCallback((password: string) => {
-    if (!password || password.length < 1) {
-      setPasswordStrength(null);
-      return;
-    }
+  const checkPasswordStrength = useCallback(
+    (password: string) => {
+      if (!password || password.length < 1) {
+        setPasswordStrength(null);
+        return;
+      }
 
-    // Use frontend validator for instant feedback
-    const result = PasswordValidator.validatePasswordWithPersonalInfo(password, {
-      email: formData.email,
-      name: formData.name,
-    });
+      // Use frontend validator for instant feedback
+      const result = PasswordValidator.validatePasswordWithPersonalInfo(
+        password,
+        {
+          email: formData.email,
+          name: formData.name,
+        }
+      );
 
-    setPasswordStrength(result);
-  }, [formData.email, formData.name, formData.password]);
+      setPasswordStrength(result);
+    },
+    [formData.email, formData.name, formData.password]
+  );
 
   useEffect(() => {
-    if (mode === "signup" && formData.password) {
+    if (mode === 'signup' && formData.password) {
       checkPasswordStrength(formData.password);
     } else {
       setPasswordStrength(null);
@@ -110,27 +122,27 @@ const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
 
     // For signup, check if password meets requirements
-    if (mode === "signup" && passwordStrength && !passwordStrength.isValid) {
+    if (mode === 'signup' && passwordStrength && !passwordStrength.isValid) {
       return; // Don't submit if password is invalid
     }
 
     try {
-      if (mode === "login") {
+      if (mode === 'login') {
         await login({
           email: formData.email,
           password: formData.password,
         });
-        
+
         // Show success notification for login
         showSuccess(
-          "Welcome back!",
+          'Welcome back!',
           "You've successfully signed in to DataKit.",
-          { 
+          {
             icon: 'shield',
-            duration: 3000
+            duration: 3000,
           }
         );
-        
+
         onLoginSuccess?.();
       } else {
         await signup({
@@ -138,14 +150,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
           password: formData.password,
           name: formData.name,
         });
-        
+
         // Show success notification for signup
         showSuccess(
-          "Welcome to DataKit!",
+          'Welcome to DataKit!',
           `Your account has been created successfully. You now have access to DataKit models with 3$ to get started.`,
-          { 
+          {
             icon: 'user',
-            duration: 6000
+            duration: 6000,
           }
         );
         onLoginSuccess?.();
@@ -157,24 +169,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const toggleMode = () => {
-    setMode(mode === "login" ? "signup" : "login");
+    setMode(mode === 'login' ? 'signup' : 'login');
     clearError();
-    setFormData({ email: "", password: "", name: "" });
+    setFormData({ email: '', password: '', name: '' });
     setPasswordStrength(null);
   };
-
 
   const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       className={`flex items-center gap-2 text-xs ${
-        met ? "text-green-400" : "text-white/60"
+        met ? 'text-green-400' : 'text-white/60'
       }`}
     >
       <div
         className={`w-3 h-3 rounded-full flex items-center justify-center ${
-          met ? "bg-green-500" : "bg-white/20"
+          met ? 'bg-green-500' : 'bg-white/20'
         }`}
       >
         {met && <Check size={8} className="text-white" />}
@@ -199,7 +210,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{
-              type: "spring",
+              type: 'spring',
               stiffness: 300,
               damping: 30,
               duration: 0.3,
@@ -211,7 +222,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium text-white">
-                  {mode === "login" ? "Welcome Back" : "Join DataKit"}
+                  {mode === 'login' ? 'Welcome Back' : 'Join DataKit'}
                 </h2>
               </div>
               <button
@@ -226,10 +237,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name field - only for signup */}
-                {mode === "signup" && (
+                {mode === 'signup' && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
+                    animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
                   >
@@ -287,18 +298,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50"
                     />
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
                       className="w-full pl-10 pr-10 py-3 bg-background/20 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                       placeholder={
-                        mode === "login"
-                          ? "Enter your password"
-                          : "Create a strong password"
+                        mode === 'login'
+                          ? 'Enter your password'
+                          : 'Create a strong password'
                       }
                       required
-                      minLength={mode === "signup" ? 12 : 6}
+                      minLength={mode === 'signup' ? 12 : 6}
                     />
                     <button
                       type="button"
@@ -310,10 +321,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   {/* Password Strength Indicator - only for signup */}
-                  {mode === "signup" && formData.password && (
+                  {mode === 'signup' && formData.password && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
+                      animate={{ opacity: 1, height: 'auto' }}
                       className="mt-3 space-y-3"
                     >
                       {/* Requirements Checklist */}
@@ -354,7 +365,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
                           </div>
                         </div>
                       )}
-
                     </motion.div>
                   )}
                 </div>
@@ -381,45 +391,45 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full py-3"
                   disabled={
                     isLoading ||
-                    (mode === "signup" &&
+                    (mode === 'signup' &&
                       passwordStrength &&
                       !passwordStrength.isValid)
                   }
                 >
                   {isLoading
-                    ? mode === "login"
-                      ? "Signing In..."
-                      : "Creating Account..."
-                    : mode === "login"
-                    ? "Sign In"
-                    : "Create Account"}
+                    ? mode === 'login'
+                      ? 'Signing In...'
+                      : 'Creating Account...'
+                    : mode === 'login'
+                    ? 'Sign In'
+                    : 'Create Account'}
                 </Button>
               </form>
 
               {/* Mode toggle */}
               <div className="mt-6 text-center">
                 <span className="text-sm text-white/70">
-                  {mode === "login"
+                  {mode === 'login'
                     ? "Don't have an account? "
-                    : "Already have an account? "}
+                    : 'Already have an account? '}
                 </span>
                 <button
                   onClick={toggleMode}
                   className="text-sm text-primary hover:text-primary-foreground transition-colors font-medium"
                 >
-                  {mode === "login" ? "Sign up" : "Sign in"}
+                  {mode === 'login' ? 'Sign up' : 'Sign in'}
                 </button>
               </div>
 
               {/* Privacy Notice - only for signup */}
-              {mode === "signup" && (
+              {mode === 'signup' && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="mt-4 text-center"
                 >
                   <p className="text-xs text-white/60">
-                    By creating an account, you agree to our{" "}
+                    By creating an account, you agree to our{' '}
                     <a
                       href="/privacy"
                       target="_blank"
@@ -433,7 +443,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               )}
 
               {/* Benefits section for signup */}
-              {mode === "signup" && (
+              {mode === 'signup' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -446,8 +456,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   <ul className="text-xs text-white/70 space-y-2">
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
-                      Access to DataKit models with built-in credits
+                      Access to DataKit Assistant with built-in credits
                     </li>
+
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
                       Export reports from data inspector
