@@ -139,7 +139,8 @@ async function createCsvViewWithFallback(
     createQuery = `CREATE VIEW ${escapedTableName} AS SELECT * FROM read_csv('${registeredFileName}', 
         header=true, 
         auto_detect=true,
-        strict_mode=false
+        strict_mode=false,
+        parallel=false
       )`;
 
     console.log(`[DuckDBStore] Trying standard CSV view creation`);
@@ -155,7 +156,8 @@ async function createCsvViewWithFallback(
           all_varchar=true,
           strict_mode=false,
           ignore_errors=true,
-          sample_size=-1
+          sample_size=-1,
+          parallel=false
         )`;
 
       console.log(`[DuckDBStore] Trying permissive CSV view creation`);

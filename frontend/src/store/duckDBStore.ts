@@ -865,7 +865,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                 quote='"',
                 escape='"',
                 strict_mode=false,
-                auto_detect=true
+                auto_detect=true,
+                parallel=false
               )`;
 
               console.log(
@@ -887,7 +888,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                   delim='${analysis.separator}',
                   strict_mode=false,
                   ignore_errors=true,
-                  auto_detect=true
+                  auto_detect=true,
+                  parallel=false
                 )`;
 
                 console.log(
@@ -909,7 +911,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                     delim='${analysis.separator}',
                     strict_mode=false,
                     ignore_errors=true,
-                    all_varchar=true
+                    all_varchar=true,
+                    parallel=false
                   )`;
 
                   console.log(
@@ -1499,7 +1502,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                 quote='"',
                 escape='"',
                 strict_mode=false,
-                auto_detect=true
+                auto_detect=true,
+                parallel=false
               )`;
 
               console.log(
@@ -1521,7 +1525,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                   delim='${analysis.separator}',
                   strict_mode=false,
                   ignore_errors=true,
-                  auto_detect=true
+                  auto_detect=true,
+                  parallel=false
                 )`;
 
                 console.log(
@@ -1543,7 +1548,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
                     delim='${analysis.separator}',
                     strict_mode=false,
                     ignore_errors=true,
-                    all_varchar=true
+                    all_varchar=true,
+                    parallel=false
                   )`;
 
                   console.log(
