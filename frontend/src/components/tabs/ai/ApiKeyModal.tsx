@@ -36,6 +36,7 @@ const PROVIDER_CONFIG = {
       "Run AI models locally with complete privacy. Requires Ollama to be running at http://localhost:11434",
     keyFormat: "http://localhost:11434",
     isUrlInput: true,
+    provider: 'local'
   },
   openai: {
     name: "OpenAI",
@@ -240,8 +241,8 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                                 )}
                               </div>
                               <p className="text-xs mt-0.5 truncate opacity-80">
-                                {provider === "local"
-                                  ? "Browser-based"
+                                {provider === "local" || provider === "ollama"
+                                  ? "Local"
                                   : "Cloud API"}
                               </p>
                             </div>
