@@ -23,6 +23,7 @@ export const useFileUpload = () => {
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
                 "application/vnd.ms-excel": [".xls"],
                 "application/x-parquet": [".parquet"],
+                "application/octet-stream": [".duckdb"],
               },
             },
           ],

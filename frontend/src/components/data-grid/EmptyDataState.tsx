@@ -193,7 +193,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               ref={fileInputRef}
               type="file"
               className="hidden"
-              accept=".csv,.json,.xlsx,.xls,.parquet"
+              accept=".csv,.json,.xlsx,.xls,.parquet,.duckdb"
               onChange={handleFileSelect}
               disabled={isProcessing}
             />
