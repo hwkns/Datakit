@@ -13,6 +13,7 @@ import {
   getObjectType,
 } from "@/lib/duckdb/ingestion/tables";
 import { analyzeTxtFile } from "@/lib/duckdb/ingestion/analyzeTextFile";
+import { DuckDBTableRegistry } from "@/lib/duckdb/ducklake";
 import {
   createCsvViewWithFallback,
   importCsvWithFallback,
@@ -41,6 +42,9 @@ interface DuckDBState {
 
   // Table registry - maps raw names to escaped names
   registeredTables: Map<string, string>;
+  
+  // DuckLake table registry
+  ducklakeRegistry: DuckDBTableRegistry | null;
 
   // Sample table state
   hasSampleTable: boolean;
@@ -96,6 +100,7 @@ interface DuckDBState {
   refreshSchemaCache: () => Promise<void>;
   resetError: () => void;
   cleanupDB: () => Promise<void>;
+  dropTable: (tableName: string) => Promise<boolean>;
   importFileDirectlyStreaming: (
     fileHandle: FileSystemFileHandle,
     fileName: string,
@@ -771,6 +776,53 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       schemaCache: new Map(),
       lastSchemaCacheUpdate: 0,
     });
+  },
+
+  dropTable: async (tableName: string) => {
+    const { connection } = get();
+    
+    if (!connection) {
+      console.error('[DuckDBStore] Cannot drop table: no connection');
+      return false;
+    }
+
+    try {
+      // Create a sanitized table name for the query
+      const escapedTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
+      
+      const dropQuery = `DROP TABLE IF EXISTS "${escapedTableName}"`;
+      
+      if (isDevelopment) {
+        console.log(`[DuckDBStore] Dropping table: ${dropQuery}`);
+      }
+
+      await connection.query(dropQuery);
+
+      // Remove from registered tables
+      const registeredTables = new Map(get().registeredTables);
+      for (const [rawName, registeredName] of registeredTables) {
+        if (registeredName === escapedTableName) {
+          registeredTables.delete(rawName);
+          break;
+        }
+      }
+
+      // Update state
+      set({ 
+        registeredTables,
+        lastSchemaCacheUpdate: 0  // Force schema cache refresh
+      });
+
+      if (isDevelopment) {
+        console.log(`[DuckDBStore] Successfully dropped table: ${escapedTableName}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`[DuckDBStore] Failed to drop table ${tableName}:`, error);
+      set({ error: `Failed to drop table: ${error}` });
+      return false;
+    }
   },
 
   importFileDirectlyStreaming: async (
