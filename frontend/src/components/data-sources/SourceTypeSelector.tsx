@@ -1,7 +1,3 @@
-/**
- * Source Type Selector - Tab-like interface for different data source types
- */
-
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
