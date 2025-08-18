@@ -105,7 +105,7 @@ export const WorkspaceSelector: React.FC = () => {
     if (!newWorkspaceName.trim()) return;
 
     // Check workspace limit for non-authenticated users
-    if (!isAuthenticated && nonDraftWorkspaceCount >= 2) {
+    if (!isAuthenticated && nonDraftWorkspaceCount >= 1) {
       console.log(
         '[WorkspaceSelector] Workspace limit reached for non-authenticated user'
       );
@@ -183,7 +183,7 @@ export const WorkspaceSelector: React.FC = () => {
 
     // Check workspace limit for non-authenticated users
     // When saving draft, this would create a new non-draft workspace
-    if (!isAuthenticated && nonDraftWorkspaceCount >= 2) {
+    if (!isAuthenticated && nonDraftWorkspaceCount >= 1) {
       console.log('[WorkspaceSelector] Cannot save draft - workspace limit reached for non-authenticated user');
       setIsOpen(false);
       setShowAuthModal(true);
@@ -260,7 +260,7 @@ export const WorkspaceSelector: React.FC = () => {
                     </h3>
                     {!isAuthenticated && nonDraftWorkspaceCount >= 1 && (
                       <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded">
-                        {nonDraftWorkspaceCount}/2
+                        {nonDraftWorkspaceCount}/1
                       </span>
                     )}
                   </div>
@@ -501,7 +501,7 @@ export const WorkspaceSelector: React.FC = () => {
                   <button
                     onClick={() => {
                       // Check workspace limit for non-authenticated users
-                      if (!isAuthenticated && nonDraftWorkspaceCount >= 2) {
+                      if (!isAuthenticated && nonDraftWorkspaceCount >= 1) {
                         console.log(
                           '[WorkspaceSelector] Workspace limit reached, showing auth modal'
                         );
@@ -518,7 +518,7 @@ export const WorkspaceSelector: React.FC = () => {
                       <span className="text-sm text-white">New Workspace</span>
                     </div>
                     {/* Show premium indicator for non-authenticated users at limit */}
-                    {!isAuthenticated && nonDraftWorkspaceCount >= 2 && (
+                    {!isAuthenticated && nonDraftWorkspaceCount >= 1 && (
                       <Shield className="h-4 w-4 text-amber-400 opacity-60 group-hover:opacity-100 transition-opacity" />
                     )}
                   </button>
