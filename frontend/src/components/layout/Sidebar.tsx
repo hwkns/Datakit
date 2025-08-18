@@ -13,6 +13,7 @@ import useDirectFileImport from '@/hooks/useDirectFileImport';
 import { useAppStore } from '@/store/appStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import usePopover from '@/hooks/usePopover';
+import { useNotifications } from '@/hooks/useNotifications';
 
 import UserMenu from '@/components/auth/UserMenu';
 import DuckDBIcon from '@/assets/duckdb.svg';
@@ -61,6 +62,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   } = useAppStore();
 
   const uploadPopover = usePopover();
+  
+  // Get notifications
+  const { showSuccess } = useNotifications();
 
   // Get workspace state from appStore
   const {
@@ -133,6 +137,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           lastModified: Date.now(),
         };
         addFileToWorkspace(newFile);
+        
+        // Show success notification for remote file import
+        showSuccess(
+          'Remote File Imported',
+          `"${result.fileName}" has been imported from ${result.remoteProvider || 'remote source'}`,
+          { icon: 'check', duration: 5000 }
+        );
       }
     }
   };
@@ -142,22 +153,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     // Get file info before removing
     const file = workspaceFiles.find(f => f.id === fileId);
     
-    // Remove from workspace first
+    if (!file) return;
+    
+    // Show confirmation alert before removing
+    const confirmed = confirm(
+      `Remove "${file.name}" from workspace? This will not delete the actual file.`
+    );
+    
+    if (!confirmed) return;
+    
+    // Remove from workspace after confirmation
     removeFileFromWorkspace(fileId);
     
+    // Show success notification
+    showSuccess(
+      'File Removed',
+      `"${file.name}" has been removed from workspace`,
+      { icon: 'check', duration: 4000 }
+    );
+    
     // If file was loaded into DuckDB, remove the table or view
-    if (file) {
-      try {
-        const duckDBStore = useDuckDBStore.getState();
-        
-        // Try to drop table or view with the file name (escaped)
-        const tableName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
-        await duckDBStore.dropTableOrView(tableName);
-        
-        console.log(`[Sidebar] Dropped table/view for removed file: ${tableName}`);
-      } catch (error) {
-        console.error('[Sidebar] Error dropping table/view for removed file:', error);
-      }
+    try {
+      const duckDBStore = useDuckDBStore.getState();
+      
+      // Try to drop table or view with the file name (escaped)
+      const tableName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
+      await duckDBStore.dropTableOrView(tableName);
+      
+      console.log(`[Sidebar] Dropped table/view for removed file: ${tableName}`);
+    } catch (error) {
+      console.error('[Sidebar] Error dropping table/view for removed file:', error);
     }
   };
 

@@ -15,6 +15,7 @@ import { useAppStore } from '@/store/appStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useNotifications } from '@/hooks/useNotifications';
 import AuthModal from '@/components/auth/AuthModal';
 
 export const WorkspaceSelector: React.FC = () => {
@@ -49,6 +50,9 @@ export const WorkspaceSelector: React.FC = () => {
 
   // Get authentication state
   const { isAuthenticated } = useAuth();
+  
+  // Get notifications
+  const { showSuccess } = useNotifications();
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
 
@@ -110,7 +114,16 @@ export const WorkspaceSelector: React.FC = () => {
     }
 
     // Create workspace if under limit or authenticated
-    createWorkspace(newWorkspaceName.trim());
+    const workspaceName = newWorkspaceName.trim();
+    createWorkspace(workspaceName);
+    
+    // Show success notification
+    showSuccess(
+      'Workspace Created',
+      `"${workspaceName}" workspace has been created successfully`,
+      { icon: 'check', duration: 4000 }
+    );
+    
     setNewWorkspaceName('');
     setIsCreating(false);
     setIsOpen(false);
@@ -118,7 +131,18 @@ export const WorkspaceSelector: React.FC = () => {
 
   const handleRenameWorkspace = (id: string) => {
     if (editingName.trim()) {
-      renameWorkspace(id, editingName.trim());
+      const oldName = workspaces.find(w => w.id === id)?.name;
+      const newName = editingName.trim();
+      
+      renameWorkspace(id, newName);
+      
+      // Show success notification
+      showSuccess(
+        'Workspace Renamed',
+        `Workspace renamed from "${oldName}" to "${newName}"`,
+        { icon: 'check', duration: 4000 }
+      );
+      
       setEditingId(null);
     }
   };
@@ -130,8 +154,15 @@ export const WorkspaceSelector: React.FC = () => {
     const confirmed = confirm(
       `Delete workspace "${workspace?.name}"? This action cannot be undone.`
     );
-    if (confirmed) {
+    if (confirmed && workspace) {
       deleteWorkspace(id);
+      
+      // Show success notification
+      showSuccess(
+        'Workspace Deleted',
+        `"${workspace.name}" workspace has been deleted`,
+        { icon: 'check', duration: 4000 }
+      );
     }
   };
 
@@ -160,7 +191,18 @@ export const WorkspaceSelector: React.FC = () => {
     }
 
     // Save draft if under limit or authenticated
-    saveDraftWorkspace(draftSaveName.trim());
+    const workspaceName = draftSaveName.trim();
+    const fileCount = workspaceFiles.length;
+    
+    saveDraftWorkspace(workspaceName);
+    
+    // Show success notification
+    showSuccess(
+      'Workspace Saved',
+      `Draft workspace saved as "${workspaceName}" with ${fileCount} file${fileCount !== 1 ? 's' : ''}`,
+      { icon: 'check', duration: 5000 }
+    );
+    
     setDraftSaveName('');
     setIsSavingDraft(false);
     setIsOpen(false);
