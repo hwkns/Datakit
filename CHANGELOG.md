@@ -1,3 +1,6 @@
+# 0.4.0
+Allowing PostgreSQL connection
+
 # 0.3.91
 Multiple table selection on ai context panel assistant
 

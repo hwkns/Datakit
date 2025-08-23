@@ -81,7 +81,7 @@ const PostgreSQLPanel: React.FC<PostgreSQLPanelProps> = ({ onImport }) => {
     createConnection,
     deleteConnection,
     loadSchemas,
-    loadAllTables,
+    loadTables,
     testConnection,
     clearErrors,
   } = usePostgreSQLStore();
@@ -102,10 +102,12 @@ const PostgreSQLPanel: React.FC<PostgreSQLPanelProps> = ({ onImport }) => {
   useEffect(() => {
     if (selectedConnection) {
       loadSchemas(selectedConnection.id).then(() => {
-        loadAllTables(selectedConnection.id);
+        // Load tables only for the connection's default schema instead of all schemas
+        const defaultSchema = selectedConnection.schema || 'public';
+        loadTables(selectedConnection.id, defaultSchema);
       });
     }
-  }, [selectedConnection, loadSchemas, loadAllTables]);
+  }, [selectedConnection, loadSchemas, loadTables]);
 
   const handleCreateConnection = async () => {
     try {

@@ -623,21 +623,16 @@ export class PostgresProxyService {
     const connection = await this.getConnection(userId, connectionId);
     let effectiveSchema = schemaName || connection.schema || 'public';
 
-    // If no schema specified, try to find the best default
+    // Debug logging to understand schema resolution
+    this.logger.log(
+      `Schema resolution: requested='${schemaName}', connection.schema='${connection.schema}', effectiveSchema='${effectiveSchema}'`,
+    );
+
+    // If no schema specified, try 'public' first, then fallback to getting available schemas only if needed
     if (!schemaName && !connection.schema) {
-      const availableSchemas = await this.getAvailableSchemas(
-        userId,
-        connectionId,
-      );
-      if (availableSchemas.length > 0) {
-        // Prefer 'public' if it exists, otherwise use the first available schema
-        effectiveSchema = availableSchemas.includes('public')
-          ? 'public'
-          : availableSchemas[0];
-        this.logger.log(
-          `Auto-selected schema '${effectiveSchema}' from available: ${availableSchemas.join(', ')}`,
-        );
-      }
+      // First try 'public' schema without making additional DB calls
+      effectiveSchema = 'public';
+      this.logger.log(`No schema specified, defaulting to 'public' schema`);
     }
 
     this.logger.log(
@@ -705,8 +700,12 @@ export class PostgresProxyService {
         );
       }
 
-      // System tables filter
-      if (!options.includeSystemTables) {
+      // System tables filter - only exclude system schemas if user hasn't specifically requested one
+      const systemSchemas = ['information_schema', 'pg_catalog', 'pg_toast'];
+      if (
+        !options.includeSystemTables &&
+        !systemSchemas.includes(effectiveSchema)
+      ) {
         whereConditions.push(
           `t.table_schema NOT IN ('information_schema', 'pg_catalog', 'pg_toast')`,
         );
@@ -716,6 +715,9 @@ export class PostgresProxyService {
         whereConditions.length > 0
           ? `WHERE ${whereConditions.join(' AND ')}`
           : '';
+
+      // Debug logging to see the where clause
+      this.logger.log(`Table discovery WHERE clause: ${whereClause}`);
 
       // Main query to get table information (simplified to avoid system table issues)
       const tablesQuery = `
@@ -743,28 +745,68 @@ export class PostgresProxyService {
         30000,
       );
 
-      // Get column information for each table
-      const tables: TableInfoDto[] = [];
+      // Get column information for all tables in one query (more efficient)
+      const columnsByTable = new Map<string, ColumnInfoDto[]>();
 
-      for (const tableRow of tablesResult) {
-        const columns = await this.getTableColumns(
+      if (tablesResult.length > 0) {
+        const tableNames = tablesResult.map((t) => `'${t.name}'`).join(', ');
+        const allColumnsQuery = `
+          SELECT 
+            c.table_name,
+            c.column_name as name,
+            c.data_type as type,
+            CASE WHEN c.is_nullable = 'YES' THEN true ELSE false END as nullable,
+            c.column_default as default_value,
+            c.ordinal_position,
+            c.character_maximum_length,
+            c.numeric_precision,
+            c.numeric_scale
+          FROM pg_source.information_schema.columns c
+          WHERE c.table_schema = '${effectiveSchema}' AND c.table_name IN (${tableNames})
+          ORDER BY c.table_name, c.ordinal_position
+        `;
+
+        const allColumnsResult = await DatabaseConnectionUtil.executeQuery(
           db,
-          effectiveSchema,
-          tableRow.name,
+          allColumnsQuery,
+          [],
+          30000,
         );
 
-        const table: TableInfoDto = {
-          name: tableRow.name,
-          schema: tableRow.schema,
-          type: tableRow.type,
-          rowCount: tableRow.row_count || undefined,
-          sizeBytes: tableRow.size_bytes || undefined,
-          comment: tableRow.comment || undefined,
-          columns: columns,
-        };
+        // Group columns by table name
+        for (const row of allColumnsResult) {
+          const tableName = row.table_name;
+          if (!columnsByTable.has(tableName)) {
+            columnsByTable.set(tableName, []);
+          }
 
-        tables.push(table);
+          columnsByTable.get(tableName)!.push({
+            name: row.name,
+            type: row.type,
+            nullable: row.nullable,
+            defaultValue: row.default_value || undefined,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            isUnique: false,
+            comment: undefined,
+            ordinalPosition: row.ordinal_position,
+            characterMaximumLength: row.character_maximum_length || undefined,
+            numericPrecision: row.numeric_precision || undefined,
+            numericScale: row.numeric_scale || undefined,
+          });
+        }
       }
+
+      // Build the tables array
+      const tables: TableInfoDto[] = tablesResult.map((tableRow) => ({
+        name: tableRow.name,
+        schema: tableRow.schema,
+        type: tableRow.type,
+        rowCount: tableRow.row_count || undefined,
+        sizeBytes: tableRow.size_bytes || undefined,
+        comment: tableRow.comment || undefined,
+        columns: columnsByTable.get(tableRow.name) || [],
+      }));
 
       // Cache the results if appropriate
       if (shouldCache) {
@@ -1103,40 +1145,32 @@ export class PostgresProxyService {
   }
 
   /**
-   * Validates that a schema exists in the PostgreSQL database
+   * Validates that a schema exists in the PostgreSQL database (efficiently)
    */
   private async validateSchemaExists(
     db: duckdb.Database,
     schemaName: string,
   ): Promise<boolean> {
     try {
-      // First, try to list all schemas to debug
-      const allSchemasQuery = `
+      // Only check if the specific schema exists
+      const schemaCheckQuery = `
         SELECT schema_name 
         FROM pg_source.information_schema.schemata 
-        ORDER BY schema_name
+        WHERE schema_name = '${schemaName}'
+        LIMIT 1
       `;
 
-      const allSchemas = await DatabaseConnectionUtil.executeQuery(
+      const result = await DatabaseConnectionUtil.executeQuery(
         db,
-        allSchemasQuery,
+        schemaCheckQuery,
         [],
         5000,
       );
 
-      this.logger.log(
-        `Available schemas: ${allSchemas.map((s) => s.schema_name).join(', ')}`,
-      );
-
-      // Check if our target schema exists (case-insensitive)
-      const schemaExists = allSchemas.some(
-        (s) => s.schema_name.toLowerCase() === schemaName.toLowerCase(),
-      );
+      const schemaExists = result.length > 0;
 
       if (!schemaExists) {
-        this.logger.warn(
-          `Schema '${schemaName}' not found. Available schemas: ${allSchemas.map((s) => s.schema_name).join(', ')}`,
-        );
+        this.logger.warn(`Schema '${schemaName}' not found`);
       }
 
       return schemaExists;

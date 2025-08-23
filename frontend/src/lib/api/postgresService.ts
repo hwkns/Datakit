@@ -77,11 +77,9 @@ class PostgreSQLService {
   }
 
   async getTablesForDefaultSchema(connectionId: string): Promise<PostgreSQLTable[]> {
-    const response = await apiClient.get<BackendResponse<any[]>>(
-      `${this.baseUrl}/connections/${connectionId}/tables`
-    );
-    
-    return this.transformTablesResponse(response.data);
+    const connection = await this.getConnection(connectionId);
+    const defaultSchema = connection.schema || 'public';
+    return this.getTables(connectionId, defaultSchema);
   }
 
   private transformTablesResponse(tables: any[]): PostgreSQLTable[] {
