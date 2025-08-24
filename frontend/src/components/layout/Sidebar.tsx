@@ -461,7 +461,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         // Handle remote files - could trigger remote import modal
         console.log('Remote file clicked:', file);
         alert(
-          'Remote file re-import not yet implemented. Please use the Cloud Sources button to re-import.'
+          'Remote source re-import not yet implemented. Please use the Cloud Sources button to re-import.'
         );
       }
     } catch (error) {

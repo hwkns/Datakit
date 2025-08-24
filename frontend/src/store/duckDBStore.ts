@@ -2518,7 +2518,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       
       // QUERY ROUTING: Use unified query router to determine execution target
       const { postgresVirtualTables, postgresActiveConnections } = get();
-      const { analyzeQuery } = await import('@/lib/utils/queryRouter');
+      const { analyzeQuery } = await import('@/lib/duckdb/utils/queryRouter');
       
       const routingResult = analyzeQuery(
         sql,

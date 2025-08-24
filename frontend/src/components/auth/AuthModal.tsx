@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { PasswordValidator } from '@/lib/utils/passwordValidator';
+import { PasswordValidator } from '@/lib/duckdb/utils/passwordValidator';
 import { useNotifications } from '@/hooks/useNotifications';
 
 interface AuthModalProps {

@@ -931,7 +931,7 @@ const SchemaBrowser: React.FC<SchemaBrowserProps> = ({ onInsertQuery }) => {
                               <span className="text-sm">Loading PostgreSQL schemas...</span>
                             </div>
                           ) : virtualTables.length === 0 ? (
-                            <div className="px-2 py-4 text-center text-white/50 text-sm">
+                            <div className="px-2 py-4 text-center text-white/50 text-xs">
                               No tables found. Click refresh to load schemas.
                             </div>
                           ) : (
