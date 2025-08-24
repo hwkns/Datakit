@@ -90,7 +90,7 @@ export const DataSourceManager: React.FC<DataSourceManagerProps> = ({
               </h3>
 
               {/* Provider logos - 4 smaller icons */}
-              <div className="flex items-center gap-3 relative z-10">
+              <div className="flex items-center gap-4 relative z-10">
                 <img
                   src={s3Logo}
                   alt="S3"

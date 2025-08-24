@@ -503,7 +503,7 @@ const SchemaBrowser: React.FC<SchemaBrowserProps> = ({ onInsertQuery }) => {
       <div className="flex-1 overflow-auto">
         {/* Show empty state if no data at all */}
         {!hasAnyData && !localLoading ? (
-          <div className="px-4 py-8 text-center text-white/50 text-sm">
+          <div className="px-4 py-8 text-center text-white/50 text-xs">
             No data available. Import files to get started.
           </div>
         ) : (
@@ -746,10 +746,10 @@ const SchemaBrowser: React.FC<SchemaBrowserProps> = ({ onInsertQuery }) => {
                       {motherDuckRefreshing.has(db.name) ? (
                         <div className="flex items-center justify-center py-4 text-white/50">
                           <Loader2 size={16} className="animate-spin mr-2" />
-                          <span className="text-sm">Loading {db.name} schemas...</span>
+                          <span className="text-xs">Loading {db.name} schemas...</span>
                         </div>
                       ) : schemas.length === 0 ? (
-                        <div className="px-2 py-4 text-center text-white/50 text-sm">
+                        <div className="px-2 py-4 text-center text-white/50 text-xs">
                           No tables found in {db.name}
                         </div>
                       ) : (
@@ -928,7 +928,7 @@ const SchemaBrowser: React.FC<SchemaBrowserProps> = ({ onInsertQuery }) => {
                           {postgresRefreshing.has(connectionId) ? (
                             <div className="flex items-center justify-center py-4 text-white/50">
                               <Loader2 size={16} className="animate-spin mr-2" />
-                              <span className="text-sm">Loading PostgreSQL schemas...</span>
+                              <span className="text-xs">Loading PostgreSQL schemas...</span>
                             </div>
                           ) : virtualTables.length === 0 ? (
                             <div className="px-2 py-4 text-center text-white/50 text-xs">
