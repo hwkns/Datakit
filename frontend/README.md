@@ -1,209 +1,157 @@
-# DataKit Project Overview
+# DataKit - Your All-in-One Data Analysis Platform
 
-## 1. Introduction
+## What is DataKit?
 
-DataKit is a modern web-based data analysis tool that leverages WebAssembly and DuckDB to process large datasets (multi GBs) directly in the browser without requiring server-side processing. It provides a powerful, client-side SQL engine with visualization capabilities and data inspection panel, enabling users to work with CSV, XLSX, PARQUET JSON files efficiently. Users could have chat with your files through chat panel and have the generated queries from ai panel ran over their queies. There's also notebooks. You can bridge to your DuckDB from your notebook and write the sql, make plots, etc. Additionally, transformers from Hugging Face are loaded by default in the environment.
-For now the supported models are from: https://huggingface.co/Xenova/models
+DataKit is a powerful browser-based data analysis platform that processes multi-gigabyte files locally on your machine with complete privacy. No data ever leaves your browser, yet you get the full power of professional data analysis tools.
 
-## 2. Architecture Overview
+## Key Features & Capabilities
 
-### 2.1 Core Technologies
+### 📊 **Data Import & Processing**
+- **Local File Support**: Import CSV, Excel (XLSX), JSON, and Parquet files directly in your browser
+- **Large File Handling**: Process files up to several GBs efficiently using WebAssembly technology
+- **Remote Data Sources**: Connect to various cloud platforms:
+  - Amazon S3 buckets
+  - Google Sheets (public)
+  - HuggingFace datasets
+  - MotherDuck (cloud DuckDB)
+  - PostgreSQL databases
+  - Custom URLs
+- **Split View**: Compare two datasets side-by-side
+- **Multi-file Management**: Work with multiple datasets simultaneously with tabbed interface
 
-- **Frontend Framework**: React with TypeScript
-- **Data Processing**: DuckDB-wasm (WebAssembly-based SQL engine)
-- **Data Parsing**: Custom streaming parsers + PapaParse
-- **File Handling**: File System Access API + standard File API
-- **State Management**: Zustand
-- **UI Components**: Custom components with Tailwind CSS
-- **Visualization**: D3.js integration
-- **Code Editing**: Monaco Editor with SQL support
+### 🔍 **Data Preview & Inspection**
+- **Interactive Grid View**: Browse your data with sortable columns and resizable cells
+- **Smart Data Detection**: Automatic detection of data types and formats
+- **Data Quality Analysis**: Get instant insights about:
+  - Missing values and null patterns
+  - Data type distributions
+  - Column statistics (mean, median, mode, etc.)
+  - Outlier detection
+  - Data quality scores
+- **Quick Overview Panel**: See key metrics and patterns at a glance
+- **Export Options**: Export filtered data or specific columns in various formats
 
-### 2.2 Architectural Patterns
+### 💾 **SQL Query Engine**
+- **DuckDB Integration**: Full-featured SQL database running entirely in your browser
+- **Query Editor**: Professional SQL editor with:
+  - Syntax highlighting and auto-completion
+  - Query history and favorites
+  - Smart query optimization suggestions
+  - Real-time error detection
+- **Schema Browser**: Explore your data structure with ease
+- **Query Templates**: Pre-built queries for common operations
+- **Performance Optimization**: Automatic query optimization for large datasets
+- **Results Management**: 
+  - Paginated results for smooth browsing
+  - Export query results to CSV
+  - Full-screen mode for focused work
 
-- **Singleton Pattern**: Global DuckDB instance via Zustand store
-- **Custom Hooks**: Encapsulated functionality in React hooks
-- **Component Composition**: Modular UI components
-- **Streaming Data Processing**: Chunked parsing for large files
-- **Virtualized Rendering**: Efficient display of large result sets
-- **Server-Side Pagination**: Paginated query execution for large datasets
+### 📈 **Data Visualization**
+- **Chart Types**: Create bar, line, area, pie, and scatter charts
+- **Interactive Charts**: Zoom, pan, and hover for details
+- **Smart Recommendations**: AI-powered chart suggestions based on your data
+- **Customization Options**:
+  - Colors and themes
+  - Axis configuration
+  - Legend positioning
+  - Title and labels
+- **Export Formats**: Save charts as PNG, SVG, or interactive HTML
+- **Chart Gallery**: Save and reuse your favorite visualizations
 
-## 3. Core Components
+### 🤖 **AI Assistant**
+- **Natural Language Queries**: Ask questions in plain English
+- **SQL Generation**: Automatically generate SQL from your questions
+- **Data Insights**: Get AI-powered insights and recommendations
+- **Visualization Generation**: Create charts from natural language descriptions
+- **Multiple AI Providers**:
+  - DataKit Cloud AI (default)
+  - OpenAI GPT models
+  - Anthropic Claude
+  - Groq
+  - Local models via Ollama
+- **Context-Aware**: Understands your data structure and suggests relevant queries
+- **Query Explanation**: Get plain-English explanations of complex SQL
 
-### 3.1 Data Processing
+### 📓 **Python Notebooks**
+- **Interactive Notebooks**: Write and execute Python code in cells
+- **DuckDB Bridge**: Direct access to your loaded data via SQL
+- **Data Science Libraries**: Pre-loaded with pandas, numpy, matplotlib, and more
+- **Hugging Face Transformers**: Built-in support for ML models
+- **Variable Inspector**: Track your Python variables and their values
+- **Package Manager**: Install additional Python packages on demand
+- **Export Options**: Save as Jupyter notebooks or PDF reports
+- **Templates**: Start with pre-built templates for common analyses
 
-#### 3.1.1 DuckDB Integration (`duckDBStore.ts`)
-- Centralized DuckDB instance management
-- Table creation and management
-- SQL query execution with pagination
-- Direct file import capabilities
-- BigInt handling for large datasets
+### 🔄 **Workflow Features**
+- **Workspace Management**: Organize projects with multiple files and queries
+- **Auto-save**: Never lose your work with automatic saving
+- **Keyboard Shortcuts**: Speed up your workflow with comprehensive shortcuts
+- **Split Views**: Compare datasets or work on multiple tasks
+- **Recent Files**: Quick access to recently used files
+- **Undo/Redo**: Full undo/redo support for all operations
 
-#### 3.1.2 File Processing
-- `useStreamingCSVParser.ts`: Efficient CSV parsing with chunking
-- `useStreamingJSONParser.ts`: JSON parsing with streaming support
-- `useDataParser.ts`: Unified interface for different file formats
+## Use Cases
 
-#### 3.1.3 File System Integration
-- `useFileAccess.ts`: File system access and recent files management
-- `streamReader.ts`: Efficient stream processing utilities
-- `useDirectFileImport.ts`: Direct file import to DuckDB
+### For Data Analysts
+- Import sales data from CSV files
+- Write SQL queries to analyze trends
+- Create visualizations for reports
+- Export results for presentations
 
-### 3.2 User Interface
+### For Data Scientists
+- Load large datasets without server uploads
+- Use Python notebooks for statistical analysis
+- Apply machine learning models via Hugging Face
+- Create reproducible research workflows
 
-#### 3.2.1 Layout Components
-- `MainLayout.tsx`: Application layout structure
-- `Sidebar.tsx`: Navigation and file management
-- `QueryWorkspace.tsx`: Flexible, resizable query workspace with panels
+### For Business Users
+- Connect to Google Sheets for live data
+- Use AI assistant to ask questions in plain English
+- Generate charts without coding knowledge
+- Export professional-looking reports
 
-#### 3.2.2 Data Visualization
-- `CSVGrid.tsx`: Grid display for tabular data
-- `JSONGrid.tsx`: Specialized display for JSON data
-- `QueryResults.tsx`: Virtualized results view with pagination
+### For Developers
+- Query PostgreSQL databases directly
+- Test SQL queries with sample data
+- Analyze API response JSONs
+- Debug data transformation pipelines
 
-#### 3.2.3 Query Interface
-- `MonacoEditor.tsx`: SQL editor with syntax highlighting and autocomplete
-- `QueryHistory.tsx`: History of executed queries
-- `SchemaBrowser.tsx`: Database schema exploration
-- `QueryTemplates.tsx`: Pre-defined SQL query templates
+## Privacy & Security
 
-#### 3.2.4 File Handling
-- `FileUploadButton.tsx`: File selection and upload
-- `DownloadButton.tsx`: Results export
+🔒 **Complete Privacy**: All data processing happens in your browser. No data is ever sent to external servers unless you explicitly connect to cloud services.
 
-### 3.3 Custom Hooks
+🚀 **No Installation Required**: Works instantly in any modern browser - Chrome, Firefox, Safari, or Edge.
 
-#### 3.3.1 Query Management Hooks
-- `useQueryExecution.ts`: Execute queries with pagination and error handling
-- `useQueryHistory.ts`: Manage query history and favorites
-- `useQueryOptimization.ts`: Analyze and optimize SQL queries
+⚡ **WebAssembly Performance**: Native-speed processing using cutting-edge WebAssembly technology.
 
-#### 3.3.2 UI Hooks
-- `useResizable.ts`: Resize panels and track dimensions
+## Getting Started
 
-## 4. Data Flow
+1. **Open DataKit** in your browser
+2. **Import your data** - drag & drop or click to browse
+3. **Choose your workflow**:
+   - Preview data in the grid view
+   - Write SQL queries in the Query tab
+   - Create visualizations in the Visualize tab
+   - Ask questions using the AI Assistant
+   - Write Python code in Notebooks
 
-### 4.1 File Import Process
+## Supported File Formats
 
-1. **File Selection**: User selects a file via `FileUploadButton`
-2. **Direct Import**: For CSV files, direct import to DuckDB via `registerFileHandle`
-3. **Table Creation**: DuckDB creates a table from the imported file
-4. **Data Sampling**: Sample of data (1000 rows) loaded for UI display
-5. **Schema Detection**: Column types detected from table schema
-6. **UI Update**: Data grid and query panel updated with file info
+- **CSV** - Comma-separated values
+- **Excel** - .xlsx and .xls files
+- **JSON** - Including nested structures
+- **Parquet** - Columnar storage format
+- **Remote Sources** - S3, Google Sheets, PostgreSQL, and more
 
-### 4.2 Query Execution Flow
+## System Requirements
 
-1. **Query Input**: User writes SQL in the Monaco Editor
-2. **Query Analysis**: Query is analyzed for optimizations and warnings
-3. **Server-Side Pagination**: Query executed with LIMIT/OFFSET for pagination
-4. **Result Handling**: Only current page of results loaded into memory
-5. **Virtualized Rendering**: Results displayed efficiently using react-window
-6. **Export Option**: Results can be downloaded as CSV
+- Modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+- At least 4GB RAM (8GB+ recommended for large files)
+- Desktop or laptop computer (mobile support coming soon)
 
-## 5. Key Features
+## Tips for Best Experience
 
-### 5.1 Large File Processing
-
-- **Streaming Parsers**: Process files larger than browser memory
-- **Chunked Processing**: Parse and load files in manageable chunks
-- **Progress Tracking**: Show detailed progress during operations
-- **Direct DuckDB Import**: Efficiently import CSV files directly to DuckDB
-
-### 5.2 SQL Capabilities
-
-- **Full SQL Support**: Leverage DuckDB's rich SQL dialect
-- **Complex Queries**: Join, aggregate, filter and transform data
-- **Fast Execution**: Efficient query processing via WebAssembly
-- **SQL Templates**: Pre-defined queries for common operations
-- **Schema Browser**: Explore tables and columns for easier query writing
-
-### 5.3 User Experience
-
-- **Recent Files**: Track and quickly reopen recent files
-- **File Previews**: View data samples before full processing
-- **Progress Indicators**: Detailed status during operations
-- **Error Handling**: Clear error messages with recovery options
-- **Query History**: Save and reuse previous queries
-- **Query Optimization**: Suggestions for better query performance
-- **Resizable Layout**: Customize workspace with resizable panels
-- **Fullscreen Mode**: Focus on editor or results as needed
-
-### 5.4 Performance Optimizations
-
-- **Server-Side Pagination**: Only load current page of data
-- **Virtualized Rendering**: Efficient display of large tables
-- **BigInt Handling**: Special handling for large numeric values
-- **Lazy Loading**: Components and functionality loaded on-demand
-- **Memory Management**: Careful handling of large datasets
-
-## 6. Technical Implementation Details
-
-### 6.1 DuckDB Integration
-
-```typescript
-// Paginated query execution
-executePaginatedQuery: async (sql, page, pageSize) => {
-  // Get total row count
-  const countQuery = `SELECT COUNT(*) as total_rows FROM (${sql}) as count_query`;
-  const countResult = await connection.query(countQuery);
-  const totalRows = Number(countResult.toArray()[0].total_rows);
-  
-  // Execute paginated query
-  const offset = (page - 1) * pageSize;
-  const paginatedSQL = `${sql} LIMIT ${pageSize} OFFSET ${offset}`;
-  const result = await connection.query(paginatedSQL);
-  
-  // Process results handling BigInt conversion
-  const data = processDuckDBResult(result.toArray());
-  
-  return {
-    data,
-    columns: result.schema.fields.map(f => f.name),
-    totalRows,
-    page,
-    pageSize,
-    totalPages: Math.ceil(totalRows / pageSize)
-  };
-}
-```
-
-### 6.2 Virtualized Results View
-
-```tsx
-// Efficient rendering of large result sets
-<AutoSizer>
-  {({ height, width }) => (
-    <List
-      height={height}
-      width={width}
-      itemCount={results.length}
-      itemSize={28}
-      overscanCount={10}
-    >
-      {RowRenderer}
-    </List>
-  )}
-</AutoSizer>
-```
-
-### 6.3 Custom Hooks for UI Management
-
-```typescript
-// Query optimization hook
-const {
-  suggestions,
-  hasWarnings,
-  analyzeQuery,
-  optimizeQuery
-} = useQueryOptimization();
-```
-
-## 7. Future Enhancements
-
-- **Advanced Visualizations**: More chart types and customization options
-- **Exportable Reports**: Generate reports from query results
-- **Data Transformation**: Visual data transformation capabilities
-- **Custom Functions**: User-defined functions in SQL
-- **Collaborative Features**: Shared queries and results
-- **Persistent Storage**: Save queries and results between sessions
-- **Dashboard Creation**: Build custom dashboards from queries
+- For files over 100MB, use Chrome or Edge for best performance
+- Enable hardware acceleration in your browser settings
+- Close unnecessary tabs when working with very large datasets
+- Use the query limit feature when exploring new datasets
