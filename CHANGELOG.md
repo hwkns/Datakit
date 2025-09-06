@@ -1,3 +1,6 @@
+# 0.4.10
+Introducing Posthog (replacing plausible)
+
 # 0.4.0
 Allowing PostgreSQL connection
 
