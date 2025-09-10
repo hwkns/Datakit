@@ -1,5 +1,5 @@
 import React from 'react';
-import { Book, History } from 'lucide-react';
+import { Book, History, ExternalLink, MessageSquare } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -16,6 +16,8 @@ interface UnifiedActionButtonsProps {
   discordInviteUrl?: string;
   /** Custom documentation URL */
   docsUrl?: string;
+  /** Custom landing page URL */
+  landingPageUrl?: string;
   /** Custom ProductHunt URL */
   productHuntUrl?: string;
 }
@@ -28,74 +30,96 @@ const ActionButtons: React.FC<UnifiedActionButtonsProps> = ({
   feedbackContext,
   discordInviteUrl = DISCORD_URL,
   docsUrl = 'https://docs.datakit.page/',
+  landingPageUrl = 'https://datakit.studio',
   // productHuntUrl = "https://www.producthunt.com/products/datakit",
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      {/* Documentation Button - Primary with text */}
-      <Button variant="primary" size="sm" asChild>
-        <a
-          href={docsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center"
-        >
-          <Book size={14} className="mr-1.5 xl:mr-1.5 lg:mr-0" />
-          <span className="text-xs hidden lg:inline xl:inline">
-            Documentation
-          </span>
-        </a>
-      </Button>
-
-      {/* Feedback Button - Primary with text */}
-      <FeedbackButton
-        context={feedbackContext}
-        variant="primary"
-        size="sm"
-        text="Share Feedback"
-        className="[&>span]:hidden [&>span]:lg:inline [&>span]:xl:inline"
-      />
-
-      {/* Discord Button - Icon only with tooltip */}
-      <Tooltip placement="bottom" content="Join our Discord">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className="!px-2 !py-1 min-w-0"
-        >
+    <div className="flex items-center gap-4">
+      {/* Primary Actions - Left side */}
+      <div className="flex items-center gap-2">
+        {/* Studio Link */}
+        <Button variant="ghost" size="sm" asChild>
           <a
-            href={discordInviteUrl}
+            href={landingPageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Join our Discord community"
+            className="flex items-center"
           >
-            <img
-              src={discord}
-              alt="Discord"
-              className="w-4 h-4 fill-primary fitext-primary"
-            />
+            <ExternalLink size={14} className="text-white/80 mr-1.5" />
+            <span className="text-xs bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">DataKit Studio</span>
           </a>
         </Button>
-      </Tooltip>
 
-      <Tooltip placement="left" content="What's new">
-        <Button
-          variant="link"
+        {/* Feedback Button - Primary CTA */}
+        <FeedbackButton
+          context={feedbackContext}
+          variant="primary"
           size="sm"
-          className="!px-2 !py-1 min-w-0"
-          asChild
-        >
-          <a
-            href="https://datakit.canny.io/changelog"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="View changelog"
+          text="Feedback"
+          className=""
+        />
+      </div>
+
+      {/* Icon Actions - Right side */}
+      <div className="flex items-center gap-1">
+        <Tooltip placement="bottom" content="Documentation">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="!px-2 !py-1 min-w-0"
           >
-            <History size={14} />
-          </a>
-        </Button>
-      </Tooltip>
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View documentation"
+            >
+              <Book size={14} />
+            </a>
+          </Button>
+        </Tooltip>
+
+        <Tooltip placement="bottom" content="Discord">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="!px-2 !py-1 min-w-0"
+          >
+            <a
+              href={discordInviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Join our Discord"
+            >
+              <img
+                src={discord}
+                alt="Discord"
+                className="w-4 h-4"
+              />
+            </a>
+          </Button>
+        </Tooltip>
+
+        <Tooltip placement="bottom" content="What's New">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="!px-2 !py-1 min-w-0"
+          >
+            <a
+              href="https://datakit.canny.io/changelog"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View changelog"
+            >
+              <History size={14} />
+            </a>
+          </Button>
+        </Tooltip>
+      </div>
     </div>
   );
 };

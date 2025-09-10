@@ -21,11 +21,11 @@ interface SEOProps {
 
 export const SEO: React.FC<SEOProps> = ({
     title = 'DataKit',
-    description = 'Data Toolkit',
+    description = 'Your data, your choice. Process locally for complete privacy or leverage cloud when you need to collaborate. The modern data analysis platform that adapts to you.',
     keywords = 'data, visualization, sql',
     url = window.location.href,
     type = 'website',
-    siteName = 'DataKit, analyze your data',
+    siteName = 'DataKit - The data platform that works your way',
     author = 'Amin Khorrami',
     locale = 'en_US',
     themeColor = '#000000',
@@ -36,7 +36,7 @@ export const SEO: React.FC<SEOProps> = ({
     category,
     tags = []
   }) => {
-    const fullTitle = `${title} | Analyze your data`
+    const fullTitle = `${title} | The data platform that works your way`
     const imageUrl = '/datakit.png'
   
     return (
