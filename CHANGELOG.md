@@ -1,3 +1,7 @@
+# 0.4.11
+Introducing Studio (link on navbar)
+Improving SEO
+
 # 0.4.10
 Introducing Posthog (replacing plausible)
 

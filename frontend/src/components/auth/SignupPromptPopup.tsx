@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Gift } from 'lucide-react';
+import { X } from 'lucide-react';
 import AuthModal from './AuthModal';
 import { Button } from '../ui/Button';
 import { useAIStore } from '@/store/aiStore';
@@ -49,12 +49,10 @@ const SignupPromptPopup: React.FC<SignupPromptPopupProps> = ({ onClose }) => {
       >
         <div className="bg-black border border-white/20 rounded-lg shadow-2xl p-5">
           {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-sm text-white">
-                Try DataKit Assistant!
-              </h3>
-            </div>
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="font-medium text-sm text-white">
+              The data platform that works your way
+            </h3>
             <button
               onClick={onClose}
               className="text-white/50 hover:text-white/80 transition-colors ml-2"
@@ -65,42 +63,57 @@ const SignupPromptPopup: React.FC<SignupPromptPopupProps> = ({ onClose }) => {
 
           {/* Content */}
           <div className="mb-4">
-            <p className="text-white/80 text-sm leading-relaxed mb-3">
-              We'd love to know what you think about our Assistant tab! Give it
-              a try with{' '}
-              <span className="font-semibold text-primary">free credits</span>.
+            <p className="text-white/70 text-xs leading-relaxed mb-4">
+              Your data, your choice. Process locally for complete privacy or leverage cloud when you need to collaborate.
             </p>
 
-            <div className="bg-white/5 rounded-md p-3 mb-3 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <Gift className="w-4 h-4 text-primary" />
-                <span className="text-xs font-medium text-white/90">
-                  What you'll get:
-                </span>
-              </div>
-              <ul className="text-xs text-white/70 space-y-1 pl-1">
-                <li>• $3 in free credits to explore AI models</li>
-                <li>• Access to powerful language models</li>
-                <li>• SQL query assistance & data insights</li>
+            {/* Simplified benefit showcase */}
+            <div className="bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-md p-3 border border-cyan-500/20 mb-3">
+              <span className="text-xs font-medium text-white/90 block mb-2">
+                What you get free
+              </span>
+              <ul className="text-xs text-white/70 space-y-1">
+                <li>• All cloud connectors</li>
+                <li>• $3 DataKit Assistant credits</li>
+                <li>• Unlimited local projects</li>
+                <li>• Export & visualizations</li>
               </ul>
+            </div>
+
+            {/* Team/Enterprise teaser */}
+            <div className="px-3 py-2 bg-white/5 rounded-md border border-white/10">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-white/80">Enterprise ready</span>
+                <a
+                  href="https://datakit.studio/contact"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  Contact us →
+                </a>
+              </div>
+              <p className="text-xs text-white/60">
+                Deploy on-premise for complete control or hybrid cloud for flexibility. SOC2 compliant infrastructure.
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleLoginClick}
-              className="px-3 py-2 text-sm text-white/70 hover:text-white border border-white/20 hover:border-white/40 rounded transition-colors"
-            >
-              Sign in
-            </Button>
+          {/* Actions - streamlined */}
+          <div className="space-y-2">
             <Button
               variant="outline"
               onClick={handleSignupClick}
-              className="flex-1 px-4 py-2 text-sm text-white border border-white/20 hover:border-white/40 rounded transition-colors font-medium"
+              className="w-full px-4 py-2.5 text-sm bg-gradient-to-r from-cyan-500/10 to-teal-500/10 text-white border border-cyan-500/30 hover:border-cyan-500/50 rounded transition-all font-medium hover:shadow-lg hover:shadow-cyan-500/10"
             >
-              Sign up for free
+              Start free with $3 credits →
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleLoginClick}
+              className="w-full px-3 py-2 text-xs text-white/60 hover:text-white border border-white/10 hover:border-white/20 rounded transition-colors"
+            >
+              Already have an account? Sign in
             </Button>
           </div>
         </div>

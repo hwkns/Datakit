@@ -59,12 +59,12 @@ const Home = () => {
 
   return (
     <>
-      <SEO
+      <SEO 
         title="DataKit"
-        description="Modern web-based data analysis tool - Process large files locally with complete privacy"
-        keywords="data analysis, sql, duckdb, charts, visualization, inspection, webassembly"
+        description="Your data, your choice. Process locally for complete privacy or leverage cloud when you need to collaborate. The modern data analysis platform that adapts to you."
+        keywords="data analysis, privacy-first analytics, local data processing, WebAssembly, DuckDB, data visualization, SQL queries, CSV analysis, Excel processing, data science, business intelligence, secure analytics, DataKit"
+        url="/"
       />
-
       <MainLayout onDataLoad={handleDataLoad}>
         <div className="p-6 h-full flex flex-col bg-background">
           <div className="mb-4 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
