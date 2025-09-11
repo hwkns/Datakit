@@ -33,6 +33,16 @@ export const useDemoFileDrops = ({ processFile, addFile, analytics }: UseDemoFil
         return
       }
 
+      // Handle handshake from parent iframe
+      if (event.data.type === 'DEMO_READY') {
+        console.log('Received DEMO_READY, sending confirmation back')
+        event.source?.postMessage({
+          type: 'DATAKIT_READY',
+          message: 'DataKit ready to receive files'
+        }, event.origin as WindowPostMessageOptions)
+        return
+      }
+
       if (event.data.type === 'FILE_DROP') {
         console.log('Processing FILE_DROP message:', event.data)
         const { file } = event.data
