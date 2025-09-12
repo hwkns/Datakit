@@ -73,9 +73,9 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
       
       <div className="flex items-center space-x-2">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="h-7 px-2 text-xs"
+          className="h-7 px-2 text-xs border-primary"
           onClick={downloadCSV}
         >
           <Download size={12} className="mr-1" />
