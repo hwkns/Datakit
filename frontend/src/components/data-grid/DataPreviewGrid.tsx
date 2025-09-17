@@ -244,8 +244,8 @@ const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = 
                 )}
                 <span className="text-white/90 group-hover:text-white font-medium">
                   {gridRef.current?.columnStats?.length > 0 
-                    ? (showStats ? 'Hide Analysis' : 'Show Analysis')
-                    : 'Column Analysis'
+                    ? (showStats ? 'Hide Stats' : 'Show Stats')
+                    : 'Column Stats'
                   }
                 </span>
               </Button>
