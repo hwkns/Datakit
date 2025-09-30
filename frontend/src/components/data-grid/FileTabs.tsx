@@ -62,6 +62,8 @@ const getFileIcon = (
 
   // Align with FileTreeView icon mapping and colors
   switch (sourceType) {
+    case DataSourceType.TABLE:
+      return <Table className={cn(iconClass, 'text-primary')} />;
     case DataSourceType.CSV:
     case DataSourceType.XLSX:
       return <FileSpreadsheet className={cn(iconClass, 'text-emerald-400')} />;
@@ -196,7 +198,9 @@ const FileTabItem: React.FC<{
               exit={{ opacity: 0, height: 0 }}
               className="text-xs text-white/50 truncate"
             >
-              {tab.sourceType}
+              {tab.sourceType === DataSourceType.TABLE 
+                ? (tab.isView ? 'VIEW' : 'TABLE')
+                : tab.sourceType}
             </motion.span>
           )}
         </AnimatePresence>

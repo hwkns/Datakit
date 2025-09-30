@@ -6,7 +6,8 @@ export enum DataSourceType {
   PARQUET = "Parquet",
   XLSX = "xlsx",
   TXT = "TXT",
-  TSV = 'TSV'
+  TSV = 'TSV',
+  TABLE = 'TABLE'  // For saved query results as tables/views
 }
 
 export interface JsonSchema {

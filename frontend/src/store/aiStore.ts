@@ -18,6 +18,7 @@ interface QueryResults {
   currentPage: number;
   totalPages: number;
   rowsPerPage: number;
+  executedSQL?: string; // Store the SQL that was executed to generate these results
 }
 
 interface AIState {

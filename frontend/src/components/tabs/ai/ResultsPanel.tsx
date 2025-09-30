@@ -1,15 +1,49 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { Table, AlertCircle } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";
+import { useQueryResultsImport } from "@/hooks/query/useQueryResultsImport";
 import QueryResults from "@/components/tabs/query/query-results/QueryResults";
+import SaveAsTableModal from "@/components/tabs/query/query-results/SaveAsTableModal";
 
 interface ResultsPanelProps {
   height: number;
+  activeFile?: {
+    id: string;
+    fileName?: string;
+    tableName?: string;
+  } | null;
 }
 
-const ResultsPanel: React.FC<ResultsPanelProps> = ({ height }) => {
+const ResultsPanel: React.FC<ResultsPanelProps> = ({ height, activeFile }) => {
   const { queryResults } = useAIStore();
+  const { isImporting, importQueryResultsAsTable } = useQueryResultsImport();
+  const [showSaveAsTableModal, setShowSaveAsTableModal] = useState(false);
+  
+  // Handle opening the save as table modal
+  const handleImportAsTable = useCallback(() => {
+    setShowSaveAsTableModal(true);
+  }, []);
+  
+  // Handle confirming table import with custom name
+  const handleConfirmImportAsTable = useCallback(async (tableName: string) => {
+    if (!queryResults?.data || !queryResults?.columns) return;
+    
+
+    // Use dynamic source file name based on active file or fallback to ai_query_results
+    const sourceFileName = activeFile?.fileName || activeFile?.tableName || 'ai_query_results';
+    // Pass the executed SQL for VIEW creation of large datasets and the custom table name
+    const success = await importQueryResultsAsTable(
+      queryResults.data, 
+      queryResults.columns, 
+      sourceFileName,
+      queryResults.executedSQL,
+      tableName
+    );
+    if (success) {
+      setShowSaveAsTableModal(false);
+    }
+  }, [queryResults, importQueryResultsAsTable, activeFile]);
   
   if (!queryResults) {
     return (
@@ -35,26 +69,41 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ height }) => {
   }
   
   return (
-    <div className="h-full" style={{ height: `${height}px` }}>
-      <QueryResults
-        results={queryResults.data}
-        columns={queryResults.columns}
-        isLoading={queryResults.isLoading}
-        error={queryResults.error}
-        totalRows={queryResults.totalRows}
-        currentPage={queryResults.currentPage}
-        totalPages={queryResults.totalPages}
-        rowsPerPage={queryResults.rowsPerPage}
-        onPageChange={(page) => {
-          // Handle pagination - this should be implemented in the store
-          console.log("Page change:", page);
-        }}
-        onRowsPerPageChange={(rowsPerPage) => {
-          // Handle rows per page change
-          console.log("Rows per page:", rowsPerPage);
-        }}
+    <>
+      <div className="h-full" style={{ height: `${height}px` }}>
+        <QueryResults
+          results={queryResults.data}
+          columns={queryResults.columns}
+          isLoading={queryResults.isLoading}
+          error={queryResults.error}
+          totalRows={queryResults.totalRows}
+          currentPage={queryResults.currentPage}
+          totalPages={queryResults.totalPages}
+          rowsPerPage={queryResults.rowsPerPage}
+          onPageChange={(page) => {
+            // Handle pagination - this should be implemented in the store
+            console.log("Page change:", page);
+          }}
+          onRowsPerPageChange={(rowsPerPage) => {
+            // Handle rows per page change
+            console.log("Rows per page:", rowsPerPage);
+          }}
+          onImportAsTable={handleImportAsTable}
+          isImporting={isImporting}
+        />
+      </div>
+      
+      {/* Save As Table Modal */}
+      <SaveAsTableModal
+        isOpen={showSaveAsTableModal}
+        onClose={() => setShowSaveAsTableModal(false)}
+        onConfirm={handleConfirmImportAsTable}
+        isImporting={isImporting}
+        rowCount={queryResults.totalRows}
+        columnCount={queryResults.columns?.length || 0}
+        sourceFileName={activeFile?.fileName || activeFile?.tableName || 'ai_query_results'}
       />
-    </div>
+    </>
   );
 };
 

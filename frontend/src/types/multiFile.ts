@@ -70,6 +70,12 @@ export interface DataFile {
   loadedToDuckDB: boolean;
   /** Name of the DuckDB table if loaded */
   tableName: string;
+  /** True if this is a saved query result */
+  isQueryResult?: boolean;
+  /** True if this is a VIEW rather than TABLE */
+  isView?: boolean;
+  /** Metadata about the source and creation */
+  metadata?: any;
   
   // Remote source info
   /** Whether this is from a remote source */
@@ -190,6 +196,8 @@ export interface FileTab {
   isDirty?: boolean; // For future unsaved changes
   remoteProvider?: RemoteSourceProvider;
   hasGoogleSheetsMetadata?: boolean;
+  isQueryResult?: boolean; // True if this is a saved query result
+  isView?: boolean; // True if this is a VIEW rather than TABLE
   splitView?: {
     isActive: boolean;
     partnerId: string | null;

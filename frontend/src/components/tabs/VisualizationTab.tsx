@@ -43,125 +43,6 @@ interface DataSource {
 }
 
 /**
- * Minimal compact dropdown for data source selection
- */
-const DataSourceDropdown: React.FC<{
-  selectedSource: DataSource | null;
-  onSourceChange: (source: DataSource) => void;
-}> = ({ selectedSource, onSourceChange }) => {
-  const { files } = useAppStore();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showPostgresNotification, setShowPostgresNotification] = useState(false);
-
-  const dataSources = useMemo(() => {
-    const sources: DataSource[] = [];
-    
-    // Add regular files with data
-    files.forEach((file) => {
-      // Regular CSV/Excel files with 2D array data
-      if (file.data && Array.isArray(file.data) && file.data.length > 1 && file.data[0]) {
-        sources.push({
-          type: "file",
-          fileId: file.id,
-          fileName: file.fileName,
-          data: file.data,
-          columns: file.data[0],
-          rowCount: file.data.length - 1,
-        });
-      }
-      // PostgreSQL tables (remote tables with column metadata)
-      else if (file.isRemote && file.remoteProvider === 'postgresql' && file.columnTypes) {
-        sources.push({
-          type: "postgresql",
-          fileId: file.id,
-          fileName: file.fileName,
-          data: [], // Will be loaded on-demand
-          columns: file.columnTypes.map(col => col.name),
-          rowCount: file.rowCount || 0,
-          postgresql: file.postgresql,
-        });
-      }
-    });
-    
-    return sources;
-  }, [files]);
-
-  return (
-    <div className="relative">
-      <button
-        className="flex items-center gap-2 px-3 py-1.5 bg-darkNav border border-white/10 rounded text-sm hover:bg-white/5 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {selectedSource?.type === "postgresql" ? (
-          <Link2 className="w-4 h-4 text-white/70" />
-        ) : (
-          <FileText className="w-4 h-4 text-white/70" />
-        )}
-        <span className="text-white/90 truncate">
-          {selectedSource ? selectedSource.fileName : "Select file"}
-        </span>
-        <ChevronDown
-          className={`w-3 h-3 text-white/50 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-black border border-white/10 rounded shadow-lg z-50 min-w-48">
-          {dataSources.map((source) => (
-            <button
-              key={source.fileId}
-              className="w-full px-3 py-2 text-left text-sm text-white/80 hover:text-white flex items-center gap-2 cursor-pointer"
-              onClick={() => {
-                if (source.type === "postgresql") {
-                  // Show notification for PostgreSQL tables
-                  setShowPostgresNotification(true);
-                  setIsOpen(false);
-                  // Hide notification after 3 seconds
-                  setTimeout(() => {
-                    setShowPostgresNotification(false);
-                  }, 3000);
-                } else {
-                  // Allow selection for regular files
-                  onSourceChange(source);
-                  setIsOpen(false);
-                }
-              }}
-            >
-              {source.type === "postgresql" ? (
-                <Link2 className="w-3 h-3 text-blue-400" />
-              ) : (
-                <FileText className="w-3 h-3 text-white/50" />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="truncate">{source.fileName}</div>
-                <div className="text-xs text-white/50">
-                  {source.type === "postgresql" ? "PostgreSQL Table" : `${source.rowCount} rows`}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-      
-      {/* PostgreSQL notification */}
-      {showPostgresNotification && (
-        <div className="absolute top-full left-0 mt-1 bg-blue-500/90 text-white text-sm px-3 py-2 rounded shadow-lg z-50 max-w-xs">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 flex-shrink-0" />
-            <div>
-              <div className="font-medium">PostgreSQL Visualization</div>
-              <div className="text-blue-100 text-xs">Coming soon! We're working on chart support for PostgreSQL tables.</div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
  * Compact chart type selector
  */
 const ChartTypeRow: React.FC = () => {
@@ -301,10 +182,6 @@ const VisualizationTab: React.FC = () => {
           <p className="text-white/70 mb-4">
             Import data files to create visualizations.
           </p>
-          <Button variant="outline" onClick={() => setActiveTab("preview")}>
-            Import Data
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
         </div>
       </div>
     );
