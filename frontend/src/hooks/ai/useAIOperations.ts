@@ -467,6 +467,7 @@ export const useAIOperations = () => {
           rowsPerPage: result.pageSize || 100,
           isLoading: false,
           error: null,
+          executedSQL: sql
         });
       } else {
         const { setQueryResults } = useAIStore.getState();

@@ -1,3 +1,6 @@
+# 0.4.17
+Saving the result of query as a table in the db
+
 # 0.4.16 
 Introducing New Look of FileList
 

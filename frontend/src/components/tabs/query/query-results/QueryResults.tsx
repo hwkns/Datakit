@@ -17,6 +17,9 @@ interface QueryResultsProps {
   rowsPerPage?: number;
   onPageChange?: (page: number) => void;
   onRowsPerPageChange?: (rowsPerPage: number) => void;
+  // Import as table props
+  onImportAsTable?: () => void;
+  isImporting?: boolean;
 }
 
 /**
@@ -33,7 +36,9 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   totalPages = 0,
   rowsPerPage = 100,
   onPageChange,
-  onRowsPerPageChange
+  onRowsPerPageChange,
+  onImportAsTable,
+  isImporting = false
 }) => {
   // Show loading state
   if (isLoading) {
@@ -69,6 +74,8 @@ const QueryResults: React.FC<QueryResultsProps> = ({
         rowsPerPage={rowsPerPage} 
         results={results} 
         columns={columns} 
+        onImportAsTable={onImportAsTable}
+        isImporting={isImporting}
       />
       
       {/* Main table component with virtualization */}

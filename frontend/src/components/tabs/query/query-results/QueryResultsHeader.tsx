@@ -1,6 +1,7 @@
 import React from 'react';
-import { Download } from 'lucide-react';
+import { Download, TableIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useQueryColumnFormatting } from './useQueryColumnFormatting';
 
 interface QueryResultsHeaderProps {
@@ -10,6 +11,8 @@ interface QueryResultsHeaderProps {
   rowsPerPage: number;
   results: any[];
   columns: string[];
+  onImportAsTable?: () => void;
+  isImporting?: boolean;
 }
 
 const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({ 
@@ -18,7 +21,9 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
   totalPages, 
   rowsPerPage,
   results,
-  columns
+  columns,
+  onImportAsTable,
+  isImporting = false
 }) => {
   const { formatCellValue } = useQueryColumnFormatting({
     results,
@@ -72,6 +77,23 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
       </div>
       
       <div className="flex items-center space-x-2">
+        {onImportAsTable && (
+          <Tooltip 
+            content="Save these results as a new table in your database"
+            placement="bottom"
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs border-primary"
+              onClick={onImportAsTable}
+              disabled={isImporting || !results || results.length === 0}
+            >
+              <TableIcon size={12} className="mr-1" />
+              <span>{isImporting ? 'Importing...' : 'Save as Table'}</span>
+            </Button>
+          </Tooltip>
+        )}
         <Button
           variant="outline"
           size="sm"

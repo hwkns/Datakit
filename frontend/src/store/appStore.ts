@@ -11,6 +11,7 @@ import { DataFile, DataLoadWithDuckDBResult } from "@/types/multiFile";
 import { ImportProvider } from "@/types/remoteImport";
 import { ViewMode } from "@/components/navigation/ViewModeSelector";
 import { WorkspaceFile } from "@/components/workspace/FileTreeView";
+import { useDuckDBStore } from "@/store/duckDBStore";
 
 /**
  * Interface for a workspace
@@ -394,6 +395,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   removeFile: (fileId: string) => {
+    const fileToRemove = get().files.find(f => f.id === fileId);
+    
     set((state) => {
       const newFiles = state.files.filter((f) => f.id !== fileId);
       let newActiveFileId = state.activeFileId;
@@ -427,6 +430,26 @@ export const useAppStore = create<AppState>((set, get) => ({
         activeFileId: newActiveFileId,
       };
     });
+
+    if (fileToRemove?.loadedToDuckDB && fileToRemove.tableName) {
+      const { dropTableOrView, registeredTables } = useDuckDBStore.getState();
+      
+      // Drop the table/view from DuckDB
+      dropTableOrView(fileToRemove.tableName).then((success) => {
+        if (success) {
+          console.log(`[AppStore] Successfully dropped ${fileToRemove.isView ? 'VIEW' : 'TABLE'}: ${fileToRemove.tableName}`);
+          
+          // Remove from registered tables map
+          const newRegisteredTables = new Map(registeredTables);
+          newRegisteredTables.delete(fileToRemove.tableName);
+          useDuckDBStore.setState({ registeredTables: newRegisteredTables });
+        } else {
+          console.warn(`[AppStore] Failed to drop ${fileToRemove.isView ? 'VIEW' : 'TABLE'}: ${fileToRemove.tableName}`);
+        }
+      }).catch((error) => {
+        console.error(`[AppStore] Error dropping ${fileToRemove.isView ? 'VIEW' : 'TABLE'}: ${fileToRemove.tableName}`, error);
+      });
+    }
   },
 
   setActiveFile: (fileId: string) => {

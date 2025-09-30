@@ -102,7 +102,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
           >
-            <div className={`${colorStyles[color]} text-white rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg border border-white/10`}>
+            <div className={`${colorStyles[color]} text-white rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg border border-white/30`}>
               {content}
             </div>
             <div 

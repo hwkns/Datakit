@@ -342,7 +342,7 @@ const AIWorkspace: React.FC = () => {
               <ChevronDown className="h-4 w-4 text-white/70" />
             </button>
 
-            <ResultsPanel height={resultsPanelHeight} />
+            <ResultsPanel height={resultsPanelHeight} activeFile={activeFile} />
           </motion.div>
         )}
       </AnimatePresence>
