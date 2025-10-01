@@ -34,6 +34,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
   icon,
   onSelect,
 }) => {
+  const { t } = useTranslation();
   const cardContent = (
     <div className="h-full flex flex-col p-4 relative">
       {/* Compact Header */}

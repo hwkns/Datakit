@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Key,
@@ -9,22 +9,22 @@ import {
   CheckCircle,
   ExternalLink,
   Settings,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { useAIStore } from "@/store/aiStore";
-import { aiService } from "@/lib/ai/aiService";
-import { AIProvider } from "@/types/ai";
-import { Button } from "@/components/ui/Button";
-import LocalModelManager from "./LocalModelManager";
-import OllamaModelManager from "./OllamaModelManager";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/auth/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useAIStore } from '@/store/aiStore';
+import { aiService } from '@/lib/ai/aiService';
+import { AIProvider } from '@/types/ai';
+import { Button } from '@/components/ui/Button';
+import LocalModelManager from './LocalModelManager';
+import OllamaModelManager from './OllamaModelManager';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useNavigate } from 'react-router-dom';
 
-import OpenAILogo from "@/assets/openai.webp";
-import AnthropicLogo from "@/assets/anthropic.webp";
+import OpenAILogo from '@/assets/openai.webp';
+import AnthropicLogo from '@/assets/anthropic.webp';
 import OllamaLogo from '@/assets/ollama.webp';
-import GroqLogo from "@/assets/groq.png";
+import GroqLogo from '@/assets/groq.png';
 
 interface ApiKeyModalProps {
   isOpen: boolean;
@@ -33,47 +33,66 @@ interface ApiKeyModalProps {
 
 const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
-  
+
   // Move PROVIDER_CONFIG inside the component where 't' is available
   const PROVIDER_CONFIG = {
     ollama: {
-      name: "Ollama",
+      name: 'Ollama',
       icon: <img src={OllamaLogo} className="h-4 w-4" />,
-      color: "blue",
-      description: t('ai.apiKey.providers.ollama.description'),
-      websiteUrl: "https://ollama.com",
-      helpText: t('ai.apiKey.providers.ollama.helpText'),
-      keyFormat: "http://localhost:11434",
+      color: 'blue',
+      description: t('ai.apiKey.providers.ollama.description', {
+        defaultValue: 'Local Ollama server - runs models on your machine',
+      }),
+      websiteUrl: 'https://ollama.com',
+      helpText: t('ai.apiKey.providers.ollama.helpText', {
+        defaultValue:
+          'Run AI models locally with complete privacy. Requires Ollama to be running at http://localhost:11434',
+      }),
+      keyFormat: 'http://localhost:11434',
       isUrlInput: true,
-      provider: 'local'
+      provider: 'local',
     },
     openai: {
-      name: "OpenAI",
+      name: 'OpenAI',
       icon: <img src={OpenAILogo} className="h-5 w-5" />,
-      color: "blue",
-      description: t('ai.apiKey.providers.openai.description'),
-      websiteUrl: "https://platform.openai.com/api-keys",
-      helpText: t('ai.apiKey.providers.openai.helpText'),
-      keyFormat: "sk-...",
+      color: 'blue',
+      description: t('ai.apiKey.providers.openai.description', {
+        defaultValue: 'GPT-4o and GPT-4o Mini models',
+      }),
+      websiteUrl: 'https://platform.openai.com/api-keys',
+      helpText: t('ai.apiKey.providers.openai.helpText', {
+        defaultValue: 'Most capable models for complex reasoning and analysis.',
+      }),
+      keyFormat: 'sk-...',
     },
     anthropic: {
-      name: "Anthropic",
+      name: 'Anthropic',
       icon: <img src={AnthropicLogo} className="h-4 w-4" />,
-      color: "blue",
-      description: t('ai.apiKey.providers.anthropic.description'),
-      websiteUrl: "https://console.anthropic.com/",
-      helpText: t('ai.apiKey.providers.anthropic.helpText'),
-      keyFormat: "sk-ant-...",
+      color: 'blue',
+      description: t('ai.apiKey.providers.anthropic.description', {
+        defaultValue: 'Claude 3.5 Sonnet and Haiku models',
+      }),
+      websiteUrl: 'https://console.anthropic.com/',
+      helpText: t('ai.apiKey.providers.anthropic.helpText', {
+        defaultValue:
+          'Excellent for detailed analysis and explanations. Free credits for new users.',
+      }),
+      keyFormat: 'sk-ant-...',
     },
     groq: {
-      name: "Groq",
+      name: 'Groq',
       icon: <img src={GroqLogo} className="h-4 w-4" />,
-      color: "blue",
-      description: t('ai.apiKey.providers.groq.description'),
-      websiteUrl: "https://console.groq.com/keys",
-      helpText: t('ai.apiKey.providers.groq.helpText'),
-      keyFormat: "gsk_...",
-    }
+      color: 'blue',
+      description: t('ai.apiKey.providers.groq.description', {
+        defaultValue: 'Ultra-fast Llama 3.1 models with free tier',
+      }),
+      websiteUrl: 'https://console.groq.com/keys',
+      helpText: t('ai.apiKey.providers.groq.helpText', {
+        defaultValue:
+          'Fastest inference speed, perfect for trying AI features. Completely free to start.',
+      }),
+      keyFormat: 'gsk_...',
+    },
     // local: {
     //   name: "Local Models",
     //   icon: <Cpu className="h-5 w-5" />,
@@ -84,7 +103,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
     //   keyFormat: null,
     // },
   } as const;
-  const [activeProvider, setActiveProvider] = useState<AIProvider>("openai");
+  const [activeProvider, setActiveProvider] = useState<AIProvider>('openai');
   const [keyInputs, setKeyInputs] = useState<Map<AIProvider, string>>(
     new Map()
   );
@@ -134,29 +153,29 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
 
   const handleUpgradeClick = () => {
     onClose();
-    navigate("/settings#ai");
+    navigate('/settings#ai');
   };
 
   const getProviderColorClass = (
     provider: AIProvider,
-    type: "bg" | "border" | "text"
+    type: 'bg' | 'border' | 'text'
   ) => {
     const color = PROVIDER_CONFIG[provider].color;
     switch (type) {
-      case "bg":
+      case 'bg':
         return `bg-${color}-500/10`;
-      case "border":
+      case 'border':
         return `border-${color}-500/30`;
-      case "text":
+      case 'text':
         return `text-${color}-500`;
       default:
-        return "";
+        return '';
     }
   };
 
   const maskApiKey = (key: string) => {
-    if (key.length <= 8) return "•".repeat(key.length);
-    return key.slice(0, 4) + "•".repeat(key.length - 8) + key.slice(-4);
+    if (key.length <= 8) return '•'.repeat(key.length);
+    return key.slice(0, 4) + '•'.repeat(key.length - 8) + key.slice(-4);
   };
 
   return (
@@ -182,10 +201,14 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
             <div className="w-64 bg-gradient-to-b from-darkNav to-black border-r border-white/10 flex flex-col">
               <div className="p-4 border-b border-white/10">
                 <h2 className="text-lg font-heading font-medium text-white">
-                  {t('ai.apiKey.configuration')}
+                  {t('ai.apiKey.configuration', {
+                    defaultValue: 'Configuration',
+                  })}
                 </h2>
                 <p className="text-xs text-white/60 mt-1">
-                  {t('ai.apiKey.configureDescription')}
+                  {t('ai.apiKey.configureDescription', {
+                    defaultValue: 'Configure AI providers and settings',
+                  })}
                 </p>
               </div>
 
@@ -202,31 +225,31 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                           key={provider}
                           onClick={() => setActiveProvider(provider)}
                           className={cn(
-                            "w-full text-left p-3 rounded-lg mb-1 transition-all duration-200 group relative",
+                            'w-full text-left p-3 rounded-lg mb-1 transition-all duration-200 group relative',
                             activeProvider === provider
                               ? `${getProviderColorClass(
                                   provider,
-                                  "bg"
+                                  'bg'
                                 )} ${getProviderColorClass(
                                   provider,
-                                  "border"
+                                  'border'
                                 )} border text-white`
-                              : "text-white/70 hover:text-white hover:bg-white/5 border border-transparent"
+                              : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
                           )}
                         >
                           <div className="flex items-center">
                             <div
                               className={cn(
-                                "h-8 w-8 rounded-md flex items-center justify-center mr-3 border",
+                                'h-8 w-8 rounded-md flex items-center justify-center mr-3 border',
                                 activeProvider === provider
                                   ? `${getProviderColorClass(
                                       provider,
-                                      "border"
+                                      'border'
                                     )} ${getProviderColorClass(
                                       provider,
-                                      "text"
+                                      'text'
                                     )}`
-                                  : "bg-white/5 border-white/10 text-white/60"
+                                  : 'bg-white/5 border-white/10 text-white/60'
                               )}
                             >
                               {config.icon}
@@ -241,9 +264,13 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                                 )}
                               </div>
                               <p className="text-xs mt-0.5 truncate opacity-80">
-                                {provider === "local" || provider === "ollama"
-                                  ? t('ai.apiKey.providerTypes.local')
-                                  : t('ai.apiKey.providerTypes.cloudApi')}
+                                {provider === 'local' || provider === 'ollama'
+                                  ? t('ai.apiKey.providerTypes.local', {
+                                      defaultValue: 'Local',
+                                    })
+                                  : t('ai.apiKey.providerTypes.cloudApi', {
+                                      defaultValue: 'Cloud API',
+                                    })}
                               </p>
                             </div>
                           </div>
@@ -252,11 +279,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                             <motion.div
                               layoutId="activeProvider"
                               className={cn(
-                                "absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 rounded-r",
+                                'absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 rounded-r',
                                 `bg-${config.color}-500`
                               )}
                               transition={{
-                                type: "spring",
+                                type: 'spring',
                                 stiffness: 300,
                                 damping: 30,
                               }}
@@ -278,11 +305,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center">
                     <div
                       className={cn(
-                        "h-8 w-8 rounded-md flex items-center justify-center mr-3 border",
+                        'h-8 w-8 rounded-md flex items-center justify-center mr-3 border',
                         `${getProviderColorClass(
                           activeProvider,
-                          "border"
-                        )} ${getProviderColorClass(activeProvider, "text")}`
+                          'border'
+                        )} ${getProviderColorClass(activeProvider, 'text')}`
                       )}
                     >
                       {PROVIDER_CONFIG[activeProvider].icon}
@@ -309,38 +336,51 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6">
-                {activeProvider === "local" ? (
+                {activeProvider === 'local' ? (
                   // Local Models Section
                   <LocalModelManager />
-                ) : activeProvider === "ollama" ? (
+                ) : activeProvider === 'ollama' ? (
                   // Ollama Configuration Section
                   <div className="space-y-6">
                     {/* URL Configuration */}
                     <div>
                       <h4 className="text-sm font-medium text-white mb-3">
-                        {t('ai.apiKey.serverConfiguration')}
+                        {t('ai.apiKey.serverConfiguration', {
+                          defaultValue: 'Server Configuration',
+                        })}
                       </h4>
                       <div>
                         <label className="block text-sm font-medium text-white/80 mb-2">
-                          {t('ai.apiKey.ollamaServerUrl')}
+                          {t('ai.apiKey.ollamaServerUrl', {
+                            defaultValue: 'Ollama Server URL',
+                          })}
                         </label>
                         <input
                           type="text"
-                          value={keyInputs.get('ollama') || ""}
-                          onChange={(e) => handleKeyChange('ollama', e.target.value)}
+                          value={keyInputs.get('ollama') || ''}
+                          onChange={(e) =>
+                            handleKeyChange('ollama', e.target.value)
+                          }
                           placeholder="http://localhost:11434"
                           className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
                         />
                         <p className="text-xs text-white/60 mt-1">
-                          {t('ai.apiKey.ollamaServerUrlDescription')}
+                          {t('ai.apiKey.ollamaServerUrlDescription', {
+                            defaultValue:
+                              'The URL where your Ollama server is running',
+                          })}
                         </p>
                       </div>
                     </div>
 
                     {/* Model Management */}
                     <OllamaModelManager
-                      baseUrl={keyInputs.get('ollama') || 'http://localhost:11434'}
-                      selectedModel={activeModel || aiService.getOllamaModel() || undefined}
+                      baseUrl={
+                        keyInputs.get('ollama') || 'http://localhost:11434'
+                      }
+                      selectedModel={
+                        activeModel || aiService.getOllamaModel() || undefined
+                      }
                       onModelSelect={(modelName) => {
                         // Set the active model in the AI service and store
                         aiService.setOllamaModel(modelName);
@@ -354,29 +394,43 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-sm font-medium text-white mb-3">
-                        {t('ai.apiKey.apiKeyConfiguration')}
+                        {t('ai.apiKey.apiKeyConfiguration', {
+                          defaultValue: 'API Key Configuration',
+                        })}
                       </h4>
 
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-white/80 mb-2">
-                            {activeProvider === 'ollama' ? t('ai.apiKey.ollamaServerUrl') : t('ai.apiKey.apiKey')}
+                            {activeProvider === 'ollama'
+                              ? t('ai.apiKey.ollamaServerUrl', {
+                                  defaultValue: 'Ollama Server URL',
+                                })
+                              : t('ai.apiKey.apiKey', {
+                                  defaultValue: 'API Key',
+                                })}
                           </label>
                           <div className="relative">
                             <input
                               type={
-                                activeProvider === 'ollama' || showKeys.get(activeProvider)
-                                  ? "text"
-                                  : "password"
+                                activeProvider === 'ollama' ||
+                                showKeys.get(activeProvider)
+                                  ? 'text'
+                                  : 'password'
                               }
-                              value={keyInputs.get(activeProvider) || ""}
+                              value={keyInputs.get(activeProvider) || ''}
                               onChange={(e) =>
                                 handleKeyChange(activeProvider, e.target.value)
                               }
                               placeholder={
                                 activeProvider === 'ollama'
-                                  ? "http://localhost:11434"
-                                  : t('ai.apiKey.enterApiKeyPlaceholder', { provider: PROVIDER_CONFIG[activeProvider].name })
+                                  ? 'http://localhost:11434'
+                                  : t('ai.apiKey.enterApiKeyPlaceholder', {
+                                      provider:
+                                        PROVIDER_CONFIG[activeProvider].name,
+                                      defaultValue:
+                                        'Enter your {{provider}} API key',
+                                    })
                               }
                               className="w-full px-3 py-2 pr-20 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
                             />
@@ -407,10 +461,16 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-white mb-1">
-                                  {t('ai.apiKey.skipApiKeysTitle')}
+                                  {t('ai.apiKey.skipApiKeysTitle', {
+                                    defaultValue:
+                                      'Skip the API keys with DataKit credits',
+                                  })}
                                 </p>
                                 <p className="text-xs text-white/70 mb-3">
-                                  {t('ai.apiKey.skipApiKeysDescription')}
+                                  {t('ai.apiKey.skipApiKeysDescription', {
+                                    defaultValue:
+                                      'Get instant access to powerful AI models without managing API keys. Credits included with your account.',
+                                  })}
                                 </p>
                                 <Button
                                   variant="outline"
@@ -418,7 +478,9 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                                   onClick={handleUpgradeClick}
                                   className="h-7 bg-primary/20 hover:bg-primary/30 border-primary/50 text-primary"
                                 >
-                                  {t('ai.apiKey.signInToGetStarted')}
+                                  {t('ai.apiKey.signInToGetStarted', {
+                                    defaultValue: 'Sign in to get started',
+                                  })}
                                 </Button>
                               </div>
                             </div>
@@ -440,13 +502,15 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                                       window.open(
                                         PROVIDER_CONFIG[activeProvider]
                                           .websiteUrl!,
-                                        "_blank"
+                                        '_blank'
                                       )
                                     }
                                     className="h-7"
                                   >
                                     <ExternalLink className="h-3 w-3 mr-1" />
-                                    {t('ai.apiKey.getApiKey')}
+                                    {t('ai.apiKey.getApiKey', {
+                                      defaultValue: 'Get API Key',
+                                    })}
                                   </Button>
                                 </div>
                               </div>
@@ -460,17 +524,24 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                     <div className="border-t border-white/10 pt-6">
                       <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
                         <Settings className="h-4 w-4" />
-                        {t('ai.apiKey.generalSettings')}
+                        {t('ai.apiKey.generalSettings', {
+                          defaultValue: 'General Settings',
+                        })}
                       </h4>
 
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <label className="text-sm text-white/80">
-                              {t('ai.apiKey.autoExecuteSQL')}
+                              {t('ai.apiKey.autoExecuteSQL', {
+                                defaultValue: 'Auto-execute generated SQL',
+                              })}
                             </label>
                             <p className="text-xs text-white/60">
-                              {t('ai.apiKey.autoExecuteSQLDescription')}
+                              {t('ai.apiKey.autoExecuteSQLDescription', {
+                                defaultValue:
+                                  'Automatically run SQL queries generated by AI',
+                              })}
                             </p>
                           </div>
                           <button
@@ -480,16 +551,16 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                               })
                             }
                             className={cn(
-                              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                              autoExecuteSQL ? "bg-primary" : "bg-white/20"
+                              'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                              autoExecuteSQL ? 'bg-primary' : 'bg-white/20'
                             )}
                           >
                             <span
                               className={cn(
-                                "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                'inline-block h-3 w-3 transform rounded-full bg-white transition-transform',
                                 autoExecuteSQL
-                                  ? "translate-x-5"
-                                  : "translate-x-1"
+                                  ? 'translate-x-5'
+                                  : 'translate-x-1'
                               )}
                             />
                           </button>
@@ -556,10 +627,12 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
               <div className="p-4 border-t border-white/10 bg-darkNav/30">
                 <div className="flex justify-end gap-3">
                   <Button variant="ghost" onClick={onClose}>
-                    {t('common.cancel')}
+                    {t('common.cancel', { defaultValue: 'Cancel' })}
                   </Button>
                   <Button variant="outline" onClick={handleSave}>
-                    {t('ai.apiKey.saveConfiguration')}
+                    {t('ai.apiKey.saveConfiguration', {
+                      defaultValue: 'Save Configuration',
+                    })}
                   </Button>
                 </div>
               </div>

@@ -33,33 +33,33 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
   }[] = [
     {
       value: 'preview',
-      label: t('viewMode.preview.label'),
+      label: t('viewMode.preview.label', { defaultValue: 'Preview' }),
       icon: <Eye size={16} />,
-      description: t('viewMode.preview.description'),
+      description: t('viewMode.preview.description', { defaultValue: 'View and explore your data' }),
     },
     {
       value: 'query',
-      label: t('viewMode.query.label'),
+      label: t('viewMode.query.label', { defaultValue: 'SQL' }),
       icon: <Code2 size={16} />,
-      description: t('viewMode.query.description'),
+      description: t('viewMode.query.description', { defaultValue: 'Query with SQL' }),
     },
     {
       value: 'notebook',
-      label: t('viewMode.notebook.label'),
+      label: t('viewMode.notebook.label', { defaultValue: 'Notebook' }),
       icon: <FileText size={16} />,
-      description: t('viewMode.notebook.description'),
+      description: t('viewMode.notebook.description', { defaultValue: 'Analyze with Jupyter notebook' }),
     },
     {
       value: 'visualization',
-      label: t('viewMode.visualization.label'),
+      label: t('viewMode.visualization.label', { defaultValue: 'Visualize' }),
       icon: <BarChart3 size={16} />,
-      description: t('viewMode.visualization.description'),
+      description: t('viewMode.visualization.description', { defaultValue: 'Create charts and graphs' }),
     },
     {
       value: 'ai',
-      label: t('viewMode.ai.label'),
+      label: t('viewMode.ai.label', { defaultValue: 'Assistant' }),
       icon: <UserPen size={16} />,
-      description: t('viewMode.ai.description'),
+      description: t('viewMode.ai.description', { defaultValue: 'AI-powered insights' }),
     },
   ];
 
