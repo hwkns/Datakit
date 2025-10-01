@@ -1327,7 +1327,7 @@
     "title": "Import from Cloud",
     "subtitle": "Connect to your cloud data sources",
     "selectProvider": "Select a provider to get started",
-    "comingSoon": "Coming Soon",
+    "comingSoon": "Soon",
     "signInRequired": "Sign in required",
     "providers": {
       "customUrl": "Custom URL",
