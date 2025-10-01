@@ -81,6 +81,15 @@ const UserMenu: React.FC<UserMenuProps> = ({
     setShowAuthModal(true);
   };
 
+  // Don't show auth buttons while auth status is loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-2">
+        <LoadingDots size="sm" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     if (variant === 'collapsed') {
       return (
