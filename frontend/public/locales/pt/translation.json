@@ -9,7 +9,7 @@
     },
     "actionButtons": {
       "tooltips": {
-        "datakitStudio": "Crie visualizações de dados profissionais e relatórios com o DataKit Studio"
+        "datakitStudio": "DataKit Studio"
       },
       "dataKitStudio": "DataKit Studio",
       "feedback": "opinião",
@@ -1242,7 +1242,7 @@
       "poweredBy": "Tecnologia ",
       "visitAmin": "Visitar Amin",
       "built": "built",
-      "company": "DK"
+      "company": "DataKit"
     },
     "workspace": {
       "confirmRemove": "Remover \"{{fileName}}\" da área de trabalho? Isto não excluirá o arquivo real.",
