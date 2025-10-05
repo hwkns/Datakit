@@ -1,3 +1,6 @@
+# 0.4.19
+Simpler sidebar with easy to make folders and opening folders from beginning
+
 # 0.4.18
 Introducing Multi lang selection in the app
 

@@ -1,117 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 
-import { DataSourceManager } from '@/components/data-sources';
-import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
-import {
-  FileTreeView,
-  WorkspaceFile,
-} from '@/components/workspace/FileTreeView';
+import { GlobalDropZone } from '@/components/common/GlobalDropZone';
+import { SidebarToolbar } from '@/components/workspace/SidebarToolbar';
+import { FolderTreeView } from '@/components/workspace/FolderTreeView';
 import { SettingsPopover } from '@/components/common/SettingsPopover';
 import { useDuckDBStore } from '@/store/duckDBStore';
-import useDirectFileImport from '@/hooks/useDirectFileImport';
+import { useFolderStore } from '@/store/folderStore';
 import { useAppStore } from '@/store/appStore';
-import { motion, AnimatePresence } from 'framer-motion';
-import usePopover from '@/hooks/usePopover';
+import { useFileImport } from '@/hooks/useFileImport';
+import { motion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
+import { FolderNode } from '@/types/folder';
 
 import UserMenu from '@/components/auth/UserMenu';
 import DuckDBIcon from '@/assets/duckdb.svg';
-
-// Check for custom logo from environment variable or window object
-const customLogoUrl =
-  import.meta.env.VITE_CUSTOM_LOGO_URL || (window as any).CUSTOM_LOGO_URL;
-
-// Helper function to check File System Access API support
-const isFileSystemAccessSupported = (): boolean => {
-  return 'showOpenFilePicker' in window && 'FileSystemFileHandle' in window;
-};
-
-// Helper function to get browser-specific compatibility info
-const getBrowserCompatibilityInfo = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
-  const isEdge = userAgent.includes('edg');
-  const isFirefox = userAgent.includes('firefox');
-  const isSafari =
-    userAgent.includes('safari') && !userAgent.includes('chrome');
-
-  return {
-    isChrome,
-    isEdge,
-    isFirefox,
-    isSafari,
-    hasFullSupport: isChrome || isEdge,
-    hasLimitedSupport: isSafari,
-    noSupport: isFirefox,
-    getBrowserName: () => {
-      if (isChrome) return 'Chrome';
-      if (isEdge) return 'Edge';
-      if (isFirefox) return 'Firefox';
-      if (isSafari) return 'Safari';
-      return 'Unknown';
-    },
-  };
-};
-
-// Helper function to request permission for file handle
-const requestFileHandlePermission = async (
-  handle: FileSystemFileHandle
-): Promise<boolean> => {
-  try {
-    // Check if we already have permission
-    const permission = await handle.queryPermission({ mode: 'read' });
-    if (permission === 'granted') {
-      return true;
-    }
-
-    // Request permission if not granted
-    if (permission === 'prompt') {
-      const requestedPermission = await handle.requestPermission({
-        mode: 'read',
-      });
-      return requestedPermission === 'granted';
-    }
-
-    return false;
-  } catch (error) {
-    console.log('[Permission] Error requesting file handle permission:', error);
-    return false;
-  }
-};
-
-// Helper function to verify handle validity with permission request
-const verifyFileHandle = async (
-  handle: FileSystemFileHandle,
-  expectedFileName: string
-): Promise<{ isValid: boolean; file?: File; error?: string }> => {
-  try {
-    // First, try to request permission
-    const hasPermission = await requestFileHandlePermission(handle);
-    if (!hasPermission) {
-      return { isValid: false, error: 'Permission denied by user or system' };
-    }
-
-    // Try to get the file
-    const file = await handle.getFile();
-
-    // Verify the file name matches
-    if (file.name !== expectedFileName) {
-      return {
-        isValid: false,
-        error: `File name mismatch: expected "${expectedFileName}", got "${file.name}"`,
-      };
-    }
-
-    return { isValid: true, file };
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-    return { isValid: false, error: errorMessage };
-  }
-};
-
 import RemoteDataImportModal from '@/components/common/RemoteDataImportPanel';
 
 import { ColumnType } from '@/types/csv';
@@ -142,6 +46,10 @@ interface SidebarProps {
   onDataLoad?: (result: DataLoadWithDuckDBResult) => void;
 }
 
+// Check for custom logo from environment variable or window object
+const customLogoUrl =
+  import.meta.env.VITE_CUSTOM_LOGO_URL || (window as any).CUSTOM_LOGO_URL;
+
 const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   const { t } = useTranslation();
   const {
@@ -150,29 +58,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     isRemoteModalOpen,
     setIsRemoteModalOpen,
   } = useAppStore();
+  
+  // Sidebar resizing state
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default 16rem = 256px
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const uploadPopover = usePopover();
+  // Initialize CSS custom property
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+  }, []);
 
-  // Get notifications
-  const { showSuccess } = useNotifications();
+  const { showSuccess, showError } = useNotifications();
 
-  // Get workspace state from appStore
+  // Folder store
+  const { 
+    initializeStore, 
+    draftFolderId, 
+    remoteFolderId,
+    addFile: addFileToFolder,
+    getNodeById,
+    expandFolder,
+  } = useFolderStore();
+
+  // Unified file import
   const {
-    workspaceFiles,
-    addFileToWorkspace,
-    removeFileFromWorkspace,
-    renameFileInWorkspace,
-    files,
-    setActiveFile,
-  } = useAppStore();
-
-  const {
-    processFileStreaming,
-    processFile,
+    importFileWithHandle,
+    importFiles,
+    reopenWorkspaceFile,
     isProcessing: isProcessingLocalFile,
-    loadingStatus: localFileLoadingStatus,
-    processingError: localFileProcessingError,
-  } = useDirectFileImport();
+  } = useFileImport();
 
   const {
     isLoading: duckDBLoading,
@@ -180,63 +95,103 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     error: duckDBError,
   } = useDuckDBStore();
 
-  const handleFileWithStreaming = async (
-    handle: FileSystemFileHandle,
-    file: File,
-    skipWorkspaceAdd = false
-  ) => {
-    if (!onDataLoad) return;
+  // Initialize folder store on mount
+  useEffect(() => {
+    initializeStore();
+  }, [initializeStore]);
 
-    try {
-      uploadPopover.close();
-      const result = await processFileStreaming(handle, file, onDataLoad);
-
-      // Add file to workspace with handle for automatic access (if supported)
-      // Skip if this is being called from workspace file selection
-      if (result && !skipWorkspaceAdd) {
-        const fileType = file.name.split('.').pop()?.toLowerCase() || 'txt';
-        const newFile: WorkspaceFile = {
-          id: `file-${Date.now()}`,
-          name: file.name,
-          type: fileType as WorkspaceFile['type'],
-          size: file.size,
-          lastModified: file.lastModified,
-          handle: isFileSystemAccessSupported() ? handle : undefined, // Only store handle if supported
-        };
-        addFileToWorkspace(newFile);
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error importing file with streaming:', error);
+  // Resize handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    
+    // Disable transitions during resize
+    if (sidebarRef.current) {
+      sidebarRef.current.classList.add('sidebar-resizing');
     }
   };
 
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !sidebarRef.current) return;
+      
+      e.preventDefault();
+      const newWidth = Math.min(Math.max(256, e.clientX), 500); // Min 256px (default), max 500px
+      
+      // Direct CSS custom property update - instant and smooth
+      document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`);
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!isResizing || !sidebarRef.current) return;
+      
+      const finalWidth = Math.min(Math.max(256, e.clientX), 500); // Min 256px (default), max 500px
+      
+      // Re-enable transitions
+      sidebarRef.current.classList.remove('sidebar-resizing');
+      
+      // Update React state for persistence
+      setSidebarWidth(finalWidth);
+      setIsResizing(false);
+      
+      document.body.style.userSelect = ''; 
+      document.body.style.cursor = '';
+    };
+
+    if (isResizing) {
+      document.body.style.userSelect = 'none'; // Disable text selection during drag
+      document.body.style.cursor = 'col-resize'; // Set cursor globally
+      
+      document.addEventListener('mousemove', handleMouseMove, { passive: false });
+      document.addEventListener('mouseup', handleMouseUp, { passive: false });
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      };
+    }
+  }, [isResizing]);
+
+  // Handle file import with streaming support (unified)
+  const handleFileWithStreaming = async (
+    handle: FileSystemFileHandle,
+    file: File
+  ) => {
+    console.log('[handleFileWithStreaming] Using unified import for:', file.name);
+    
+    return await importFileWithHandle(handle, file, onDataLoad, draftFolderId || undefined);
+  };
+
+  // Handle regular file import (unified)
+  const handleFileImport = async (file: File) => {
+    console.log('[handleFileImport] Using unified import for:', file.name);
+    
+    return await importFiles([file], onDataLoad, draftFolderId || undefined);
+  };
+
+  // Handle remote data import
   const handleRemoteDataImport = (result: DataLoadWithDuckDBResult) => {
     if (onDataLoad) {
       onDataLoad(result);
 
-      // Add remote file to workspace
+      // Add remote file to Remote Sources folder
       if (result.isRemote) {
-        const newFile: WorkspaceFile = {
-          id: `remote-${Date.now()}`,
-          name: result.fileName,
-          type: 'remote',
+        const file = new File([], result.fileName, { lastModified: Date.now() });
+        addFileToFolder(file, {
           isRemote: true,
           remoteUrl: result.remoteURL,
-          lastModified: Date.now(),
-        };
-        addFileToWorkspace(newFile);
+          fileType: 'remote',
+          isLoaded: true,
+          tableName: result.tableName,
+        }, remoteFolderId || undefined);
 
-        // Show success notification for remote file import
         showSuccess(
-          t('sidebar.remote.importedTitle', { defaultValue: 'Remote File Imported' }),
+          t('sidebar.remote.importedTitle'),
           t('sidebar.remote.importedMessage', {
             fileName: result.fileName,
-            provider: result.remoteProvider || t('sidebar.remote.defaultProvider', { defaultValue: 'remote source' }),
-            defaultValue: `"${result.fileName}" has been imported from ${
-              result.remoteProvider || 'remote source'
-            }`
+            provider: result.remoteProvider || t('sidebar.remote.defaultProvider'),
           }),
           { icon: 'check', duration: 5000 }
         );
@@ -244,368 +199,129 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     }
   };
 
-  // File tree handlers
-  const handleFileRemove = async (fileId: string) => {
-    // Get file info before removing
-    const file = workspaceFiles.find((f) => f.id === fileId);
+  // Handle file selection from tree (unified)
+  const handleFileSelect = async (node: FolderNode) => {
+    console.log('[Sidebar] File selected from tree:', {
+      fileName: node.name,
+      nodeType: node.type,
+      fileData: node.fileData,
+      hasHandle: !!node.fileData?.handle,
+      isLoaded: node.fileData?.isLoaded,
+      tableName: node.fileData?.tableName
+    });
 
-    if (!file) return;
+    if (node.type !== 'file') return;
 
-    // Show confirmation alert before removing
-    const confirmed = confirm(
-      t('sidebar.workspace.confirmRemove', {
-        fileName: file.name,
-        defaultValue: `Remove "${file.name}" from workspace? This will not delete the actual file.`
-      })
+    // Find the workspace file corresponding to this folder node
+    const { workspaceFiles, files, setActiveFile } = useAppStore.getState();
+    
+    // Try to match by handle first (most reliable), then by name
+    let workspaceFile = workspaceFiles.find(f => 
+      node.fileData?.handle && f.handle && f.handle === node.fileData.handle
     );
-
-    if (!confirmed) return;
-
-    // Remove from workspace after confirmation
-    removeFileFromWorkspace(fileId);
-
-    // Show success notification
-    showSuccess(
-      t('sidebar.workspace.fileRemovedTitle', { defaultValue: 'File Removed' }),
-      t('sidebar.workspace.fileRemovedMessage', {
-        fileName: file.name,
-        defaultValue: `"${file.name}" has been removed from workspace`
-      }),
-      { icon: 'check', duration: 4000 }
-    );
-
-    // If file was loaded into DuckDB, remove the table or view
-    try {
-      const duckDBStore = useDuckDBStore.getState();
-
-      // Try to drop table or view with the file name (escaped)
-      const tableName = file.name
-        .replace(/\.[^/.]+$/, '')
-        .replace(/[^a-zA-Z0-9_]/g, '_');
-      await duckDBStore.dropTableOrView(tableName);
-
-      console.log(
-        `[Sidebar] Dropped table/view for removed file: ${tableName}`
-      );
-    } catch (error) {
-      console.error(
-        '[Sidebar] Error dropping table/view for removed file:',
-        error
+    
+    // Fallback to name matching if handle matching fails
+    if (!workspaceFile) {
+      workspaceFile = workspaceFiles.find(f => 
+        f.name === node.name || f.originalName === node.name
       );
     }
-  };
-
-  const handleFileRename = (fileId: string, newName: string) => {
-    renameFileInWorkspace(fileId, newName);
-  };
-
-  const handleFileSelect = async (file: WorkspaceFile) => {
-    console.log('[Sidebar] File selected from workspace:', file);
-
-    if (!onDataLoad) {
-      console.log('[Sidebar] No onDataLoad callback available');
-      return;
-    }
-
-    try {
-      // First, check if file is already loaded in FileTabs
-      const existingFileTab = files.find((f) => f.fileName === file.name);
-
-      if (existingFileTab) {
-        console.log(
-          '[Sidebar] File already loaded, switching to existing tab:',
-          file.name
-        );
-        setActiveFile(existingFileTab.id);
+    
+    console.log('[Sidebar] Found workspace file:', !!workspaceFile, workspaceFile);
+    
+    if (workspaceFile) {
+      // Check if file is already loaded in app store
+      const existingFile = files.find(f => f.fileName === workspaceFile.name);
+      if (existingFile) {
+        console.log('[Sidebar] File already in app store, switching to it');
+        setActiveFile(existingFile.id);
         return;
       }
 
-      // For local files, try to use stored handle first, then prompt if needed
-      if (!file.isRemote) {
-        // Check browser support for File System Access API
-        if (!isFileSystemAccessSupported()) {
-          console.log(
-            '[Sidebar] File System Access API not supported, cannot auto-open files'
-          );
-          const browserInfo = getBrowserCompatibilityInfo();
-          const browserName = browserInfo.getBrowserName();
-
-          let message = t('sidebar.fileAccess.browserNotSupported', {
-            browserName,
-            defaultValue: `Your browser (${browserName}) does not support automatic file access. Please re-import the file manually. `
-          });
-
-          if (browserInfo.noSupport) {
-            message += t('sidebar.fileAccess.useChrome', {
-              defaultValue: 'For automatic file access, please use Chrome or Edge.'
-            });
-          } else if (browserInfo.hasLimitedSupport) {
-            message += t('sidebar.fileAccess.safariLimited', {
-              defaultValue: 'File access support is limited in Safari. For better experience, use Chrome or Edge.'
-            });
-          } else {
-            message += t('sidebar.fileAccess.useChromeForFeatures', {
-              defaultValue: 'For automatic import features, please use Chrome or Edge.'
-            });
-          }
-
-          alert(message);
-          return;
+      // Use unified reopen logic
+      try {
+        const result = await reopenWorkspaceFile(workspaceFile, onDataLoad);
+        if (result) {
+          console.log('[Sidebar] File reopened successfully using unified import');
         }
-
-        // Try using stored file handle for automatic access
-        if (file.handle) {
-          console.log(
-            '[Sidebar] Using stored file handle for automatic import:',
-            file.name
-          );
-
-          const handleResult = await verifyFileHandle(file.handle, file.name);
-
-          if (handleResult.isValid && handleResult.file) {
-            console.log(
-              '[Sidebar] Handle valid with permission, importing automatically:',
-              file.name
-            );
-            await handleFileWithStreaming(file.handle, handleResult.file, true); // Skip workspace add
-            return;
-          } else {
-            console.log(
-              '[Sidebar] Handle verification failed:',
-              handleResult.error
-            );
-
-            // Show specific error message to user based on the error type
-            if (handleResult.error?.includes('Permission denied')) {
-              const shouldRetry = confirm(
-                t('sidebar.fileAccess.permissionDenied', {
-                  fileName: file.name,
-                  defaultValue: `Permission denied to access "${file.name}". This can happen due to browser security policies.\n\n` +
-                    `Click "OK" to manually select the file again, or "Cancel" to skip.`
-                })
-              );
-              if (!shouldRetry) return;
-            } else if (handleResult.error?.includes('File name mismatch')) {
-              alert(
-                t('sidebar.fileAccess.nameMismatch', {
-                  fileName: file.name,
-                  defaultValue: `The stored file reference for "${file.name}" points to a different file. Please re-select the correct file.`
-                })
-              );
-            } else {
-              const shouldRetry = confirm(
-                t('sidebar.fileAccess.cannotAccess', {
-                  fileName: file.name,
-                  defaultValue: `Cannot automatically access "${file.name}". The file may have been moved, deleted, or access permissions changed.\n\n` +
-                    `Click "OK" to manually select the file again, or "Cancel" to skip.`
-                })
-              );
-              if (!shouldRetry) return;
-            }
-          }
-        }
-
-        // Fallback: prompt user to re-select file
-        console.log(
-          '[Sidebar] No valid handle, prompting user to re-select:',
-          file.name
-        );
-
-        try {
-          const fileHandleArray = await window.showOpenFilePicker({
-            types: [
-              {
-                description: t('sidebar.fileDialog.dataFiles', { defaultValue: 'Data Files' }),
-                accept: {
-                  'text/csv': ['.csv'],
-                  'application/json': ['.json'],
-                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                    ['.xlsx'],
-                  'application/vnd.ms-excel': ['.xls'],
-                  'application/x-parquet': ['.parquet'],
-                  'application/vnd.apache.parquet': ['.parquet'],
-                  'text/plain': ['.txt'],
-                  'application/octet-stream': ['.duckdb', '.db'],
-                },
-              },
-            ],
-            excludeAcceptAllOption: false,
-            multiple: false,
-          });
-
-          if (fileHandleArray.length > 0) {
-            const selectedHandle = fileHandleArray[0];
-            const selectedFile = await selectedHandle.getFile();
-
-            // Verify it's the same file name
-            if (selectedFile.name === file.name) {
-              console.log(
-                '[Sidebar] File verified, importing with streaming:',
-                selectedFile.name
-              );
-
-              // Check again if file was loaded while we were selecting (race condition)
-              const existingFileTabAfterPicker = files.find(
-                (f) => f.fileName === file.name
-              );
-              if (existingFileTabAfterPicker) {
-                console.log(
-                  '[Sidebar] File was loaded while picker was open, switching to existing'
-                );
-                setActiveFile(existingFileTabAfterPicker.id);
-                return;
-              }
-
-              await handleFileWithStreaming(selectedHandle, selectedFile, true); // Skip workspace add
-
-              // Update the file handle in the workspace file for future automatic access
-              const updatedFile: WorkspaceFile = {
-                ...file,
-                handle: isFileSystemAccessSupported()
-                  ? selectedHandle
-                  : undefined,
-              };
-              // We could add a method to update workspace file handles here
-              console.log('[Sidebar] Updated file handle for:', file.name);
-            } else {
-              console.log(
-                '[Sidebar] File name mismatch:',
-                selectedFile.name,
-                'vs',
-                file.name
-              );
-              alert(t('sidebar.fileAccess.selectCorrectFile', {
-                fileName: file.name,
-                defaultValue: `Please select the correct file: ${file.name}`
-              }));
-            }
-          }
-        } catch (error) {
-          if ((error as Error).name !== 'AbortError') {
-            console.error('Error re-importing file:', error);
-            alert(
-              t('sidebar.fileAccess.couldNotLoad', {
-                fileName: file.name,
-                defaultValue: `Could not load file ${file.name}. Please re-import it using the file upload button.`
-              })
-            );
-          }
-        }
-      } else if (file.isRemote && file.remoteUrl) {
-        // Handle remote files - could trigger remote import modal
-        console.log('Remote file clicked:', file);
-        alert(
-          t('sidebar.remote.notImplemented', {
-            defaultValue: 'Remote source re-import not yet implemented. Please use the Cloud Sources button to re-import.'
-          })
-        );
+      } catch (error) {
+        console.error('[Sidebar] Failed to reopen file:', error);
       }
+    } else {
+      console.warn('[Sidebar] No workspace file found for:', node.name);
+      
+      // For files without handles (drag & drop), check if they're already in app store
+      const existingFile = files.find(f => f.fileName === node.name);
+      if (existingFile) {
+        console.log('[Sidebar] File found in app store, switching to existing tab');
+        setActiveFile(existingFile.id);
+        return;
+      }
+      
+      // File is completely missing - show error and suggest re-import
+      showError(
+        t('sidebar.fileLoadError', 'Failed to Load File'),
+        'Please re-import the file using the import button.'
+      );
+    }
+  };
+
+  // Handle folder selection
+  const handleFolderSelect = (node: FolderNode) => {
+    console.log('[Sidebar] Folder selected:', node);
+    // Could implement folder-level actions here
+  };
+
+  // Handle global file drop (unified)
+  const handleGlobalFileDrop = async (files: File[], targetFolderId?: string, handles?: (FileSystemFileHandle | undefined)[]) => {
+    console.log('[handleGlobalFileDrop] Using unified import for:', files.length, 'files', 'targetFolderId:', targetFolderId, 'draftFolderId:', draftFolderId, 'handles:', handles?.filter(Boolean).length || 0);
+    
+    const finalFolderId = targetFolderId || draftFolderId || undefined;
+    console.log('[handleGlobalFileDrop] Final folder ID:', finalFolderId);
+    
+    try {
+      const results = [];
+      
+      // Process each file with its corresponding handle
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const handle = handles?.[i];
+        
+        if (handle) {
+          console.log('[handleGlobalFileDrop] Using handle for file:', file.name);
+          const result = await importFileWithHandle(handle, file, onDataLoad, finalFolderId);
+          if (result) results.push(result);
+        } else {
+          console.log('[handleGlobalFileDrop] No handle available for file:', file.name);
+          const result = await importFiles([file], onDataLoad, finalFolderId);
+          if (result) results.push(...result);
+        }
+      }
+      
+      console.log('[handleGlobalFileDrop] Import completed, results:', results.length);
+      return results;
     } catch (error) {
-      console.error('Error handling file selection:', error);
+      console.error('[handleGlobalFileDrop] Import failed:', error);
+      throw error;
     }
   };
 
   // Determine if any loading state is active
   const isLoading = isProcessingLocalFile || duckDBLoading;
+  const errorMessage = duckDBError;
 
-  // Determine current loading status message
-  const loadingStatus = localFileLoadingStatus;
-
-  // Determine current error message
-  const errorMessage = localFileProcessingError || duckDBError;
-
-  // Variants for framer-motion animations
+  // Sidebar animation variants - only for collapse/expand
   const sidebarVariants = {
-    expanded: { width: '16rem' }, // w-64 = 16rem
-    collapsed: { width: '4rem' }, // mini sidebar width
+    expanded: { width: 'var(--sidebar-width)' },
+    collapsed: { width: '4rem' },
   };
 
-  // File upload popup for collapsed mode
-  const renderFileUploadPopup = () => (
-    <div className="absolute left-16 top-0 bg-darkNav rounded-lg shadow-lg border border-white/10 p-3 w-64">
-      <div className="mb-3">
-        <h3 className="text-sm font-medium text-white mb-1">{t('sidebar.upload.title', { defaultValue: 'Upload File' })}</h3>
-        <p className="text-xs text-white/70">
-          {t('sidebar.upload.description', { defaultValue: 'Import your data file for analysis' })}
-        </p>
-      </div>
 
-      <DataSourceManager
-        onFileHandleSelect={handleFileWithStreaming}
-        onFileSelect={async (file) => {
-          uploadPopover.close();
-          const result = onDataLoad
-            ? await processFile(file, onDataLoad)
-            : await processFile(file);
-
-          // Add file to workspace
-          if (result) {
-            const fileType = file.name.split('.').pop()?.toLowerCase() || 'txt';
-            const newFile: WorkspaceFile = {
-              id: `file-${Date.now()}`,
-              name: file.name,
-              type: fileType as WorkspaceFile['type'],
-              size: file.size,
-              lastModified: file.lastModified,
-            };
-            addFileToWorkspace(newFile);
-          }
-
-          return result;
-        }}
-        onRemoteClick={() => {
-          uploadPopover.close();
-          setIsRemoteModalOpen(true);
-        }}
-        isLoading={isProcessingLocalFile}
-        className="w-full"
-      />
-
-      {(isLoading || loadingStatus) && (
-        <div className="mt-3 bg-background/30 p-2 border border-white/5 rounded-md">
-          {loadingStatus && (
-            <div className="text-xs font-medium text-white text-opacity-80 mb-2 flex items-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></div>
-              {loadingStatus}
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="w-full bg-background rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${Math.max(5, duckDBProgress * 100)}%` }}
-              ></div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  // Define what to show in collapsed mode - only icons with functionality
+  // Collapsed sidebar content
   const renderCollapsedContent = () => (
     <>
       <div className="p-4">
         {/* Header space for collapsed mode */}
-      </div>
-
-      <div className="flex flex-col items-center gap-4 p-2 mt-2">
-        {/* File Upload Button with Dropdown */}
-        <div className="relative" ref={uploadPopover.ref}>
-          <AnimatePresence>
-            {uploadPopover.isOpen && (
-              <motion.div
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -5 }}
-                transition={{ duration: 0.2 }}
-              >
-                <>{renderFileUploadPopup()}</>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
 
       <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-white/10">
@@ -617,7 +333,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:text-primary-foreground transition-custom p-2 hover:bg-background hover:bg-opacity-30 rounded"
-            aria-label={t('sidebar.footer.visitAmin', { defaultValue: 'Visit Amin' })}
+            aria-label={t('sidebar.footer.visitAmin')}
           >
             <ExternalLink size={16} />
           </a>
@@ -626,7 +342,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     </>
   );
 
-  // Define expanded sidebar content
+  // Expanded sidebar content
   const renderExpandedContent = () => (
     <>
       {/* Header with logo and title */}
@@ -639,67 +355,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           />
         ) : (
           <h1 className="text-white font-heading font-medium text-lg">
-            {t('sidebar.header.title', { defaultValue: 'DataKit' })}
+            {t('sidebar.header.title')}
           </h1>
         )}
       </div>
 
-      {/* Workspace Selector */}
-      <div className="px-5 py-3 border-b border-white/10">
-        <WorkspaceSelector />
-      </div>
+      {/* Toolbar */}
+      <SidebarToolbar
+        onOpenFolder={() => {
+          // Handled in SidebarToolbar directly
+        }}
+        onRemoteClick={() => setIsRemoteModalOpen(true)}
+        onFileSelect={handleFileImport}
+        onFileHandleSelect={handleFileWithStreaming}
+      />
 
-      {/* Data Source Manager section */}
-      <div className="px-5 pt-3 pb-2">
-        <DataSourceManager
-          onFileHandleSelect={handleFileWithStreaming}
-          onFileSelect={async (file) => {
-            const result = onDataLoad
-              ? await processFile(file, onDataLoad)
-              : await processFile(file);
-
-            // Add file to workspace
-            if (result) {
-              const fileType =
-                file.name.split('.').pop()?.toLowerCase() || 'txt';
-              const newFile: WorkspaceFile = {
-                id: `file-${Date.now()}`,
-                name: file.name,
-                type: fileType as WorkspaceFile['type'],
-                size: file.size,
-                lastModified: file.lastModified,
-              };
-              addFileToWorkspace(newFile);
-            }
-
-            return result;
-          }}
-          onRemoteClick={() => setIsRemoteModalOpen(true)}
-          isLoading={isProcessingLocalFile}
-          className="w-full"
-        />
-
-        {/* Loading Status - Combined for both local and remote */}
-      </div>
-      <div className="flex-1 overflow-y-auto border-t border-white/10 mt-2">
-        <FileTreeView
-          files={workspaceFiles}
+      {/* Folder Tree View - Main content area */}
+      <div className="flex-1 overflow-y-auto border-t border-white/10">
+        <FolderTreeView
           onFileSelect={handleFileSelect}
-          onFileRemove={handleFileRemove}
-          onFileRename={handleFileRename}
+          onFolderSelect={handleFolderSelect}
         />
       </div>
 
-      {/* File Tree - Main content area */}
-
-      {(isLoading || loadingStatus) && (
-        <div className="mt-3 bg-background/30 p-3 border border-white/5 rounded-md">
-          {loadingStatus && (
-            <div className="text-xs font-medium text-white text-opacity-80 mb-2 flex items-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></div>
-              {loadingStatus}
-            </div>
-          )}
+      {/* Loading status */}
+      {isLoading && (
+        <div className="mx-5 mb-3 bg-background/30 p-3 border border-white/5 rounded-md">
+          <div className="text-xs font-medium text-white text-opacity-80 mb-2 flex items-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></div>
+            {t('sidebar.processing', 'Processing files...')}
+          </div>
 
           {isLoading && (
             <div className="w-full bg-background rounded-full h-1.5 overflow-hidden">
@@ -718,7 +403,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         </div>
       )}
 
-      {/* Footer area with UserMenu */}
+      {/* Footer area */}
       <div>
         <div className="p-4">
           <UserMenu variant="sidebar" />
@@ -727,7 +412,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         <div className="px-2 py-2 border-t border-white border-opacity-5">
           <div className="flex items-center justify-end">
             <p className="text-xs text-white text-opacity-50 flex items-center">
-              {t('sidebar.footer.poweredBy', { defaultValue: 'Powered by' })}{' '}
+              {t('sidebar.footer.poweredBy')}{' '}
               <a
                 href="https://duckdb.org/"
                 target="_blank"
@@ -744,7 +429,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                {t('sidebar.footer.built', { defaultValue: 'built' })}
+                {t('sidebar.footer.built')}
               </a>
               {' @ '}
               <a
@@ -753,7 +438,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                {t('sidebar.footer.company', { defaultValue: 'DataKit' })}
+                {t('sidebar.footer.company')}
               </a>
             </p>
             <div className="flex-shrink-0 ml-1">
@@ -766,9 +451,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
   );
 
   return (
-    <>
+    <>      
       <motion.div
-        className="relative bg-darkNav flex flex-col h-full border-r border-white border-opacity-10 overflow-hidden"
+        ref={sidebarRef}
+        className={`relative bg-darkNav flex flex-col h-full border-r border-white border-opacity-10 overflow-hidden sidebar-container ${
+          sidebarCollapsed ? 'sidebar-collapsed' : ''
+        }`}
         initial={sidebarCollapsed ? 'collapsed' : 'expanded'}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
         variants={sidebarVariants}
@@ -776,10 +464,52 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       >
         {sidebarCollapsed ? renderCollapsedContent() : renderExpandedContent()}
 
+        {/* Resize handle with unique fade-out border */}
+        {!sidebarCollapsed && (
+          <div
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize group"
+            onMouseDown={handleMouseDown}
+          >
+            {/* Fade-out border effect with primary gradient */}
+            <div 
+              className={`absolute top-0 right-0 w-1 h-full transition-all duration-150 ease-out ${
+                isResizing ? 'opacity-100' : 'opacity-0 group-hover:opacity-80'
+              }`}
+              style={{
+                background: isResizing 
+                  ? 'linear-gradient(to bottom, transparent 0%, hsl(175 100% 36% / 0.6) 10%, hsl(175 100% 45% / 0.7) 30%, hsl(175 100% 55% / 0.5) 50%, hsl(175 100% 45% / 0.7) 70%, hsl(175 100% 36% / 0.6) 90%, transparent 100%)'
+                  : 'linear-gradient(to bottom, transparent 0%, hsl(175 100% 36% / 0.7) 15%, hsl(175 100% 45% / 0.5) 35%, hsl(175 100% 55% / 0.4) 50%, hsl(175 100% 45% / 0.5) 65%, hsl(175 100% 36% / 0.7) 85%, transparent 100%)'
+              }}
+            />
+            
+            {/* Subtle glow effect when actively resizing */}
+            {isResizing && (
+              <>
+                <div 
+                  className="absolute top-0 right-0 w-3 h-full opacity-25 blur-sm transition-all duration-150"
+                  style={{
+                    background: 'linear-gradient(to bottom, transparent 0%, hsl(175 100% 36% / 0.3) 15%, hsl(175 100% 45% / 0.25) 40%, hsl(175 100% 55% / 0.15) 50%, hsl(175 100% 45% / 0.25) 60%, hsl(175 100% 36% / 0.3) 85%, transparent 100%)'
+                  }}
+                />
+                <div 
+                  className="absolute top-0 right-0 w-6 h-full opacity-15 blur-md transition-all duration-150"
+                  style={{
+                    background: 'linear-gradient(to bottom, transparent 0%, hsl(175 100% 36% / 0.15) 20%, hsl(175 100% 45% / 0.1) 50%, hsl(175 100% 36% / 0.15) 80%, transparent 100%)'
+                  }}
+                />
+              </>
+            )}
+          </div>
+        )}
+
         <button
           onClick={toggleSidebar}
           className="absolute top-5 right-3 w-6 h-6 flex items-center justify-center text-white/70 hover:text-white hover:border-white/10 transition-colors shadow-lg cursor-pointer"
-          aria-label={sidebarCollapsed ? t('sidebar.expand', { defaultValue: 'Expand sidebar' }) : t('sidebar.collapse', { defaultValue: 'Collapse sidebar' })}
+          aria-label={
+            sidebarCollapsed
+              ? t('sidebar.expand')
+              : t('sidebar.collapse')
+          }
         >
           {sidebarCollapsed ? (
             <ChevronRight size={16} />
@@ -794,6 +524,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
         isOpen={isRemoteModalOpen}
         onClose={() => setIsRemoteModalOpen(false)}
         onImport={handleRemoteDataImport}
+      />
+
+      {/* Global Drop Zone */}
+      <GlobalDropZone
+        onFileDrop={handleGlobalFileDrop}
+        isProcessing={isLoading}
       />
     </>
   );

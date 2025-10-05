@@ -1,94 +1,30 @@
 import { useRef } from "react";
-import useDirectFileImport from "@/hooks/useDirectFileImport";
-import { useAppStore } from "@/store/appStore";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { WorkspaceFile } from "@/components/workspace/FileTreeView";
-
-// Helper function to check File System Access API support
-const isFileSystemAccessSupported = (): boolean => {
-  return 'showOpenFilePicker' in window && 'FileSystemFileHandle' in window;
-};
+import { useFileImport } from "@/hooks/useFileImport";
 
 export const useFileUpload = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const analytics = useAnalytics();
-  const { addFile, addFileToWorkspace } = useAppStore();
-  const { processFile, processFileStreaming, isProcessing } = useDirectFileImport();
+  const { openFilePicker, importFiles, isProcessing } = useFileImport();
 
   const handleButtonClick = async () => {
-    // Try to use File System Access API for better performance
-    if (isFileSystemAccessSupported()) {
-      try {
-        const [fileHandle] = await window.showOpenFilePicker({
-          types: [
-            {
-              description: "Data Files",
-              accept: {
-                "text/csv": [".csv"],
-                "application/json": [".json"],
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-                "application/vnd.ms-excel": [".xls"],
-                "application/x-parquet": [".parquet"],
-                "application/vnd.apache.parquet": [".parquet"],
-                "text/plain": [".txt"],
-                "application/octet-stream": [".duckdb", ".db"],
-              },
-            },
-          ],
-          multiple: false,
-        });
-
-        const file = await fileHandle.getFile();
-        
-        // Use streaming for better performance
-        await processFileStreaming(fileHandle, file, (result) => {
-          addFile(result);
-          analytics.trackFileUpload(result);
-          
-          // Add file to workspace with handle for automatic access
-          const fileType = file.name.split('.').pop()?.toLowerCase() || 'txt';
-          const newFile: WorkspaceFile = {
-            id: `file-${Date.now()}`,
-            name: file.name,
-            type: fileType as WorkspaceFile['type'],
-            size: file.size,
-            lastModified: file.lastModified,
-            handle: fileHandle, // Store the file handle for future automatic access
-          };
-          addFileToWorkspace(newFile);
-        });
-      } catch (err) {
-        if (!(err instanceof Error) || err.name !== "AbortError") {
-          // Fall back to regular input if API fails
-          fileInputRef.current?.click();
-        }
-      }
-    } else {
-      // Fall back to regular input
-      fileInputRef.current?.click();
+    console.log('[useFileUpload] Using unified import via openFilePicker');
+    try {
+      await openFilePicker(undefined, undefined, false); // single file for compatibility
+    } catch (error) {
+      console.error('[useFileUpload] Error:', error);
     }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    await processFile(file, (result) => {
-      addFile(result);
-      analytics.trackFileUpload(result);
-      
-      // Add file to workspace (without handle since we're using regular file input)
-      const fileType = file.name.split('.').pop()?.toLowerCase() || 'txt';
-      const newFile: WorkspaceFile = {
-        id: `file-${Date.now()}`,
-        name: file.name,
-        type: fileType as WorkspaceFile['type'],
-        size: file.size,
-        lastModified: file.lastModified,
-        // No handle available for regular file input
-      };
-      addFileToWorkspace(newFile);
-    });
+    console.log('[useFileUpload] Using unified import for file input:', files.length, 'files');
+    
+    try {
+      await importFiles(files);
+    } catch (error) {
+      console.error('[useFileUpload] Error importing files:', error);
+    }
     
     // Reset input
     if (fileInputRef.current) {

@@ -245,7 +245,9 @@
       "importFrom": "import from:",
       "selfHost": "Self-host DataKit:",
       "watchDemo": "watch a demo",
-      "localFiles": "Local files"
+      "localFiles": "Local files",
+      "dropOrClick": "Drop files here or click to browse",
+      "processing": "Processing files..."
     },
     "providers": {
       "postgresql": {
@@ -1983,6 +1985,17 @@
     }
   },
   "workspace": {
+    "toolbar": {
+      "uploadFiles": "Import",
+      "newFolder": "New Folder",
+      "newFolderPrompt": "Enter folder name:",
+      "openFolder": "Open Folder",
+      "browserNotSupported": "Your browser does not support folder access. Please use Chrome or Edge.",
+      "remoteSources": "Remote Sources",
+      "moreOptions": "More Options",
+      "exportStructure": "Export Structure",
+      "importStructure": "Import Structure"
+    },
     "fileTree": {
       "noFiles": "No files in workspace",
       "addFilesHint": "Add files using the source panel above",

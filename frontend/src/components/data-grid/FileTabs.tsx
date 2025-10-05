@@ -19,6 +19,7 @@ import {
   Package,
   Cloud,
   Upload,
+  FilePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import GoogleSheetsIcon from '@/components/icons/GoogleSheetsIcon';
@@ -45,7 +46,7 @@ interface ContextMenuState {
 }
 
 /**
- * Get the appropriate icon for a file type - aligned with FileTreeView
+ * Get the appropriate icon for a file type
  */
 const getFileIcon = (
   sourceType: DataSourceType,
@@ -61,7 +62,6 @@ const getFileIcon = (
     return <GoogleSheetsIcon className={iconClass} />;
   }
 
-  // Align with FileTreeView icon mapping and colors
   switch (sourceType) {
     case DataSourceType.TABLE:
       return <Table className={cn(iconClass, 'text-primary')} />;
@@ -648,36 +648,53 @@ const FileTabs: React.FC<FileTabsProps> = ({
             onClick={handleButtonClick}
             disabled={isProcessing}
             whileHover={{ 
-              scale: 1.02,
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              borderColor: 'rgba(255, 255, 255, 0.25)'
+              scale: 1.01
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.99 }}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
             className={cn(
-              "group relative flex items-center gap-2 ml-2 text-xs rounded-lg bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm border border-white/15 shadow-lg transition-all duration-300 cursor-pointer disabled:opacity-50 hover:shadow-xl flex-shrink-0",
+              "group relative flex items-center gap-2 ml-2 text-xs rounded-lg border-2 border-dashed border-white/20 hover:border-white/50 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/[0.02] flex-shrink-0",
               isCompactMode ? "px-2.5 py-1.5" : "px-3 py-1.5"
             )}
             type="button"
           >
-            {/* Background glow effect */}
-            <motion.div
-              className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              layoutId="importButtonGlow"
-            />
+            {/* Subtle gradient background on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
+            {/* Floating upload icon */}
             <motion.div
-              animate={isProcessing ? { rotate: 360 } : { rotate: 0 }}
-              transition={{ duration: 0.8, repeat: isProcessing ? Infinity : 0, ease: "linear" }}
+              animate={isProcessing ? { 
+                rotate: 360,
+                y: [0, -1, 0],
+                scale: [1, 1.02, 1],
+                opacity: [0.6, 0.8, 0.6]
+              } : {
+                y: [0, -1, 0],
+                scale: [1, 1.02, 1],
+                opacity: [0.6, 0.8, 0.6]
+              }}
+              transition={isProcessing ? { 
+                duration: 0.8, 
+                repeat: Infinity, 
+                ease: "linear" 
+              } : {
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              className="flex-shrink-0"
             >
-              <Plus className="h-4 w-4 text-white/70 group-hover:text-white relative z-10 transition-colors duration-200" />
+              <FilePlus className="h-4 w-4 text-white/60 group-hover:text-primary transition-colors relative z-10" />
             </motion.div>
+            
             {!isCompactMode && (
-              <span className="text-white/70 group-hover:text-white relative z-10 font-medium transition-colors duration-200">
-                {isProcessing ? t('fileTabs.loading') : t('fileTabs.import')}
-              </span>
+              <div className="relative z-10">
+                <div className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent group-hover:from-blue-100 group-hover:to-blue-200 transition-all duration-300 font-medium whitespace-nowrap">
+                  {isProcessing ? t('fileTabs.loading') : t('fileTabs.import')}
+                </div>
+              </div>
             )}
           </motion.button>
           
