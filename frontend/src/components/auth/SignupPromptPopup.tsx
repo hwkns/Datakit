@@ -77,7 +77,6 @@ const SignupPromptPopup: React.FC<SignupPromptPopupProps> = ({ onClose }) => {
               <ul className="text-xs text-white/70 space-y-1">
                 <li>• {t('signup.popup.features.cloudConnectors')}</li>
                 <li>• {t('signup.popup.features.credits')}</li>
-                <li>• {t('signup.popup.features.localProjects')}</li>
                 <li>• {t('signup.popup.features.exportViz')}</li>
               </ul>
             </div>

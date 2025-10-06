@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   FolderPlus,
@@ -8,7 +9,10 @@ import {
   Download,
   Upload,
   FilePlus,
+  Info,
+  X,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useFolderStore } from '@/store/folderStore';
 import { useFileImport } from '@/hooks/useFileImport';
 import { cn } from '@/lib/utils';
@@ -27,6 +31,11 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
 }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+  const helpButtonRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { createFolder, exportTree, draftFolderId } = useFolderStore();
   const { openFilePicker } = useFileImport();
 
@@ -100,6 +109,177 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
     }
   };
 
+  const calculateModalPosition = () => {
+    if (helpButtonRef.current) {
+      const rect = helpButtonRef.current.getBoundingClientRect();
+      const modalWidth = 320; // Approximate modal width
+      const spacing = 8; // Gap between button and modal
+      
+      let left = rect.left + rect.width / 2 - modalWidth / 2;
+      let top = rect.bottom + spacing;
+      
+      // Ensure modal doesn't go off-screen
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Adjust horizontal position if needed
+      if (left < 16) left = 16;
+      if (left + modalWidth > viewportWidth - 16) {
+        left = viewportWidth - modalWidth - 16;
+      }
+      
+      // If modal would go below viewport, show it above the button instead
+      if (top + 400 > viewportHeight - 16) { // Approximate modal height
+        top = rect.top - 400 - spacing;
+      }
+      
+      setModalPosition({ top, left });
+    }
+  };
+
+  const handleShowHelp = () => {
+    calculateModalPosition();
+    setShowHelpModal(true);
+  };
+
+  const handleMouseEnter = () => {
+    // Clear any existing hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    
+    // Set a small delay before showing to avoid accidental triggers
+    hoverTimeoutRef.current = setTimeout(() => {
+      calculateModalPosition();
+      setShowHelpModal(true);
+    }, 300); // 300ms delay
+  };
+
+  const handleMouseLeave = () => {
+    // Clear the show timeout if user leaves quickly
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    // Hide with a delay to allow moving to modal
+    hideTimeoutRef.current = setTimeout(() => {
+      setShowHelpModal(false);
+    }, 200); // 200ms delay before hiding
+  };
+
+  const handleModalMouseEnter = () => {
+    // Cancel hide when hovering over modal
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  };
+
+  const handleModalMouseLeave = () => {
+    // Hide immediately when leaving modal
+    setShowHelpModal(false);
+  };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Help Modal Component
+  const HelpModal = () => {
+    if (!showHelpModal) return null;
+
+    return createPortal(
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 pointer-events-none bg-black/20"
+        >
+          <motion.div
+            data-help-modal
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute bg-black backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl p-6 w-80 pointer-events-auto"
+            style={{ 
+              top: modalPosition.top, 
+              left: modalPosition.left,
+              transformOrigin: 'top center'
+            }}
+            onMouseEnter={handleModalMouseEnter}
+            onMouseLeave={handleModalMouseLeave}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">{t('workspace.toolbar.helpModal.title', 'Workspace Guide')}</h3>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              >
+                <X size={18} className="text-white/60 hover:text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 text-sm text-white/80">
+              <div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <FilePlus size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-white">{t('workspace.toolbar.helpModal.importFiles.title', 'Import Files')}</div>
+                      <div className="text-white/60 text-xs">{t('workspace.toolbar.helpModal.importFiles.description', 'Add files with persistent access')}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <FolderPlus size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-white">{t('workspace.toolbar.helpModal.newFolder.title', 'New Folder')}</div>
+                      <div className="text-white/60 text-xs">{t('workspace.toolbar.helpModal.newFolder.description', 'Organize your data')}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <FolderOpen size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-white">{t('workspace.toolbar.helpModal.openFolder.title', 'Open Folder')}</div>
+                      <div className="text-white/60 text-xs">{t('workspace.toolbar.helpModal.openFolder.description', 'Import folders from your computer')}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Cloud size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-white">{t('workspace.toolbar.helpModal.remoteSources.title', 'Remote Sources')}</div>
+                      <div className="text-white/60 text-xs">{t('workspace.toolbar.helpModal.remoteSources.description', 'Connect to databases and cloud storage')}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/10">
+                <div className="text-white/60 text-xs">
+                  <strong>{t('common.labels.tip', 'Tip')}:</strong> {t('workspace.toolbar.helpModal.tip', 'Files location persist between sessions and can be accessed directly from your computer.')}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>,
+      document.body
+    );
+  };
+
   return (
     <div className={cn('flex items-center justify-between px-3 py-2 border-b border-white/10', className)}>
       <div className="flex items-center gap-1">
@@ -148,19 +328,31 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
         </Tooltip>
       </div>
 
-      {/* More Options */}
-      <div className="relative">
-        {/* // TODO: We can get back to this in next iterations */}
-        {/*  */}
-        {/* <Tooltip  placement='left' content={t('workspace.toolbar.moreOptions', 'More Options')}>
+      {/* Help & More Options */}
+      <div className="flex items-center gap-1">
+        {/* Help/Info Icon */}
           <button
-            onClick={() => setShowMenu(!showMenu)}
+            ref={helpButtonRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
-            aria-label={t('workspace.toolbar.moreOptions', 'More Options')}
+            aria-label={t('workspace.toolbar.helpTooltip', 'Help - How the workspace works')}
           >
-            <MoreVertical size={18} className="text-white/70 hover:text-white" />
+            <Info size={16} className="text-white/50 hover:text-white/70" />
           </button>
-        </Tooltip> */}
+
+        <div className="relative">
+          {/* // TODO: We can get back to this in next iterations */}
+          {/*  */}
+          {/* <Tooltip  placement='left' content={t('workspace.toolbar.moreOptions', 'More Options')}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
+              aria-label={t('workspace.toolbar.moreOptions', 'More Options')}
+            >
+              <MoreVertical size={18} className="text-white/70 hover:text-white" />
+            </button>
+          </Tooltip> */}
 
         {/* Dropdown Menu */}
         {showMenu && (
@@ -190,7 +382,11 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
             </button>
           </div>
         )}
+        </div>
       </div>
+
+      {/* Help Modal */}
+      <HelpModal />
     </div>
   );
 };

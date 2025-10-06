@@ -81,7 +81,8 @@
       "or": "ou",
       "and": "e",
       "required": "Obrigatório",
-      "optional": "Opcional"
+      "optional": "Opcional",
+      "tip": "Dica"
     },
     "status": {
       "active": "Ativo",
@@ -204,7 +205,6 @@
     "benefits": {
       "title": "Por que se juntar ao DataKit?",
       "aiAccess": "Acesso ao Assistente de IA DataKit com créditos incluídos",
-      "unlimitedWorkspaces": "Criar áreas de trabalho ilimitadas",
       "cloudConnectors": "Acesso a todos os conectores de nuvem",
       "exportReports": "Exportar relatórios do inspetor de dados",
       "prioritySupport": "Suporte prioritário e acesso antecipado a novos recursos"
@@ -968,7 +968,6 @@
       "features": {
         "cloudConnectors": "Todos os conectores de nuvem",
         "credits": "R$ 15 em créditos do Assistente DataKit",
-        "localProjects": "Projetos locais ilimitados",
         "exportViz": "Exportação e visualizações"
       },
       "enterprise": {
@@ -1669,7 +1668,28 @@
       "remoteSources": "Fontes Remotas",
       "moreOptions": "Mais Opções",
       "exportStructure": "Exportar Estrutura",
-      "importStructure": "Importar Estrutura"
+      "importStructure": "Importar Estrutura",
+      "helpTooltip": "Ajuda - Como a área de trabalho funciona",
+      "helpModal": {
+        "title": "Guia da Área de Trabalho",
+        "importFiles": {
+          "title": "Importar Arquivos",
+          "description": "Adicionar arquivos com acesso persistente"
+        },
+        "newFolder": {
+          "title": "Nova Pasta",
+          "description": "Organize seus dados"
+        },
+        "openFolder": {
+          "title": "Abrir Pasta",
+          "description": "Importar pastas do seu computador"
+        },
+        "remoteSources": {
+          "title": "Fontes Remotas",
+          "description": "Conectar a bancos de dados e armazenamento na nuvem"
+        },
+        "tip": "A localização dos arquivos persiste entre sessões e pode ser acessada diretamente do seu computador."
+      }
     },
     "fileTree": {
       "noFiles": "Nenhum arquivo na área de trabalho",
@@ -1708,8 +1728,7 @@
         "benefitsDescription": "Mantenha projetos organizados, mude de base de dados.",
         "limit": "Limite",
         "limitDescription": "Criar até 1 área de trabalho.",
-        "signUp": "Cadastrar-se",
-        "unlimitedWorkspaces": "Áreas de Trabalho Ilimitadas."
+        "signUp": "Cadastrar-se"
       }
     }
   },

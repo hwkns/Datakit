@@ -224,7 +224,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium text-white">
-                  {mode === 'login' ? t('auth.modal.welcomeBack') : t('auth.modal.joinDataKit')}
+                  {mode === 'login'
+                    ? t('auth.modal.welcomeBack')
+                    : t('auth.modal.joinDataKit')}
                 </h2>
               </div>
               <button
@@ -419,7 +421,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   onClick={toggleMode}
                   className="text-sm text-primary hover:text-primary-foreground transition-colors font-medium cursor-pointer"
                 >
-                  {mode === 'login' ? t('auth.modal.signUp') : t('auth.modal.signIn')}
+                  {mode === 'login'
+                    ? t('auth.modal.signUp')
+                    : t('auth.modal.signIn')}
                 </button>
               </div>
 
@@ -458,22 +462,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   <ul className="text-xs text-white/70 space-y-2">
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
-{t('auth.benefits.aiAccess')}
+                      {t('auth.benefits.aiAccess')}
                     </li>
 
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
-{t('auth.benefits.unlimitedWorkspaces')}
+                      {t('auth.benefits.cloudConnectors')}
                     </li>
 
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
-{t('auth.benefits.cloudConnectors')}
-                    </li>
-
-                    <li className="flex items-center gap-2">
-                      <div className="w-1 h-1 bg-primary rounded-full"></div>
-{t('auth.benefits.exportReports')}
+                      {t('auth.benefits.exportReports')}
                     </li>
 
                     {/*
@@ -484,7 +483,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     </li> */}
                     <li className="flex items-center gap-2">
                       <div className="w-1 h-1 bg-primary rounded-full"></div>
-{t('auth.benefits.prioritySupport')}
+                      {t('auth.benefits.prioritySupport')}
                     </li>
                     {/* 
                     TODO:

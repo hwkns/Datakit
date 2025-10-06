@@ -82,7 +82,8 @@
       "or": "or",
       "and": "and",
       "required": "Required",
-      "optional": "Optional"
+      "optional": "Optional",
+      "tip": "Tip"
     },
     "status": {
       "active": "Active",
@@ -205,7 +206,6 @@
     "benefits": {
       "title": "Why join DataKit?",
       "aiAccess": "Access to DataKit Assistant with built-in credits",
-      "unlimitedWorkspaces": "Create unlimited workspaces",
       "cloudConnectors": "Access to all cloud connectors",
       "exportReports": "Export reports from data inspector",
       "prioritySupport": "Priority support and early access to new features"
@@ -1000,7 +1000,6 @@
       "features": {
         "cloudConnectors": "All cloud connectors",
         "credits": "$3 DataKit Assistant credits",
-        "localProjects": "Unlimited local projects",
         "exportViz": "Export & visualizations"
       },
       "enterprise": {
@@ -1994,7 +1993,28 @@
       "remoteSources": "Remote Sources",
       "moreOptions": "More Options",
       "exportStructure": "Export Structure",
-      "importStructure": "Import Structure"
+      "importStructure": "Import Structure",
+      "helpTooltip": "Help - How the workspace works",
+      "helpModal": {
+        "title": "Workspace Guide",
+        "importFiles": {
+          "title": "Import Files",
+          "description": "Add files with persistent access"
+        },
+        "newFolder": {
+          "title": "New Folder",
+          "description": "Organize your data"
+        },
+        "openFolder": {
+          "title": "Open Folder",
+          "description": "Import folders from your computer"
+        },
+        "remoteSources": {
+          "title": "Remote Sources",
+          "description": "Connect to databases and cloud storage"
+        },
+        "tip": "Files location persist between sessions and can be accessed directly from your computer."
+      }
     },
     "fileTree": {
       "noFiles": "No files in workspace",
@@ -2033,8 +2053,7 @@
         "benefitsDescription": "Keep projects organized, switch between datasets.",
         "limit": "Limit",
         "limitDescription": "Create up to 1 workspaces.",
-        "signUp": "Sign up",
-        "unlimitedWorkspaces": "for unlimited workspaces."
+        "signUp": "Sign up"
       }
     }
   },
