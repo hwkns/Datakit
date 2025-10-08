@@ -128,7 +128,9 @@
       "getStarted": "Começar Grátis",
       "settings": "Configurações",
       "expand": "Expandir barra lateral",
-      "collapse": "Recolher barra lateral"
+      "collapse": "Recolher barra lateral",
+      "fileImported": "Arquivo Importado",
+      "fileImportedMessage": "{{fileName}} foi importado com sucesso"
     },
     "mobile": {
       "title": "DataKit funciona melhor no desktop",

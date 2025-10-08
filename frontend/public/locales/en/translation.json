@@ -129,7 +129,9 @@
       "getStarted": "Get Started Free",
       "settings": "Settings",
       "expand": "Expand sidebar",
-      "collapse": "Collapse sidebar"
+      "collapse": "Collapse sidebar",
+      "fileImported": "File Imported",
+      "fileImportedMessage": "{{fileName}} has been imported successfully"
     },
     "mobile": {
       "title": "DataKit works best on desktop",

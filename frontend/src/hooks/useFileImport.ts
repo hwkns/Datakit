@@ -158,8 +158,8 @@ export const useFileImport = () => {
 
     // Show success notification
     showSuccess(
-      t('sidebar.fileImported'),
-      t('sidebar.fileImportedMessage', { fileName: file.name }),
+      t('layout.sidebar.fileImported'),
+      t('layout.sidebar.fileImportedMessage', { fileName: file.name }),
       { icon: 'check', duration: 5000 }
     );
 

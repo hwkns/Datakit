@@ -7,18 +7,15 @@ import {
   Users,
   FileText,
   Table,
-  BarChart3,
   Plus,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
-  Database,
   SplitSquareVertical,
   FileSpreadsheet,
   Braces,
   Package,
   Cloud,
-  Upload,
   FilePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -665,25 +662,6 @@ const FileTabs: React.FC<FileTabsProps> = ({
             
             {/* Floating upload icon */}
             <motion.div
-              animate={isProcessing ? { 
-                rotate: 360,
-                y: [0, -1, 0],
-                scale: [1, 1.02, 1],
-                opacity: [0.6, 0.8, 0.6]
-              } : {
-                y: [0, -1, 0],
-                scale: [1, 1.02, 1],
-                opacity: [0.6, 0.8, 0.6]
-              }}
-              transition={isProcessing ? { 
-                duration: 0.8, 
-                repeat: Infinity, 
-                ease: "linear" 
-              } : {
-                duration: 2, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
               className="flex-shrink-0"
             >
               <FilePlus className="h-4 w-4 text-white/60 group-hover:text-primary transition-colors relative z-10" />
