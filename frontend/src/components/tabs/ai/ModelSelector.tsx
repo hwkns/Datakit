@@ -147,6 +147,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
     setShowAuthModal(true);
   };
 
+  const handleOpenApiKeyModal = () => {
+    setIsOpen(false);
+    setShowApiKeyModal(true);
+  };
+
   // Handle model selection
   const handleModelSelect = async (
     provider: AIProvider | 'datakit',
@@ -411,6 +416,30 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                   )
                 )}
 
+                {/* Configuration Section */}
+                {isAuthenticated && (
+                  <div className="pt-2 border-t border-white/10">
+                    <button
+                      onClick={handleOpenApiKeyModal}
+                      className="w-full text-left p-2 rounded border border-transparent hover:bg-white/5 hover:border-white/10 transition-all duration-200"
+                    >
+                      <div className="flex items-center">
+                        <div className="h-6 w-6 rounded-md flex items-center justify-center mr-3 bg-white/5 border border-white/10">
+                          <Settings className="h-3 w-3 text-white/60" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-white/80">
+                            {t('ai.modelSelector.configuration', { defaultValue: 'Configuration' })}
+                          </div>
+                          <div className="text-xs text-white/50">
+                            {t('ai.modelSelector.configureProviders', { defaultValue: 'Configure API keys and settings' })}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
                 {/* Local Models Section - Coming Soon */}
                 {/* <div>
                   <div className="text-xs font-medium text-white/50 mb-2 flex items-center">
@@ -441,6 +470,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
         onClose={() => setShowAuthModal(false)}
         defaultMode={authModalMode}
         onLoginSuccess={() => setActiveProvider('datakit')}
+      />
+
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => setShowApiKeyModal(false)}
       />
     </div>
   );
