@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Copy, Check, Code, PenSquare, ChevronDown, ChevronRight, Table2, AlertCircle, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
+import 'prismjs/themes/prism-tomorrow.css';
 
 import { useAppStore } from '@/store/appStore';
 
@@ -172,14 +173,25 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
     setShowModal(true);
   };
 
-  // Get syntax highlighted HTML
+  // Get syntax highlighted HTML with enhanced formatting
   const getHighlightedSQL = () => {
     try {
+      // Ensure SQL language is loaded
+      if (!Prism.languages.sql) {
+        return query;
+      }
       return Prism.highlight(query, Prism.languages.sql, 'sql');
-    } catch {
+    } catch (error) {
+      console.warn('Failed to highlight SQL:', error);
       return query;
     }
   };
+
+  // Highlight on mount and query change
+  useEffect(() => {
+    // Force re-highlight when query changes
+    Prism.highlightAll();
+  }, [query]);
 
   // Compact results display for sidebar
   const renderCompactResults = () => {
@@ -413,13 +425,75 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
       </div>
 
       {/* SQL Content */}
-      <div className="p-3 overflow-hidden">
-        <pre className="text-xs overflow-x-auto whitespace-pre">
-          <code
-            className="language-sql text-white/80"
-            dangerouslySetInnerHTML={{ __html: getHighlightedSQL() }}
-          />
-        </pre>
+      <div className="relative overflow-hidden">
+        <div className="bg-[#1d1f21] border-t border-white/5">
+          <pre className="p-3 text-xs overflow-x-auto font-mono leading-relaxed scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+            <code
+              className="language-sql"
+              style={{
+                fontFamily: 'JetBrains Mono, Consolas, Monaco, "Courier New", monospace',
+                fontSize: '11px',
+                lineHeight: '1.5',
+              }}
+              dangerouslySetInnerHTML={{ __html: getHighlightedSQL() }}
+            />
+          </pre>
+        </div>
+        
+        {/* Custom styles for Monaco-like syntax highlighting - scoped to this component */}
+        <style jsx>{`
+          :global(.language-sql) {
+            background: transparent !important;
+            color: #d4d4d4 !important;
+          }
+          
+          /* Keywords - Blue like Monaco */
+          :global(.language-sql .token.keyword) {
+            color: #569cd6 !important;
+            font-weight: 600 !important;
+          }
+          
+          /* Strings - Orange */
+          :global(.language-sql .token.string) {
+            color: #ce9178 !important;
+          }
+          
+          /* Numbers - Light green */  
+          :global(.language-sql .token.number) {
+            color: #b5cea8 !important;
+          }
+          
+          /* Comments - Green */
+          :global(.language-sql .token.comment) {
+            color: #6a9955 !important;
+            font-style: italic !important;
+          }
+          
+          /* Functions - Yellow */
+          :global(.language-sql .token.function) {
+            color: #dcdcaa !important;
+            font-weight: 500 !important;
+          }
+          
+          /* Operators and punctuation */
+          :global(.language-sql .token.operator),
+          :global(.language-sql .token.punctuation) {
+            color: #d4d4d4 !important;
+          }
+          
+          /* Boolean and NULL - Blue like keywords */
+          :global(.language-sql .token.boolean),
+          :global(.language-sql .token.null) {
+            color: #569cd6 !important;
+            font-weight: 600 !important;
+          }
+          
+          /* Table/column identifiers - Light blue */
+          :global(.language-sql .token.variable),
+          :global(.language-sql .token.property) {
+            color: #9cdcfe !important;
+          }
+        `}</style>
       </div>
 
       {/* Inline Results */}

@@ -142,7 +142,7 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
       case 'remote':
         return <Cloud {...iconProps} className="text-blue-400" />;
       case 'query':
-        return <TableProperties {...iconProps} className="text-orange-400" />;
+        return <TableProperties {...iconProps} className="text-blue-400" />;
       default:
         return <FileText {...iconProps} className="text-white/50" />;
     }
@@ -434,15 +434,8 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
               </span>
 
               {/* File metadata */}
-              {node.type === 'file' && (
+              {node.type === 'file' && node.fileData?.fileType !== 'query' && (
                 <>
-                  {/* {getLoadingIcon(node.fileData?.isLoaded)} */}
-                  {/* Show draft badge for query results */}
-                  {node.fileData?.fileType === 'query' && (
-                    <span className="text-[10px] text-orange-400 bg-orange-400/10 px-1 rounded border border-orange-400/20">
-                      Draft
-                    </span>
-                  )}
                   {node.fileData?.size && node.fileData.size > 0 && (
                     <span className="text-[10px] text-white/40">
                       {formatFileSize(node.fileData.size)}
@@ -452,11 +445,6 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
               )}
 
               {/* Special folder badges */}
-              {node.folderData?.isDraft && (
-                <span className="text-[10px] text-white/40 bg-white/10 px-1 rounded">
-                  Draft
-                </span>
-              )}
               {node.folderData?.isLinked && (
                 <span className="text-[10px] text-blue-400/60">
                   Linked
@@ -573,6 +561,10 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
               >
                 {node.folderData?.isDraft
                   ? 'Drag files here to organize'
+                  : node.folderData?.isTemp
+                  ? 'Query results will appear here'
+                  : node.folderData?.isRemote
+                  ? 'Remote data sources will appear here'
                   : 'Empty folder'}
               </div>
             )}
@@ -616,14 +608,30 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
 
       {/* Tree nodes */}
       <div className="space-y-0.5 overflow-visible">
-        {roots.map((node, index) => {
-          const isLastRoot = index === roots.length - 1;
-          return renderNode(node, 0, isLastRoot, []);
-        })}
+        {roots
+          .filter(node => {
+            // Only hide Temporary Tables folder if it's empty
+            if (node.folderData?.isTemp) {
+              return node.children && node.children.length > 0;
+            }
+            // Always show Draft, Remote Sources, and other folders
+            return true;
+          })
+          .map((node, index, filteredRoots) => {
+            const isLastRoot = index === filteredRoots.length - 1;
+            return renderNode(node, 0, isLastRoot, []);
+          })}
       </div>
 
       {/* Empty state */}
-      {roots.length === 0 && (
+      {roots.filter(node => {
+        // Only hide Temporary Tables folder if it's empty
+        if (node.folderData?.isTemp) {
+          return node.children && node.children.length > 0;
+        }
+        // Always show Draft, Remote Sources, and other folders
+        return true;
+      }).length === 0 && (
         <div className="px-4 py-8 text-center">
           <Folder className="h-8 w-8 text-white/20 mx-auto mb-2" />
           <p className="text-xs text-white/40">No files or folders</p>

@@ -924,6 +924,40 @@
   "demo": {
     "title": "Dê uma olhada no seu DataKit"
   },
+  "demoWizard": {
+    "steps": {
+      "welcome": {
+        "title": "Bem-vindo ao DataKit",
+        "description": "Sua plataforma de análise de dados poderosa e focada em privacidade. Processe dados localmente com controle e segurança completos.",
+        "ctaText": "Começar"
+      },
+      "preview": {
+        "title": "Inspecionar e Analisar",
+        "description": "Visualize seus dados e realize análise abrangente de colunas rapidamente. Identifique instantaneamente problemas de qualidade de dados, padrões e insights.",
+        "ctaText": "Explorar dados"
+      },
+      "sql": {
+        "title": "Editor SQL",
+        "description": "Escreva consultas SQL poderosas com assistência de IA. Explore seus dados com autocompletar inteligente e sugestões.",
+        "ctaText": "Experimentar agora"
+      },
+      "notebooks": {
+        "title": "Notebooks Python",
+        "description": "Execute código Python diretamente no seu navegador. Crie notebooks interativos para fluxos avançados de ciência de dados.",
+        "ctaText": "Começar a analisar"
+      },
+      "remoteSources": {
+        "title": "Fontes Remotas",
+        "description": "Conecte-se a bancos de dados e fontes de dados na nuvem. Importe do PostgreSQL, S3, HuggingFace, Google Sheets e mais localizações remotas.",
+        "ctaText": "Começar a explorar"
+      }
+    },
+    "buttons": {
+      "previous": "Anterior",
+      "next": "Próximo",
+      "getStarted": "Começar"
+    }
+  },
   "dialog": {
     "unsavedChanges": {
       "title": "Alterações Não Salvas",

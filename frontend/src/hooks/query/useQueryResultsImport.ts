@@ -92,7 +92,7 @@ export const useQueryResultsImport = () => {
   const [isImporting, setIsImporting] = useState(false);
   const { addFile } = useAppStore();
   const { loadData, getTableSchema, executeQuery, db, registeredTables } = useDuckDBStore();
-  const { addNode, draftFolderId, initializeStore } = useFolderStore();
+  const { addNode, ensureTempFolder } = useFolderStore();
   
   /**
    * Import query results as a new table or view in DuckDB and add to file tabs
@@ -291,36 +291,28 @@ export const useQueryResultsImport = () => {
       // Add to file tabs
       addFile(fileData);
       
-      // Add to folder tree as well
+      // Add to folder tree in temporary tables folder
       try {
-        // Ensure draft folder exists
-        if (!draftFolderId) {
-          initializeStore();
-        }
+        const tempFolderId = ensureTempFolder();
         
-        const currentDraftFolderId = useFolderStore.getState().draftFolderId;
-        if (currentDraftFolderId) {
-          // Create a virtual file object for the folder store
-          const virtualFile = {
-            name: `${tableName}.sql`,
+        addNode({
+          name: `${tableName}.sql`,
+          type: 'file' as const,
+          fileData: {
             size: 0,
-          } as File;
-          
-          addNode({
-            name: `${tableName}.sql`,
-            type: 'file' as const,
-            fileData: {
-              size: 0,
-              lastModified: Date.now(),
-              fileType: 'query' as const,
-              isLoaded: true,
-              tableName: loadedTableName,
-              isRemote: false,
-            },
-          }, currentDraftFolderId);
-          
-          console.log(`[useQueryResultsImport] Added table to folder tree: ${tableName}`);
-        }
+            lastModified: Date.now(),
+            fileType: 'query' as const,
+            isLoaded: true,
+            tableName: loadedTableName,
+            isRemote: false,
+            isTemporary: true,
+            rowCount: results.length,
+            columnCount: columns.length,
+            sourceFileName: sourceFileName,
+          },
+        }, tempFolderId);
+        
+        console.log(`[useQueryResultsImport] Added table to temporary folder: ${tableName}`);
       } catch (folderError) {
         console.warn('[useQueryResultsImport] Failed to add to folder tree, but table creation succeeded:', folderError);
         // Don't fail the whole operation if folder tree update fails

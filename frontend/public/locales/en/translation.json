@@ -964,6 +964,40 @@
   "demo": {
     "title": "Take a look at your DataKit"
   },
+  "demoWizard": {
+    "steps": {
+      "welcome": {
+        "title": "Welcome to DataKit",
+        "description": "Your privacy-first data analysis platform. Process data locally with complete control and security.",
+        "ctaText": "Get started"
+      },
+      "preview": {
+        "title": "Inspect & Analyze",
+        "description": "Preview your data and perform column analysis at a glance. Instantly identify data quality issues, patterns, and insights.",
+        "ctaText": "Explore data"
+      },
+      "sql": {
+        "title": "SQL Editor",
+        "description": "Write powerful SQL queries with AI assistance. Explore your data with intelligent autocomplete and suggestions.",
+        "ctaText": "Try it now"
+      },
+      "notebooks": {
+        "title": "Python Notebooks",
+        "description": "Run Python code directly in your browser. Create interactive notebooks for advanced data science workflows.",
+        "ctaText": "Start analyzing"
+      },
+      "remoteSources": {
+        "title": "Remote Sources",
+        "description": "Connect to cloud databases and data sources. Import from PostgreSQL, S3, HuggingFace, Google Sheets, and more remote locations.",
+        "ctaText": "Start exploring"
+      }
+    },
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "getStarted": "Get Started"
+    }
+  },
   "seo": {
     "title": "DataKit",
     "description": "Your data, your choice. Process locally for complete privacy or leverage cloud when you need to collaborate. The modern data analysis platform that adapts to you.",

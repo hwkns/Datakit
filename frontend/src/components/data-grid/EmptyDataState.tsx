@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Container, Terminal, Code, Hexagon, Upload, PlayCircle, FilePlus } from "lucide-react";
+import { Container, Terminal, Code, Hexagon, FilePlus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/store/appStore";
@@ -11,7 +11,7 @@ import postgresIcon from "@/assets/postgres.png";
 
 import { ImportProvider } from "@/types/remoteImport";
 import { useFileUpload } from "@/components/data-grid/hooks";
-import DemoVideoModal from "@/components/data-grid/DemoVideoModal";
+import DemoWizard from "@/components/demo/DemoWizard";
 
 interface RemoteImportOption {
   id: ImportProvider;
@@ -26,7 +26,8 @@ interface Props {
 
 const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
   const { fileInputRef, handleButtonClick, handleFileSelect, isProcessing } = useFileUpload();
-  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showDemoWizard, setShowDemoWizard] = useState(false);
+  
   const { t } = useTranslation();
   const { showAIAssistant } = useAppStore();
 
@@ -99,13 +100,15 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         className="text-center max-w-4xl"
       >
         {/* Main heading with demo button */}
-        <div className="flex items-center justify-center gap-3 mb-3 flex-wrap">
+        <div className="flex items-center justify-center gap-3 mb-5 flex-wrap">
           <h1 className="text-2xl font-heading font-semibold text-white">
             {t('preview.empty.title')}
           </h1>
           <span className="text-white/40 text-sm">{t('common.labels.or')}</span>
+          
+          {/* Interactive Demo Button */}
           <motion.button
-            onClick={() => setShowDemoModal(true)}
+            onClick={() => setShowDemoWizard(true)}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ 
               opacity: 1, 
@@ -124,9 +127,8 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.2 }}
             >
-              <PlayCircle className="h-4 w-4" />
             </motion.div>
-            <span>{t('preview.empty.watchDemo')}</span>
+            <span>Take a tour</span>
           </motion.button>
         </div>
 
@@ -350,12 +352,14 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         </motion.div>
       </motion.div>
       
-      {/* Demo Video Modal */}
-      <DemoVideoModal
-        isOpen={showDemoModal}
-        onClose={() => setShowDemoModal(false)}
-        videoUrl="/video/datakit-demo.mp4"
-        title={t('demo.title')}
+      {/* Demo Wizard Modal */}
+      <DemoWizard
+        isOpen={showDemoWizard}
+        onClose={() => setShowDemoWizard(false)}
+        onGetStarted={() => {
+          setShowDemoWizard(false);
+          // Could trigger file upload flow or open getting started guide
+        }}
       />
     </div>
   );

@@ -7,7 +7,6 @@ import {
   RefreshCw, 
   Command,
   MessageSquare,
-  Database
 } from "lucide-react";
 
 import { useAIStore } from "@/store/aiStore";

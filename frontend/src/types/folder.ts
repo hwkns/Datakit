@@ -32,6 +32,8 @@ export interface FileData {
   isRemote?: boolean;
   /** URL for remote files */
   remoteUrl?: string;
+  /** Whether this is a temporary query result */
+  isTemporary?: boolean;
   /** File extension/type */
   fileType?: FileType;
   /** For linked folders - original file path */
@@ -63,6 +65,8 @@ export interface FolderNode {
     directoryHandle?: FileSystemDirectoryHandle;
     /** Is this the Remote Sources folder? */
     isRemote?: boolean;
+    /** Is this the Temporary Tables folder? */
+    isTemp?: boolean;
   };
   
   /** UI state */

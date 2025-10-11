@@ -1,29 +1,29 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-import { useDuckDBStore } from "@/store/duckDBStore";
-import { useAuthStore } from "@/store/authStore";
-import { useConsentManager } from "@/components/common/ConsentPopup";
-import { NotificationProvider } from "@/hooks/useNotifications";
-import { useSignupPrompt } from "@/hooks/useSignupPrompt";
-import { usePostHogIdentification } from "@/hooks/usePostHogIdentification";
+import { useDuckDBStore } from '@/store/duckDBStore';
+import { useAuthStore } from '@/store/authStore';
+import { useConsentManager } from '@/components/common/ConsentPopup';
+import { NotificationProvider } from '@/hooks/useNotifications';
+import { usePostHogIdentification } from '@/hooks/usePostHogIdentification';
 
-import Home from "@/pages/Home";
-import Privacy from "@/pages/Privacy";
-import Settings from "@/pages/Settings";
-import Info from "@/pages/Info";
-import NotFound from "@/pages/NotFound";
-import DatasetImport from "@/pages/DatasetImport";
-import { Button } from "@/components/ui/Button";
-import { SEO } from "@/components/common/SEO";
-import DemoVideoModal from "@/components/data-grid/DemoVideoModal";
+import Home from '@/pages/Home';
+import Privacy from '@/pages/Privacy';
+import Settings from '@/pages/Settings';
+import Info from '@/pages/Info';
+import NotFound from '@/pages/NotFound';
+import DatasetImport from '@/pages/DatasetImport';
+import { Button } from '@/components/ui/Button';
+import { SEO } from '@/components/common/SEO';
+import DemoVideoModal from '@/components/data-grid/DemoVideoModal';
+import DemoWizard from '@/components/demo/DemoWizard';
 
-import { applyThemeColor } from "@/utils/theme";
+import { applyThemeColor } from '@/utils/theme';
 
-import { DISCORD_URL } from "@/components/common/ActionButtons";
+import { DISCORD_URL } from '@/components/common/ActionButtons';
 
-import discord from "@/assets/discord.png";
-import { PlayCircle } from "lucide-react";
+import discord from '@/assets/discord.png';
+import { PlayCircle } from 'lucide-react';
 
 const MobileWarning = () => {
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -48,7 +48,7 @@ const MobileWarning = () => {
           <p className="text-white/60 text-sm mb-6">
             Switch to desktop for the full experience, or
           </p>
-          
+
           {/* Watch Demo Button */}
           <button
             onClick={() => setShowDemoModal(true)}
@@ -88,8 +88,9 @@ const AppContent = () => {
   const { initialize } = useDuckDBStore();
   const { checkAuth } = useAuthStore();
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const { ConsentPopup } = useConsentManager();
-  
+
   // Automatically identify users in PostHog when they log in
   usePostHogIdentification();
 
@@ -104,11 +105,19 @@ const AppContent = () => {
 
   // Apply saved theme color
   useEffect(() => {
-    const savedColor = localStorage.getItem("theme-primary-color");
+    const savedColor = localStorage.getItem('theme-primary-color');
     if (savedColor) {
       applyThemeColor(savedColor);
     }
   }, []);
+
+  // Check if welcome modal should be shown
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('datakit-welcome-seen');
+    if (!hasSeenWelcome && !isMobileDevice) {
+      setShowWelcomeModal(true);
+    }
+  }, [isMobileDevice]);
 
   useEffect(() => {
     const checkMobileDevice = () => {
@@ -124,8 +133,8 @@ const AppContent = () => {
     checkMobileDevice();
 
     // Re-check on window resize
-    window.addEventListener("resize", checkMobileDevice);
-    return () => window.removeEventListener("resize", checkMobileDevice);
+    window.addEventListener('resize', checkMobileDevice);
+    return () => window.removeEventListener('resize', checkMobileDevice);
   }, []);
 
   if (isMobileDevice) {
@@ -139,20 +148,27 @@ const AppContent = () => {
           path="/"
           element={
             <>
-              <Home /> 
+              <Home />
               <ConsentPopup />
-              {/* // TOOD: To think what we are going to do on having better signup prompt  */}
-              {/*  */}
-              {/* <SignupPrompt /> */}
             </>
           }
         />
-        <Route path="/datasets/:organization/:dataset" element={<DatasetImport />} />
+        <Route
+          path="/datasets/:organization/:dataset"
+          element={<DatasetImport />}
+        />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/info" element={<Info />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      
+      {/* Welcome Modal */}
+      <DemoWizard
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onGetStarted={() => setShowWelcomeModal(false)}
+      />
     </>
   );
 };

@@ -10,7 +10,7 @@ import { useDuckDBStore } from '@/store/duckDBStore';
 import { useFolderStore } from '@/store/folderStore';
 import { useAppStore } from '@/store/appStore';
 import { useFileImport } from '@/hooks/useFileImport';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
 import { FolderNode } from '@/types/folder';
 
@@ -235,9 +235,45 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       hasHandle: !!node.fileData?.handle,
       isLoaded: node.fileData?.isLoaded,
       tableName: node.fileData?.tableName,
+      isTemporary: node.fileData?.isTemporary,
     });
 
     if (node.type !== 'file') return;
+
+    // Special handling for temporary tables
+    if (node.fileData?.isTemporary && node.fileData?.tableName) {
+      console.log('[Sidebar] Opening temporary table:', node.fileData.tableName);
+      const { files, setActiveFile, addFile } = useAppStore.getState();
+      
+      // Check if this temporary table is already open
+      const existingFile = files.find((f) => f.tableName === node.fileData?.tableName);
+      if (existingFile) {
+        console.log('[Sidebar] Temporary table already open, switching to it');
+        setActiveFile(existingFile.id);
+        return;
+      }
+      
+      // Create a new tab for this temporary table
+      const tempTableData = {
+        data: [], // Data will be queried from DuckDB
+        columnTypes: [],
+        fileName: node.name.replace(/\.sql$/, ''), // Remove .sql extension if present
+        rowCount: node.fileData.rowCount || 0,
+        columnCount: node.fileData.columnCount || 0,
+        sourceType: 'TABLE' as any, // Mark as TABLE type
+        loadedToDuckDB: true,
+        tableName: node.fileData.tableName,
+        isTemporary: true,
+        metadata: {
+          isTemporary: true,
+          sourceFileName: node.fileData.sourceFileName,
+        }
+      };
+      
+      addFile(tempTableData);
+      console.log('[Sidebar] Created new tab for temporary table:', node.fileData.tableName);
+      return;
+    }
 
     // Find the workspace file corresponding to this folder node
     const { workspaceFiles, files, setActiveFile } = useAppStore.getState();
@@ -320,8 +356,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       'files',
       'targetFolderId:',
       targetFolderId,
-      'draftFolderId:',
-      draftFolderId,
+      'draftFolderId:', draftFolderId,
       'handles:',
       handles?.filter(Boolean).length || 0
     );
@@ -386,8 +421,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       <div className="p-4">{/* Header space for collapsed mode */}</div>
 
       <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-gray-500/20">
-        <UserMenu variant="collapsed" />
-
         <div className="flex flex-col gap-2 items-center">
           <a
             href="https://amin.contact"

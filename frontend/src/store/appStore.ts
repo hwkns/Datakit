@@ -427,6 +427,30 @@ export const useAppStore = create<AppState>((set, get) => ({
         console.error(`[AppStore] Error dropping ${fileToRemove.isView ? 'VIEW' : 'TABLE'}: ${fileToRemove.tableName}`, error);
       });
     }
+
+    // Clean up temporary folder if this was a query result
+    if (fileToRemove?.metadata?.isQueryResult) {
+      // Import folder store dynamically to avoid circular dependency
+      import('@/store/folderStore').then(({ useFolderStore }) => {
+        const { tempFolderId, getNodeById, removeNode } = useFolderStore.getState();
+        
+        if (tempFolderId) {
+          const tempNode = getNodeById(tempFolderId);
+          if (tempNode && tempNode.children) {
+            // Find and remove the corresponding file node in the temp folder
+            const fileNode = tempNode.children.find(child => 
+              child.type === 'file' && 
+              child.fileData?.tableName === fileToRemove.tableName
+            );
+            
+            if (fileNode) {
+              console.log('[AppStore] Removing temp file node:', fileNode.name);
+              removeNode(fileNode.id);
+            }
+          }
+        }
+      }).catch(console.error);
+    }
   },
 
   setActiveFile: (fileId: string) => {
