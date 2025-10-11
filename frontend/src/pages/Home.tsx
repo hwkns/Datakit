@@ -22,6 +22,7 @@ import { useColumnStats } from "@/hooks/useColumnStats";
 import { selectActiveFile, selectHasFiles } from "@/store/selectors/appSelectors";
 import { ImportProvider } from "@/types/remoteImport";
 import { useFolderStore } from "@/store/folderStore";
+import { usePythonStore } from "@/store/pythonStore";
 import { cn } from "@/lib/utils";
 
 /**
@@ -64,6 +65,9 @@ const Home = () => {
   
   // Inspector store
   const { openPanel, analyzeFile } = useInspectorStore();
+  
+  // Python store
+  const { initializePython, pyodide } = usePythonStore();
 
   // Column stats hook
   const { columnStats, isLoading: isLoadingStats, triggerAnalysis } = useColumnStats({
@@ -121,6 +125,18 @@ const Home = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [toggleAIAssistant]);
+
+  useEffect(() => {
+    // Initialize Python in the background if not already initialized or initializing
+    if (!pyodide.isInitialized && !pyodide.isInitializing && !pyodide.error) {
+      console.log('[Home] Starting early Python initialization for AI integration...');
+      initializePython().then(() => {
+        console.log('[Home] Python environment ready for AI-generated code');
+      }).catch((error) => {
+        console.warn('[Home] Python initialization failed (non-blocking):', error);
+      });
+    }
+  }, []); // Only run once on mount
 
 
   // Inspector handler

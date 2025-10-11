@@ -15,12 +15,14 @@ import { selectActiveFile, selectTableName } from "@/store/selectors/appSelector
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useAIOperations } from "@/hooks/ai/useAIOperations";
 import { useDuckDBStore } from "@/store/duckDBStore";
+import { usePythonStore } from "@/store/pythonStore";
 
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import ModelSelector from "@/components/tabs/ai/ModelSelector";
 import ErrorDisplay from "@/components/tabs/ai/ErrorDisplay";
 import SidebarSQLQueryCard from "@/components/tabs/ai/SidebarSQLQueryCard";
+import SidebarPythonCodeCard from "@/components/tabs/ai/SidebarPythonCodeCard";
 import AuthModal from "@/components/auth/AuthModal";
 import ApiKeyModal from "@/components/tabs/ai/ApiKeyModal";
 import { validateAIInput } from "@/components/tabs/ai/utils/validation";
@@ -78,6 +80,12 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
   const tableName = useAppStore(selectTableName);
   const { registeredTables, getTableSchema } = useDuckDBStore();
   const { isAuthenticated } = useAuth();
+  
+  // Python store hooks
+  const { 
+    createCell,
+    setActiveCellId,
+  } = usePythonStore();
 
   const {
     isProcessing,
@@ -95,9 +103,11 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     streamingResponse,
     addTableContext,
     clearTableContexts,
+    currentPrompt,
+    setCurrentPrompt,
   } = useAIStore();
 
-  const { executeAIQueryStream, canExecute, extractSQLQueries } = useAIOperations();
+  const { executeAIQueryStream, canExecute, extractSQLQueries, extractPythonQueries } = useAIOperations();
 
   // No message navigation needed in sidebar - simpler experience
 
@@ -134,6 +144,17 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [currentConversation, streamingResponse]);
+
+  // Sync AI store's currentPrompt to local prompt state (for "Ask AI to Fix" functionality)
+  useEffect(() => {
+    if (currentPrompt && currentPrompt !== prompt) {
+      setPrompt(currentPrompt);
+      // Clear the store's currentPrompt after setting it
+      setCurrentPrompt('');
+      // Focus the input for user to review and send
+      promptInputRef.current?.focus();
+    }
+  }, [currentPrompt, prompt, setCurrentPrompt]);
 
   // Simplified prompt management - no message navigation
 
@@ -283,6 +304,26 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     return t('ai.prompts.placeholders.askAboutTable', { tableName });
   };
 
+  const handleSendToNotebook = async (code: string) => {
+    try {
+      // Switch to notebook view
+      const { changeViewMode } = useAppStore.getState();
+      changeViewMode('notebook');
+      
+      // Create new cell with the code
+      const cellId = createCell('code', code);
+      
+      // Set as active cell
+      setActiveCellId(cellId);
+      
+      // Close the AI assistant to show the notebook
+      onClose();
+    } catch (error) {
+      console.error('Failed to send code to notebook:', error);
+      setCurrentError('Failed to send code to notebook');
+    }
+  };
+
   // Handle resize
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsResizing(true);
@@ -328,6 +369,7 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
 
     const displayResponse = streamingResponse || currentResponse;
     const sqlQueries = displayResponse ? extractSQLQueries(displayResponse) : [];
+    const pythonQueries = displayResponse ? extractPythonQueries(displayResponse) : [];
 
     return (
       <div className="space-y-4">
@@ -345,10 +387,12 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             >
               {message.role === 'assistant' ? (
                 <div className="space-y-3">
-                  {/* Split message content and SQL queries */}
+                  {/* Parse and render content with SQL and Python code blocks */}
                   {(() => {
-                    const queries = extractSQLQueries(message.content);
-                    if (queries.length === 0) {
+                    const sqlQueries = extractSQLQueries(message.content);
+                    const pythonCodes = extractPythonQueries(message.content);
+                    
+                    if (sqlQueries.length === 0 && pythonCodes.length === 0) {
                       return (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
                           {message.content}
@@ -356,28 +400,83 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                       );
                     }
 
-                    // Simple text + SQL rendering
-                    const parts = message.content.split(/```sql[\s\S]*?```/);
+                    // Parse content to maintain order of text and code blocks
+                    const codeBlockRegex = /```(?:sql|python)[\s\S]*?```/gi;
+                    const parts: Array<{ type: 'text' | 'sql' | 'python', content: string }> = [];
+                    let lastIndex = 0;
+                    let sqlIndex = 0;
+                    let pythonIndex = 0;
+                    
+                    // Find all code blocks and their positions
+                    const matches = Array.from(message.content.matchAll(codeBlockRegex));
+                    
+                    matches.forEach((match) => {
+                      // Add text before this code block
+                      if (match.index! > lastIndex) {
+                        const textContent = message.content.slice(lastIndex, match.index!).trim();
+                        if (textContent) {
+                          parts.push({ type: 'text', content: textContent });
+                        }
+                      }
+                      
+                      // Determine if SQL or Python
+                      if (match[0].toLowerCase().includes('```sql')) {
+                        if (sqlQueries[sqlIndex]) {
+                          parts.push({ type: 'sql', content: sqlQueries[sqlIndex++] });
+                        }
+                      } else if (match[0].toLowerCase().includes('```python')) {
+                        if (pythonCodes[pythonIndex]) {
+                          parts.push({ type: 'python', content: pythonCodes[pythonIndex++] });
+                        }
+                      }
+                      
+                      lastIndex = match.index! + match[0].length;
+                    });
+                    
+                    // Add remaining text after last code block
+                    if (lastIndex < message.content.length) {
+                      const textContent = message.content.slice(lastIndex).trim();
+                      if (textContent) {
+                        parts.push({ type: 'text', content: textContent });
+                      }
+                    }
+                    
+                    // Render parts in order
                     return (
                       <>
-                        {parts.map((part, idx) => (
-                          <React.Fragment key={idx}>
-                            {part.trim() && (
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                {part.trim()}
+                        {parts.map((part, idx) => {
+                          if (part.type === 'text') {
+                            return (
+                              <p key={`text-${idx}`} className="text-sm leading-relaxed whitespace-pre-wrap">
+                                {part.content}
                               </p>
-                            )}
-                            {queries[idx] && (
+                            );
+                          } else if (part.type === 'sql') {
+                            const queryIndex = sqlQueries.indexOf(part.content);
+                            return (
                               <SidebarSQLQueryCard
-                                query={queries[idx]}
-                                index={idx}
+                                key={`sql-${idx}`}
+                                query={part.content}
+                                index={queryIndex >= 0 ? queryIndex : 0}
                                 responseId={`sidebar-${index}`}
-                                isPrimary={idx === 0}
+                                isPrimary={queryIndex === 0}
                                 activeFile={activeFile}
                               />
-                            )}
-                          </React.Fragment>
-                        ))}
+                            );
+                          } else if (part.type === 'python') {
+                            const codeIndex = pythonCodes.indexOf(part.content);
+                            return (
+                              <SidebarPythonCodeCard
+                                key={`python-${idx}`}
+                                code={part.content}
+                                index={codeIndex >= 0 ? codeIndex : 0}
+                                onSendToNotebook={handleSendToNotebook}
+                                activeFile={activeFile}
+                              />
+                            );
+                          }
+                          return null;
+                        })}
                       </>
                     );
                   })()}
@@ -395,7 +494,7 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             <div className="max-w-[85%] p-3 rounded-lg bg-gradient-to-br from-white/8 to-white/4 border border-white/15 text-white/90 shadow-sm">
               <div className="space-y-3">
                 {(() => {
-                  if (sqlQueries.length === 0) {
+                  if (sqlQueries.length === 0 && pythonQueries.length === 0) {
                     return (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {streamingResponse}
@@ -403,27 +502,78 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     );
                   }
 
-                  const parts = streamingResponse.split(/```sql[\s\S]*?```/);
+                  // Parse streaming content with SQL and Python code blocks
+                  const codeBlockRegex = /```(?:sql|python)[\s\S]*?```/gi;
+                  const parts: Array<{ type: 'text' | 'sql' | 'python', content: string }> = [];
+                  let lastIndex = 0;
+                  let sqlIndex = 0;
+                  let pythonIndex = 0;
+                  
+                  const matches = Array.from(streamingResponse.matchAll(codeBlockRegex));
+                  
+                  matches.forEach((match) => {
+                    if (match.index! > lastIndex) {
+                      const textContent = streamingResponse.slice(lastIndex, match.index!).trim();
+                      if (textContent) {
+                        parts.push({ type: 'text', content: textContent });
+                      }
+                    }
+                    
+                    if (match[0].toLowerCase().includes('```sql')) {
+                      if (sqlQueries[sqlIndex]) {
+                        parts.push({ type: 'sql', content: sqlQueries[sqlIndex++] });
+                      }
+                    } else if (match[0].toLowerCase().includes('```python')) {
+                      if (pythonQueries[pythonIndex]) {
+                        parts.push({ type: 'python', content: pythonQueries[pythonIndex++] });
+                      }
+                    }
+                    
+                    lastIndex = match.index! + match[0].length;
+                  });
+                  
+                  if (lastIndex < streamingResponse.length) {
+                    const textContent = streamingResponse.slice(lastIndex).trim();
+                    if (textContent) {
+                      parts.push({ type: 'text', content: textContent });
+                    }
+                  }
+                  
                   return (
                     <>
-                      {parts.map((part, idx) => (
-                        <React.Fragment key={idx}>
-                          {part.trim() && (
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                              {part.trim()}
+                      {parts.map((part, idx) => {
+                        if (part.type === 'text') {
+                          return (
+                            <p key={`text-${idx}`} className="text-sm leading-relaxed whitespace-pre-wrap">
+                              {part.content}
                             </p>
-                          )}
-                          {sqlQueries[idx] && (
+                          );
+                        } else if (part.type === 'sql') {
+                          const queryIndex = sqlQueries.indexOf(part.content);
+                          return (
                             <SidebarSQLQueryCard
-                              query={sqlQueries[idx]}
-                              index={idx}
+                              key={`sql-streaming-${idx}`}
+                              query={part.content}
+                              index={queryIndex >= 0 ? queryIndex : 0}
                               responseId={`sidebar-streaming`}
-                              isPrimary={idx === 0}
+                              isPrimary={queryIndex === 0}
                               activeFile={activeFile}
                             />
-                          )}
-                        </React.Fragment>
-                      ))}
+                          );
+                        } else if (part.type === 'python') {
+                          const codeIndex = pythonQueries.indexOf(part.content);
+                          return (
+                            <SidebarPythonCodeCard
+                              key={`python-streaming-${idx}`}
+                              code={part.content}
+                              index={codeIndex >= 0 ? codeIndex : 0}
+                              onSendToNotebook={handleSendToNotebook}
+                              activeFile={activeFile}
+                            />
+                          );
+                        }
+                        return null;
+                      })}
                     </>
                   );
                 })()}
@@ -563,7 +713,7 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     disabled={isProcessing || showSetupPrompt}
                   />
 
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1 sm:gap-2">
+                  <div className="absolute bottom-3 right-2 flex items-center gap-1 sm:gap-2">
                     <div className="hidden sm:flex items-center gap-1 text-xs text-white/40 bg-black/30 px-2 py-1 rounded border border-white/10">
                       <Command className="h-3 w-3" />
                       <span>↵</span>

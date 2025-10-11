@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Copy, Check, Code, PenSquare, ChevronDown, ChevronRight, Table2, AlertCircle, Maximize2 } from 'lucide-react';
+import { Play, Copy, Check, Code, PenSquare, ChevronDown, ChevronRight, Table2, AlertCircle, Maximize2, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
 import 'prismjs/themes/prism-tomorrow.css';
 
 import { useAppStore } from '@/store/appStore';
+import { useAIStore } from '@/store/aiStore';
 
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -49,7 +50,8 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
   const [queryId, setQueryId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const { setPendingQuery, changeViewMode } = useAppStore();
+  const { setPendingQuery, changeViewMode, showAIAssistant, setShowAIAssistant } = useAppStore();
+  const { setCurrentPrompt } = useAIStore();
 
   // Generate unique responseId if not provided
   const uniqueResponseId = responseId || `sidebar-response-${Date.now()}`;
@@ -75,6 +77,37 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
     }, 50);
   };
 
+  const handleAskAIToFix = () => {
+    // Create a well-formatted message for the AI to help fix the query
+    const errorMessage = queryResult?.error || 'Query execution failed';
+    
+    // Create contextual message based on error type
+    let promptMessage = `I'm getting an error when running this SQL query. Can you help me fix it?\n\n`;
+    
+    // Add the query
+    promptMessage += `**Query:**\n\`\`\`sql\n${query}\n\`\`\`\n\n`;
+    
+    // Add the error
+    promptMessage += `**Error:**\n${errorMessage}\n\n`;
+    
+    // Add helpful context
+    if (activeFile?.fileName) {
+      promptMessage += `**Context:** I'm working with the file "${activeFile.fileName}".`;
+    }
+    
+    promptMessage += `\n\nPlease analyze the error and provide a corrected version of the query with an explanation of what was wrong.`;
+    
+    // Set the prompt in the AI assistant input field
+    setCurrentPrompt(promptMessage);
+    
+    // Open AI assistant if it's not already open
+    if (!showAIAssistant) {
+      setShowAIAssistant(true);
+    }
+    
+    console.log('[SidebarSQLQueryCard] Filled AI assistant with error context - ready for user to send');
+  };
+
   const handleRun = async () => {
     try {
       // Generate unique ID for this query execution
@@ -93,29 +126,37 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
 
       console.log(`[SidebarSQLQueryCard] Running query with ID: ${currentQueryId}`);
 
-      // Execute the query - we'll manually handle the results instead of relying on global state
-      // Import the duckdb store directly to avoid the shared state issue
+      // Use the same query execution method as QueryWorkspace
+      // Import the duckdb store directly 
       const { useDuckDBStore } = await import('@/store/duckDBStore');
-      const { executeQuery } = useDuckDBStore.getState();
+      const { executePaginatedQuery } = useDuckDBStore.getState();
       
-      const result = await executeQuery(query);
+      // Execute query with pagination (limit to 100 rows for sidebar)
+      const paginatedResult = await executePaginatedQuery(query, 1, 100);
       
-      // Process results directly
-      if (result) {
-        const data = result.toArray?.() || [];
+      if (paginatedResult) {
+        console.log(`[SidebarSQLQueryCard] Query returned ${paginatedResult.totalRows} total rows`);
+        console.log(`[SidebarSQLQueryCard] Current page has ${paginatedResult.data.length} rows`);
         
-        // Handle schema safely
-        let columns: Array<{ name: string; type: string }> = [];
-        if (result.schema && Array.isArray(result.schema)) {
-          columns = result.schema.map((col: any) => ({
-            name: col.name || col.column_name || `column_${columns.length}`,
-            type: col.type?.toString() || col.column_type?.toString() || 'unknown'
-          }));
-        } else if (data.length > 0) {
+        // Convert columns to the format expected by the component
+        let formattedColumns: Array<{ name: string; type: string }> = [];
+        if (paginatedResult.columns && Array.isArray(paginatedResult.columns)) {
+          formattedColumns = paginatedResult.columns.map((col: any) => {
+            if (typeof col === 'string') {
+              return { name: col, type: 'unknown' };
+            } else if (col && typeof col === 'object') {
+              return {
+                name: col.name || col.column_name || 'unknown',
+                type: col.type?.toString() || col.column_type?.toString() || 'unknown'
+              };
+            }
+            return { name: 'unknown', type: 'unknown' };
+          });
+        } else if (paginatedResult.data && paginatedResult.data.length > 0) {
           // Fallback: infer columns from first row
-          const firstRow = data[0];
+          const firstRow = paginatedResult.data[0];
           if (firstRow && typeof firstRow === 'object') {
-            columns = Object.keys(firstRow).map(key => ({
+            formattedColumns = Object.keys(firstRow).map(key => ({
               name: key,
               type: 'unknown'
             }));
@@ -123,14 +164,14 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
         }
 
         setQueryResult({
-          data,
-          columns,
-          totalRows: data.length,
+          data: paginatedResult.data || [],
+          columns: formattedColumns,
+          totalRows: paginatedResult.totalRows || paginatedResult.data?.length || 0,
           isLoading: false,
           error: undefined
         });
       } else {
-        // No result
+        // No result - this might be a DDL statement or empty result
         setQueryResult({
           data: [],
           columns: [],
@@ -142,11 +183,23 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
       
     } catch (error) {
       console.error('Query execution failed:', error);
+      
+      // Extract detailed error information
+      let errorMessage = 'Query execution failed';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       setQueryResult({
         data: [],
         columns: [],
         totalRows: 0,
-        error: error instanceof Error ? error.message : 'Query execution failed',
+        error: errorMessage,
         isLoading: false
       });
     } finally {
@@ -216,22 +269,91 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
     }
 
     if (queryResult.error) {
+      // Parse error message for better formatting
+      const errorMessage = queryResult.error;
+      let errorType = 'Query Error';
+      let errorDetails = errorMessage;
+      
+      // Try to identify error type from the message
+      if (errorMessage.toLowerCase().includes('syntax')) {
+        errorType = 'Syntax Error';
+      } else if (errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('does not exist')) {
+        errorType = 'Reference Error';
+      } else if (errorMessage.toLowerCase().includes('permission') || errorMessage.toLowerCase().includes('denied')) {
+        errorType = 'Permission Error';
+      } else if (errorMessage.toLowerCase().includes('type') || errorMessage.toLowerCase().includes('cast')) {
+        errorType = 'Type Error';
+      } else if (errorMessage.toLowerCase().includes('constraint') || errorMessage.toLowerCase().includes('violation')) {
+        errorType = 'Constraint Violation';
+      }
+      
+      // Check if error has line/column information
+      const lineMatch = errorMessage.match(/line (\d+)/i);
+      const columnMatch = errorMessage.match(/column (\d+)/i);
+      const nearMatch = errorMessage.match(/near "([^"]+)"/i);
+      
       return (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="border-t border-white/10 p-3 bg-red-500/10"
+          className="border-t border-red-500/20 bg-gradient-to-br from-red-500/10 to-red-600/5"
         >
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <div className="text-xs font-medium text-red-400 mb-1">
-                {t('ai.results.error.title', { defaultValue: 'Query Error' })}
+          <div className="px-3 py-2 border-b border-red-500/20">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+              <div className="text-xs font-medium text-red-400">
+                {t('ai.results.error.title', { defaultValue: errorType })}
               </div>
-              <div className="text-xs text-white/70 break-words">
-                {queryResult.error}
+              {(lineMatch || columnMatch) && (
+                <div className="text-xs text-red-400/70 ml-auto">
+                  {lineMatch && `Line ${lineMatch[1]}`}
+                  {lineMatch && columnMatch && ', '}
+                  {columnMatch && `Col ${columnMatch[1]}`}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-3 space-y-2">
+            {/* Main error message */}
+            <div className="text-xs text-white/80 font-mono break-words">
+              {errorDetails}
+            </div>
+            
+            {/* Show problematic part if found */}
+            {nearMatch && (
+              <div className="mt-2 p-2 bg-black/30 rounded border border-red-500/20">
+                <div className="text-xs text-red-400/70 mb-1">Near:</div>
+                <code className="text-xs text-red-400 font-mono">{nearMatch[1]}</code>
               </div>
+            )}
+            
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-white/10">
+              <Tooltip content={t('ai.queryCard.editToFix', { defaultValue: 'Edit in Query Tab to fix' })} placement="bottom">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                  onClick={handleEdit}
+                >
+                  <PenSquare className="h-3 w-3 mr-1" />
+                  Fix Query
+                </Button>
+              </Tooltip>
+              
+              <Tooltip content={t('ai.queryCard.askAIToFix', { defaultValue: 'Ask AI to help fix this error' })} placement="bottom">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                  onClick={handleAskAIToFix}
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Ask AI
+                </Button>
+              </Tooltip>
             </div>
           </div>
         </motion.div>
@@ -426,7 +548,6 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
 
       {/* SQL Content */}
       <div className="relative overflow-hidden">
-        <div className="bg-[#1d1f21] border-t border-white/5">
           <pre className="p-3 text-xs overflow-x-auto font-mono leading-relaxed scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
             <code
               className="language-sql"
@@ -438,8 +559,7 @@ const SidebarSQLQueryCard: React.FC<SidebarSQLQueryCardProps> = ({
               dangerouslySetInnerHTML={{ __html: getHighlightedSQL() }}
             />
           </pre>
-        </div>
-        
+ 
         {/* Custom styles for Monaco-like syntax highlighting - scoped to this component */}
         <style jsx>{`
           :global(.language-sql) {

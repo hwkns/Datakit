@@ -153,14 +153,6 @@ const NotebooksWorkspace: React.FC = () => {
     },
   });
 
-  // Initialize Python on mount (only once)
-  useEffect(() => {
-    if (!pyodide.isInitialized && !pyodide.isInitializing && !pyodide.error) {
-      initializePython();
-    }
-    // Only run on mount, not on state changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Initialize notebook for the active file when first opened
   useEffect(() => {
