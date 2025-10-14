@@ -6,9 +6,11 @@ interface TableCellProps {
   value: any;
   formattedValue?: string;
   width: number;
+  cellClass?: string;
+  columnType?: string;
 }
 
-const TableCell: React.FC<TableCellProps> = ({ value, formattedValue, width }) => {
+const TableCell: React.FC<TableCellProps> = ({ value, formattedValue, width, cellClass = "", columnType }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -101,8 +103,13 @@ const TableCell: React.FC<TableCellProps> = ({ value, formattedValue, width }) =
     }
   };
 
-  // Determine value style based on data type
+  // Determine value style based on data type - fallback for when cellClass is not provided
   const getValueStyle = (value: any): string => {
+    // If we have a cellClass, use it instead
+    if (cellClass) {
+      return cellClass;
+    }
+    
     if (value === null || value === undefined) {
       return "text-white/30 italic";
     }

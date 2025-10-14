@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { FixedSizeList as List } from "react-window";
 import TableCell from "./TableCell";
 import { useQueryColumnFormatting } from "./useQueryColumnFormatting";
+import { useCellFormatting } from "@/components/data-grid/hooks/useCellFormatting";
 
 
 interface QueryResultsTableProps {
@@ -20,6 +21,8 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
     results,
     columns,
   });
+  
+  const { getCellClass } = useCellFormatting(columnTypes, true);
 
   // Calculate column widths based on content
   useEffect(() => {
@@ -94,6 +97,7 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
             {columns.map((column, colIndex) => {
               const rawValue = row[column];
               const formattedValue = formatCellValue(String(rawValue || ''), index + 1, colIndex + 1);
+              const cellClass = getCellClass(index + 1, colIndex + 1);
               
               return (
                 <TableCell
@@ -101,6 +105,8 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
                   value={rawValue}
                   formattedValue={formattedValue}
                   width={columnWidths[colIndex] || 150}
+                  cellClass={cellClass}
+                  columnType={columnTypes[colIndex]}
                 />
               );
             })}
@@ -108,7 +114,7 @@ const QueryResultsTable: React.FC<QueryResultsTableProps> = ({
         );
       }
     );
-  }, [results, columns, columnWidths]);
+  }, [results, columns, columnWidths, formatCellValue, getCellClass, columnTypes]);
 
   // Early return for no data
   if (!results?.length || !columns?.length) {
