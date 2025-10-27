@@ -1,3 +1,6 @@
+# 0.4.20
+Global Assistant
+
 # 0.4.19
 Simpler sidebar with easy to make folders and opening folders from beginning
 
