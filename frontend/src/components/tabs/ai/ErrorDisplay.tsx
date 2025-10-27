@@ -2,20 +2,20 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, X, RefreshCw } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-import { Button } from "@/components/ui/Button";
 
 interface ErrorDisplayProps {
   error: string | null;
   onDismiss?: () => void;
   onRetry?: () => void;
   className?: string;
+  suggestion?: string;
 }
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   error,
   onDismiss,
   onRetry,
-  className = "",
+  className = ""
 }) => {
   const { t } = useTranslation();
   if (!error) return null;
@@ -62,6 +62,15 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
       };
     }
     
+    // SQL/Query errors
+    if (error.includes('Binder Error') || error.includes('COUNT(DISTINCT') || error.includes('No function matches')) {
+      return {
+        title: 'SQL Query Error',
+        message: error,
+        type: "error" as const
+      };
+    }
+    
     // Default error
     return {
       title: t('ai.error.generic.title', { defaultValue: 'Something went wrong' }),
@@ -93,6 +102,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm mb-1">{errorInfo.title}</h4>
             <p className="text-xs opacity-90 leading-relaxed">{errorInfo.message}</p>
+          
           </div>
           
           <div className="flex items-center gap-1 flex-shrink-0">

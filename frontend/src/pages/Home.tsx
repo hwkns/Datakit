@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from "framer-motion";
 import React, { useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, BarChart3, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -13,16 +13,18 @@ import ViewModeSelector, { ViewMode } from "@/components/navigation/ViewModeSele
 import EmptyDataState from "@/components/data-grid/EmptyDataState";
 import AIAssistantSidebar from "@/components/common/AIAssistantSidebar";
 
-
 import { DataSourceType } from "@/types/json";
 import { useHomePageLogic } from "@/hooks/useHomePageLogic";
 import { useAppStore } from "@/store/appStore";
 import { useInspectorStore } from "@/store/inspectorStore";
+
 import { useColumnStats } from "@/hooks/useColumnStats";
 import { selectActiveFile, selectHasFiles } from "@/store/selectors/appSelectors";
 import { ImportProvider } from "@/types/remoteImport";
 import { useFolderStore } from "@/store/folderStore";
-import { usePythonStore } from "@/store/pythonStore";
+
+import { useDraggableQueryResults } from "@/hooks/useDraggableQueryResults";
+import DraggableQueryResults from "@/components/data-grid/DraggableQueryResults";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,6 +69,32 @@ const Home = () => {
   const { openPanel, analyzeFile } = useInspectorStore();
   
 
+  // Draggable Query Results
+  const {
+    isDraggableOpen,
+    draggableResults,
+    showDraggableResults,
+    closeDraggableResults,
+    handleKeepDraggableResults,
+    handleExportDraggableResults,
+    handleCopyDraggableResults,
+  } = useDraggableQueryResults();
+
+
+
+  // Register global handlers for AI assistant integration (window-based)
+  useEffect(() => {
+    // Store the handlers globally so AI operations can access them
+    (window as any).__showDraggableResults = showDraggableResults;
+    (window as any).__closeDraggableResults = closeDraggableResults;
+    
+    return () => {
+      delete (window as any).__showDraggableResults;
+      delete (window as any).__closeDraggableResults;
+    };
+  }, [showDraggableResults, closeDraggableResults]);
+  
+
   // Column stats hook
   const { columnStats, isLoading: isLoadingStats, triggerAnalysis } = useColumnStats({
     fileId: activeFile?.id,
@@ -77,6 +105,7 @@ const Home = () => {
   
   // Get current view mode - use file's mode if available, otherwise use empty state mode
   const currentViewMode: ViewMode = activeFile?.viewMode || emptyStateViewMode;
+
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     changeViewMode(mode);
@@ -110,6 +139,13 @@ const Home = () => {
   };
 
   // No need for manual window width tracking - using CSS container queries
+
+  // Open AI Assistant by default on first load
+  useEffect(() => {
+    if (!showAIAssistant) {
+      setShowAIAssistant(true);
+    }
+  }, []); // Empty dependency array ensures this only runs on first mount
 
   // Keyboard shortcut for AI Assistant (Cmd+K / Ctrl+K)
   useEffect(() => {
@@ -203,146 +239,156 @@ const Home = () => {
               '--sidebar-width': showAIAssistant ? `${assistantSidebarWidth}px` : '0px'
             } as React.CSSProperties}
           >
-            {/* Left: File path breadcrumb when a file is open */}
-            <div className="flex justify-start items-center min-w-0">
-              {hasFiles && activeFile && (
-                <motion.div 
-                  className="responsive-breadcrumb flex items-center gap-1 text-sm min-w-0"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  {getFilePath()?.map((part, index, arr) => (
-                    <React.Fragment key={index}>
-                      <span className={cn(
-                        "breadcrumb-part",
-                        index === arr.length - 1 
-                          ? "breadcrumb-filename text-white/90 font-medium" 
-                          : "breadcrumb-folder text-white/50"
-                      )}>
-                        {part}
-                      </span>
-                      {index < arr.length - 1 && (
-                        <ChevronRight className="h-3 w-3 text-white/30 flex-shrink-0" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </motion.div>
-              )}
-            </div>
-            
-            {/* Center: ViewModeSelector */}
-            <div className="flex justify-center">
-              <ViewModeSelector
-                currentMode={currentViewMode}
-                onModeChange={handleViewModeChange}
-              />
-            </div>
-            
-            
-            {/* Right side: Stats, Inspector, and Assistant */}
-            <div className="flex justify-end min-w-0">
-              <motion.div 
-                className="responsive-buttons flex items-center gap-1.5 transition-all duration-300 min-w-0"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
-              >
-                {/* Column Stats Button - Icon only */}
-                {hasFiles && activeFile && currentViewMode === 'preview' && !activeFile.isRemote && (
-                  <Tooltip 
-                    content={columnStats.length > 0 
-                      ? (showColumnStats ? t('dataGrid.stats.hideStats') : t('dataGrid.stats.showStats'))
-                      : t('dataGrid.stats.columnStats')
-                    }
-                    placement="bottom"
+            {/* Normal Header */}
+                  {/* Left: File path breadcrumb when a file is open */}
+                  <motion.div 
+                    className="flex justify-start items-center min-w-0"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <motion.button
-                      onClick={handleColumnStatsToggle}
-                      className="relative group p-2 rounded-md bg-black/50 backdrop-blur-sm border border-white/10 transition-all duration-200 hover:border-white/20 cursor-pointer"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {showColumnStats && columnStats.length > 0 && (
-                        <div className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/25 via-primary/20 to-primary/15 border border-primary/30" />
-                      )}
-                      {isLoadingStats ? (
-                        <svg 
-                          className="w-4 h-4 text-primary animate-spin relative z-10" 
-                          fill="none" 
-                          viewBox="0 0 24 24"
-                        >
-                          <circle 
-                            className="opacity-25" 
-                            cx="12" 
-                            cy="12" 
-                            r="10" 
-                            stroke="currentColor" 
-                            strokeWidth="4"
-                          />
-                          <path 
-                            className="opacity-75" 
-                            fill="currentColor" 
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                      ) : (
-                        <BarChart3 className={`h-4 w-4 relative z-10 ${
-                          showColumnStats && columnStats.length > 0 ? 'text-white' : 'text-white/50 hover:text-white/70'
-                        }`} />
-                      )}
-                    </motion.button>
-                  </Tooltip>
-                )}
-                
-                {/* Inspector Button - Icon only */}
-                {hasFiles && activeFile && currentViewMode === 'preview' && !activeFile.isRemote && (
-                  <Tooltip content={t('dataGrid.inspector')} placement="bottom">
-                    <motion.button
-                      onClick={handleInspectorClick}
-                      className="relative group p-2 rounded-md bg-black/50 backdrop-blur-sm border border-white/10 transition-all duration-200 hover:border-white/20 cursor-pointer"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Search className="h-4 w-4 text-white/50 hover:text-white/70 relative z-10" />
-                    </motion.button>
-                  </Tooltip>
-                )}
-
-                {/* AI Assistant Button - Always available in all view modes */}
-                <motion.button
-                  onClick={toggleAIAssistant}
-                  className={cn(
-                    'responsive-button assistant-button relative group flex items-center rounded-md transition-all duration-200 cursor-pointer gap-1.5 px-3 py-1.5 text-xs border-2 font-semibold',
-                    showAIAssistant
-                      ? 'border-primary bg-primary/10'
-                      : 'border-white/20 hover:border-white/30 hover:bg-white/5'
-                  )}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  data-tooltip="Datakit Assistant (⌘K)"
-                >
-                  {showAIAssistant && (
-                    <motion.div
-                      layoutId="activeAssistant"
-                      className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/30 via-primary/25 to-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                      transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
-                    />
-                  )}
+                    {hasFiles && activeFile && (
+                      <div 
+                        className="responsive-breadcrumb flex items-center gap-1 text-sm min-w-0"
+                      >
+                        {getFilePath()?.map((part, index, arr) => (
+                          <React.Fragment key={index}>
+                            <span className={cn(
+                              "breadcrumb-part",
+                              index === arr.length - 1 
+                                ? "breadcrumb-filename text-white/90 font-medium" 
+                                : "breadcrumb-folder text-white/50"
+                            )}>
+                              {part}
+                            </span>
+                            {index < arr.length - 1 && (
+                              <ChevronRight className="h-3 w-3 text-white/30 flex-shrink-0" />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                   
-                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white/10 rounded text-xs text-white/60 border border-white/20 relative z-10">
-                    <span>⌘</span>
-                    <span className="font-mono">K</span>
-                  </div>
-                  <span className={cn(
-                    'button-text relative z-10 font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent',
-                    showAIAssistant && 'from-white to-gray-300'
-                  )}>
-                    Datakit Assistant
-                  </span>
-                </motion.button>
-              </motion.div>
-            </div>
+                  {/* Center: ViewModeSelector */}
+                  <motion.div 
+                    className="flex justify-center"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                  >
+                    <ViewModeSelector
+                      currentMode={currentViewMode}
+                      onModeChange={handleViewModeChange}
+                    />
+                  </motion.div>
+                  
+                  {/* Right side: Stats, Inspector, and Assistant */}
+                  <motion.div 
+                    className="flex justify-end min-w-0"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                  >
+                    <div className="responsive-buttons flex items-center gap-1.5 transition-all duration-300 min-w-0">
+                      {/* Column Stats Button - Icon only */}
+                      {hasFiles && activeFile && currentViewMode === 'preview' && !activeFile.isRemote && (
+                        <Tooltip 
+                          content={columnStats.length > 0 
+                            ? (showColumnStats ? t('dataGrid.stats.hideStats') : t('dataGrid.stats.showStats'))
+                            : t('dataGrid.stats.columnStats')
+                          }
+                          placement="bottom"
+                        >
+                          <motion.button
+                            onClick={handleColumnStatsToggle}
+                            className="relative group p-2 rounded-md bg-black/50 backdrop-blur-sm border border-white/10 transition-all duration-200 hover:border-white/20 cursor-pointer"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {showColumnStats && columnStats.length > 0 && (
+                              <div className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/25 via-primary/20 to-primary/15 border border-primary/30" />
+                            )}
+                            {isLoadingStats ? (
+                              <svg 
+                                className="w-4 h-4 text-primary animate-spin relative z-10" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                              >
+                                <circle 
+                                  className="opacity-25" 
+                                  cx="12" 
+                                  cy="12" 
+                                  r="10" 
+                                  stroke="currentColor" 
+                                  strokeWidth="4"
+                                />
+                                <path 
+                                  className="opacity-75" 
+                                  fill="currentColor" 
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                            ) : (
+                              <BarChart3 className={`h-4 w-4 relative z-10 ${
+                                showColumnStats && columnStats.length > 0 ? 'text-white' : 'text-white/50 hover:text-white/70'
+                              }`} />
+                            )}
+                          </motion.button>
+                        </Tooltip>
+                      )}
+                      
+                      {/* Inspector Button - Icon only */}
+                      {hasFiles && activeFile && currentViewMode === 'preview' && !activeFile.isRemote && (
+                        <Tooltip content={t('dataGrid.inspector')} placement="bottom">
+                          <motion.button
+                            onClick={handleInspectorClick}
+                            className="relative group p-2 rounded-md bg-black/50 backdrop-blur-sm border border-white/10 transition-all duration-200 hover:border-white/20 cursor-pointer"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Search className="h-4 w-4 text-white/50 hover:text-white/70 relative z-10" />
+                          </motion.button>
+                        </Tooltip>
+                      )}
+
+                      {/* AI Assistant Button - Always available in all view modes */}
+                      <motion.button
+                        onClick={toggleAIAssistant}
+                        className={cn(
+                          'responsive-button assistant-button relative group flex items-center rounded-md transition-all duration-200 cursor-pointer gap-1.5 px-3 py-1.5 text-xs border-2 font-semibold',
+                          showAIAssistant
+                            ? 'border-primary bg-primary/10'
+                            : 'border-white/20 hover:border-white/30 hover:bg-white/5'
+                        )}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        data-tooltip="Datakit Assistant (⌘K)"
+                      >
+                        {showAIAssistant && (
+                          <motion.div
+                            layoutId="activeAssistant"
+                            className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/30 via-primary/25 to-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                            transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
+                          />
+                        )}
+                        
+                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white/10 rounded text-xs text-white/60 border border-white/20 relative z-10">
+                          <span>⌘</span>
+                          <span className="font-mono">K</span>
+                        </div>
+                        <span className={cn(
+                          'button-text relative z-10 font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent',
+                          showAIAssistant && 'from-white to-gray-300'
+                        )}>
+                          Datakit Assistant
+                        </span>
+                      </motion.button>
+                    </div>
+                  </motion.div>
           </motion.div>
 
           {/* JSON View Mode Toggle (contextual, only for JSON files) */}
@@ -388,6 +434,7 @@ const Home = () => {
                 {renderContent()}
               </motion.div>
             </AnimatePresence>
+
           </div>
         </div>
 
@@ -397,6 +444,16 @@ const Home = () => {
           onClose={() => setShowAIAssistant(false)}
           width={assistantSidebarWidth}
           onWidthChange={setAssistantSidebarWidth}
+        />
+        
+        {/* Draggable Query Results Overlay */}
+        <DraggableQueryResults
+          isOpen={isDraggableOpen}
+          results={draggableResults}
+          onClose={closeDraggableResults}
+          onKeep={handleKeepDraggableResults}
+          onExport={handleExportDraggableResults}
+          onCopy={handleCopyDraggableResults}
         />
       </MainLayout>
     </>

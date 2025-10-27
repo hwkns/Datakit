@@ -10,6 +10,7 @@ import { columnActionService } from '@/lib/columnActions/columnActionService';
 
 interface UnifiedGridProps extends GridProps {
   fileId?: string;
+  gridId?: string; // Unique identifier for this grid instance
   isRemoteSource?: boolean;
   showStats?: boolean;
   onStatsToggle?: () => void;
@@ -50,6 +51,7 @@ export interface UnifiedGridRef {
 const UnifiedGrid = React.forwardRef<UnifiedGridRef, UnifiedGridProps>(({
   data,
   fileId,
+  gridId = 'default', // Default gridId if not provided
   isRemoteSource = false,
   showStats: propShowStats,
   onStatsToggle,
@@ -113,31 +115,31 @@ const UnifiedGrid = React.forwardRef<UnifiedGridRef, UnifiedGridProps>(({
     if (columnCount > 0) {
       const root = document.documentElement;
       
-      // Check if we already have widths set, if not initialize them
-      const existingWidth = getComputedStyle(root).getPropertyValue('--grid-col-0').trim();
+      // Check if we already have widths set for this specific grid, if not initialize them
+      const existingWidth = getComputedStyle(root).getPropertyValue(`--grid-${gridId}-col-0`).trim();
       
       if (!existingWidth) {
-        // Set default widths
+        // Set default widths for this grid instance
         for (let i = 0; i < columnCount; i++) {
           const defaultWidth = i === 0 ? '60px' : `${estimatedColumnWidth}px`;
-          root.style.setProperty(`--grid-col-${i}`, defaultWidth);
+          root.style.setProperty(`--grid-${gridId}-col-${i}`, defaultWidth);
         }
       }
     }
-  }, [columnCount, estimatedColumnWidth]);
+  }, [columnCount, estimatedColumnWidth, gridId]);
 
   // Get column width from CSS custom property
   const getColumnWidth = useCallback((index: number) => {
     const root = document.documentElement;
-    const cssWidth = getComputedStyle(root).getPropertyValue(`--grid-col-${index}`).trim();
+    const cssWidth = getComputedStyle(root).getPropertyValue(`--grid-${gridId}-col-${index}`).trim();
     return cssWidth ? parseInt(cssWidth.replace('px', '')) : (index === 0 ? 60 : estimatedColumnWidth);
-  }, [estimatedColumnWidth]);
+  }, [estimatedColumnWidth, gridId]);
 
-  // Set column width in CSS custom property
+  // Set column width in CSS custom property with unique gridId
   const setColumnWidth = useCallback((index: number, width: number) => {
     const root = document.documentElement;
-    root.style.setProperty(`--grid-col-${index}`, `${width}px`);
-  }, []);
+    root.style.setProperty(`--grid-${gridId}-col-${index}`, `${width}px`);
+  }, [gridId]);
   
   const [scrollLeft, setScrollLeft] = useState(0);
   
@@ -488,7 +490,7 @@ const UnifiedGrid = React.forwardRef<UnifiedGridRef, UnifiedGridProps>(({
           {/* Row number header */}
           <div 
             style={{ 
-              width: `var(--grid-col-0, 60px)`, 
+              width: `var(--grid-${gridId}-col-0, 60px)`, 
               flexShrink: 0,
               background: 'var(--dark-nav)'
             }}
@@ -503,7 +505,7 @@ const UnifiedGrid = React.forwardRef<UnifiedGridRef, UnifiedGridProps>(({
             return (
               <div 
                 key={columnIndex}
-                style={{ width: `var(--grid-col-${columnIndex}, ${estimatedColumnWidth}px)`, flexShrink: 0 }}
+                style={{ width: `var(--grid-${gridId}-col-${columnIndex}, ${estimatedColumnWidth}px)`, flexShrink: 0 }}
                 className="relative"
               >
                 <ColumnHeaderCell

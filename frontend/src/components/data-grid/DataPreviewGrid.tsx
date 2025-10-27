@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useAppStore } from '@/store/appStore';
-import { useInspectorStore } from '@/store/inspectorStore';
 import { useDuckDBStore } from '@/store/duckDBStore';
 import { selectActiveFile } from '@/store/selectors/appSelectors';
 import { useDataPreview } from '@/hooks/useDataPreview';
@@ -9,11 +9,11 @@ import { useDataPreview } from '@/hooks/useDataPreview';
 import UnifiedGrid, { UnifiedGridRef } from './UnifiedGrid';
 import InspectorPanel from '@/components/tabs/preview/inspector/InspectorPanel';
 import DataPreviewPagination from './DataPreviewPagination';
+import CellContextMenu from './CellContextMenu';
 
 import { useCellFormatting } from './hooks/useCellFormatting';
 import { useColumnSorting } from './hooks/useColumnSorting';
 import { useCellInteraction } from './hooks/useCellInteraction';
-import CellContextMenu from './CellContextMenu';
 
 interface DataPreviewGridProps {
   fileId?: string;
@@ -24,7 +24,6 @@ const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = 
   const { t } = useTranslation();
   const activeFile = useAppStore(selectActiveFile);
   const { showColumnStats, setShowColumnStats, showAIAssistant } = useAppStore();
-  const { openPanel, analyzeFile } = useInspectorStore();
   const { getObjectType, executeQuery } = useDuckDBStore();
   
   // Ref to UnifiedGrid for accessing stats functionality
@@ -143,29 +142,6 @@ const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = 
     },
     []
   );
-
-  const handleInspectorClick = useCallback(() => {
-    if (!activeFile) return;
-
-    const tableName = activeFile.tableName;
-    openPanel();
-    analyzeFile(activeFile.id, tableName);
-  }, [activeFile, openPanel, analyzeFile]);
-  
-  const handleColumnAnalysisToggle = useCallback(() => {
-    if (!gridRef.current) return;
-    
-    const { columnStats, triggerAnalysis } = gridRef.current;
-    
-    if (columnStats.length > 0) {
-      // Toggle visibility if we already have data
-      setShowColumnStats(!showColumnStats);
-    } else {
-      // Load stats for first time
-      setShowColumnStats(true);
-      triggerAnalysis();
-    }
-  }, [showColumnStats, setShowColumnStats]);
 
   // Handle SQL execution for column actions
   const handleExecuteSQL = useCallback(async (sql: string) => {
@@ -303,6 +279,7 @@ const DataPreviewGrid: React.FC<DataPreviewGridProps> = ({ fileId, hideHeader = 
               ref={gridRef}
               data={displayData}
               fileId={targetFileId}
+              gridId="data-preview"
               isRemoteSource={targetFile?.isRemote || false}
               showStats={showColumnStats}
               onStatsToggle={() => setShowColumnStats(!showColumnStats)}

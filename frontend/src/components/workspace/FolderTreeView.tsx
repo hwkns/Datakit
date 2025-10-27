@@ -56,7 +56,8 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
     renameNode,
     moveNode,
     createFolder,
-    getNodeById
+    getNodeById,
+    draftFolderId
   } = useFolderStore();
   
   const { removeFile, removeFileFromWorkspace, workspaceFiles, files, activeFileId } = useAppStore();
@@ -105,6 +106,33 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
       removeNode(node.id);
     }
   }, [files, workspaceFiles, removeFile, removeFileFromWorkspace, dropTable, removeNode]);
+
+  // Clear draft folder function
+  const handleClearDraftFolder = useCallback(async () => {
+    console.log('[FolderTreeView] Clearing draft folder');
+    
+    try {
+      // Find the draft folder
+      const draftFolder = getNodeById(draftFolderId);
+      if (!draftFolder || !draftFolder.children) {
+        console.log('[FolderTreeView] No draft folder or files found');
+        return;
+      }
+
+      // Get all files in draft folder
+      const draftFiles = draftFolder.children.filter(child => child.type === 'file');
+      console.log('[FolderTreeView] Found', draftFiles.length, 'files in draft folder');
+
+      // Delete each file (this will handle app store, workspace, and DuckDB cleanup)
+      for (const fileNode of draftFiles) {
+        await handleDeleteNode(fileNode);
+      }
+
+      console.log('[FolderTreeView] Successfully cleared draft folder');
+    } catch (error) {
+      console.error('[FolderTreeView] Error clearing draft folder:', error);
+    }
+  }, [draftFolderId, getNodeById, handleDeleteNode]);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -243,6 +271,17 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
     selectNode(node.id, e.metaKey || e.ctrlKey);
   };
 
+  // Handle double-click for draft folder
+  const handleNodeDoubleClick = (node: FolderNode, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (node.type === 'folder' && node.folderData?.isDraft) {
+      if (confirm('Clear all files from Draft folder? This will remove all files and their data.')) {
+        handleClearDraftFolder();
+      }
+    }
+  };
+
   // Handle right-click to show context menu
   const handleNodeContextMenu = (node: FolderNode, e: React.MouseEvent) => {
     e.preventDefault();
@@ -351,6 +390,7 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
             paddingRight: isActive && node.type === 'file' ? '12px' : '8px'
           }}
           onClick={(e) => handleNodeClick(node, e)}
+          onDoubleClick={(e) => handleNodeDoubleClick(node, e)}
           onContextMenu={(e) => handleNodeContextMenu(node, e)}
           draggable
           onDragStart={(e) => handleDragStart(e, node)}
@@ -487,6 +527,21 @@ export const FolderTreeView: React.FC<FolderTreeViewProps> = ({
                 >
                   <Plus size={14} />
                   New Folder
+                </button>
+              )}
+              {node.type === 'folder' && node.folderData?.isDraft && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('Clear all files from Draft folder? This will remove all files and their data.')) {
+                      handleClearDraftFolder();
+                    }
+                    setContextMenuNodeId(null);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 w-full text-left text-xs text-orange-400"
+                >
+                  <Trash2 size={14} />
+                  Clear Folder
                 </button>
               )}
               <button

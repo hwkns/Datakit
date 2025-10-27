@@ -22,12 +22,14 @@ interface SidebarToolbarProps {
   onOpenFolder?: () => void;
   onRemoteClick?: () => void;
   className?: string;
+  collapsed?: boolean;
 }
 
 export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
   onOpenFolder,
   onRemoteClick,
   className,
+  collapsed = false,
 }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
@@ -280,6 +282,41 @@ export const SidebarToolbar: React.FC<SidebarToolbarProps> = ({
     );
   };
 
+  if (collapsed) {
+    // Vertical layout for collapsed sidebar
+    return (
+      <div className={cn('flex flex-col items-center gap-2 px-2 py-3 border-b border-white/10', className)}>
+        {/* Upload Files */}
+        <Tooltip placement='right' content={t('workspace.toolbar.uploadFiles', 'Import')}>
+          <button
+            onClick={handleFileImport}
+            className="p-2 hover:bg-white/10 rounded-md transition-colors w-8 h-8 flex items-center justify-center"
+            aria-label={t('workspace.toolbar.uploadFiles', 'Import Files')}
+          >
+            <FilePlus size={16} className="text-white/70 hover:text-white" />
+          </button>
+        </Tooltip>
+
+
+        {/* Remote Sources */}
+        <Tooltip placement='right' content={t('workspace.toolbar.remoteSources', 'Remote Sources')}>
+          <button
+            onClick={onRemoteClick}
+            className="p-2 hover:bg-white/10 rounded-md transition-colors w-8 h-8 flex items-center justify-center"
+            aria-label={t('workspace.toolbar.remoteSources', 'Remote Sources')}
+          >
+            <Cloud size={16} className="text-white/70 hover:text-white" />
+          </button>
+        </Tooltip>
+
+
+        {/* Help Modal */}
+        <HelpModal />
+      </div>
+    );
+  }
+
+  // Horizontal layout for expanded sidebar
   return (
     <div className={cn('flex items-center justify-between px-3 py-2 border-b border-white/10', className)}>
       <div className="flex items-center gap-1">

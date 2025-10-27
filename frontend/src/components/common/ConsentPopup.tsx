@@ -26,16 +26,16 @@ const ConsentPopup: React.FC<ConsentPopupProps> = ({ onAccept, onDecline, onClos
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, x: 20 }}
+      initial={{ opacity: 0, y: 50, x: -20 }}
       animate={{ opacity: 1, y: 0, x: 0 }}
-      exit={{ opacity: 0, y: 50, x: 20 }}
+      exit={{ opacity: 0, y: 50, x: -20 }}
       transition={{ 
         type: "spring", 
         stiffness: 400, 
         damping: 25,
         opacity: { duration: 0.3 }
       }}
-      className="fixed bottom-4 right-4 z-50 max-w-xs will-change-transform"
+      className="fixed bottom-4 left-4 z-50 max-w-xs will-change-transform"
       style={{ transform: 'translate3d(0, 0, 0)' }}
     >
       <div className="bg-black border border-white/10 rounded-lg shadow-2xl p-4">

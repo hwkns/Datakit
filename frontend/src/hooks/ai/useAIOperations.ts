@@ -186,8 +186,8 @@ export const useAIOperations = () => {
     if (sqlBlockMatches) {
       sqlBlockMatches.forEach(match => {
         const query = match.replace(/```(?:sql)?\s*\n?/gi, '').replace(/\n?\s*```/gi, '').trim();
-        // Check if it looks like SQL
-        if (query && query.length > 10 && /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(query)) {
+        // Check if it looks like SQL - expanded to include more SQL commands
+        if (query && query.length > 5 && /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE|SUMMARIZE|DESCRIBE|PRAGMA|SHOW|EXPLAIN|ALTER|DROP)/i.test(query)) {
           queries.push(query);
         }
       });
@@ -200,7 +200,7 @@ export const useAIOperations = () => {
       let currentQuery: string[] = [];
       
       for (const line of lines) {
-        if (/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(line.trim())) {
+        if (/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE|SUMMARIZE|DESCRIBE|PRAGMA|SHOW|EXPLAIN|ALTER|DROP)/i.test(line.trim())) {
           inQuery = true;
           currentQuery = [line];
         } else if (inQuery) {
@@ -316,6 +316,7 @@ export const useAIOperations = () => {
     setCurrentError(null);
 
     const startTime = Date.now();
+    console.log('[AI Operations] Starting AI query stream processing...');
     
     try {
       const multiContext = await getMultiTableContext();
@@ -496,8 +497,21 @@ export const useAIOperations = () => {
     try {
       const result = await executePaginatedQuery(sql, 1, 100);
       
-      if (result.data && result.data.length >= 0) {
-        // Update the AI store with results
+      if (result && result.data && result.data.length >= 0) {
+        // Try to use overlay handler for tabular results
+        const overlayHandler = (window as any).__queryResultsOverlayHandler;
+        
+        if (overlayHandler && typeof overlayHandler === 'function') {
+          // Pass the PaginatedQueryResult directly - our overlay hook now handles this format
+          const wasHandledByOverlay = overlayHandler(result, sql, result.queryTime || 0);
+          
+          if (wasHandledByOverlay) {
+            // Overlay handled the result, no need to update AI store
+            return;
+          }
+        }
+        
+        // Fallback to AI store if overlay couldn't handle it (inline display)
         const { setQueryResults } = useAIStore.getState();
         
         const columns = result.columns || (result.data.length > 0 ? Object.keys(result.data[0]) : []);

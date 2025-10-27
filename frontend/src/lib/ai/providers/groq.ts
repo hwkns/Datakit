@@ -15,7 +15,7 @@ export class GroqProvider {
   private model: string;
   private apiProvider: SafeAPIProvider;
 
-  constructor(apiKey: string, model: string = 'llama-3.1-70b-versatile') {
+  constructor(apiKey: string, model: string = 'llama-3.3-70b-versatile') {
     this.apiKey = apiKey;
     this.model = model;
     this.apiProvider = new SafeAPIProvider('https://api.groq.com/openai/v1', {

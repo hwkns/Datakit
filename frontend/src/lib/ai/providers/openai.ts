@@ -15,7 +15,7 @@ export class OpenAIProvider {
   private model: string;
   private apiProvider: SafeAPIProvider;
 
-  constructor(apiKey: string, model: string = 'gpt-4-turbo-preview') {
+  constructor(apiKey: string, model: string = 'gpt-4o-2024-11-20') {
     this.apiKey = apiKey;
     this.model = model;
     this.apiProvider = new SafeAPIProvider('https://api.openai.com/v1', {

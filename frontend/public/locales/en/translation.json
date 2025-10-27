@@ -419,7 +419,7 @@
     "tabs": {
       "profile": "Profile",
       "workspace": "Workspace & Team",
-      "ai": "AI assistant settings",
+      "ai": "AI settings",
       "appearance": "Appearance",
       "notifications": "Notifications",
       "subscription": "Subscription"
@@ -748,7 +748,7 @@
           "helpText": "Most capable models for complex reasoning and analysis."
         },
         "anthropic": {
-          "description": "Claude 3.5 Sonnet and Haiku models",
+          "description": "Claude 4.5 Sonnet and smaller models",
           "helpText": "Excellent for detailed analysis and explanations. Free credits for new users."
         },
         "groq": {

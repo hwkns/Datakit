@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Settings } from 'lucide-react';
 
 import { GlobalDropZone } from '@/components/common/GlobalDropZone';
 import { SidebarToolbar } from '@/components/workspace/SidebarToolbar';
 import { FolderTreeView } from '@/components/workspace/FolderTreeView';
 import { SettingsPopover } from '@/components/common/SettingsPopover';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useDuckDBStore } from '@/store/duckDBStore';
 import { useFolderStore } from '@/store/folderStore';
 import { useAppStore } from '@/store/appStore';
@@ -60,11 +61,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     isRemoteModalOpen,
     setIsRemoteModalOpen
   } = useAppStore();
+  
+  // Handle settings navigation
+  const handleOpenSettings = () => {
+    window.location.href = '/settings';
+  };
 
   // Removed file checking - Help & Support always shows
 
   // Sidebar resizing state
-  const [sidebarWidth, setSidebarWidth] = useState(256); // Default 16rem = 256px
+  const [sidebarWidth, setSidebarWidth] = useState(200); // Default 200px
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -123,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       if (!isResizing || !sidebarRef.current) return;
 
       e.preventDefault();
-      const newWidth = Math.min(Math.max(256, e.clientX), 500); // Min 256px (default), max 500px
+      const newWidth = Math.min(Math.max(200, e.clientX), 500); // Min 200px (default), max 500px
 
       // Direct CSS custom property update - instant and smooth
       document.documentElement.style.setProperty(
@@ -135,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     const handleMouseUp = (e: MouseEvent) => {
       if (!isResizing || !sidebarRef.current) return;
 
-      const finalWidth = Math.min(Math.max(256, e.clientX), 500); // Min 256px (default), max 500px
+      const finalWidth = Math.min(Math.max(200, e.clientX), 500); // Min 200px (default), max 500px
 
       // Re-enable transitions
       sidebarRef.current.classList.remove('sidebar-resizing');
@@ -272,6 +278,41 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
       
       addFile(tempTableData);
       console.log('[Sidebar] Created new tab for temporary table:', node.fileData.tableName);
+      return;
+    }
+
+    // Special handling for saved tables (from AI "Keep Results")
+    // Only handle tables that are specifically marked as saved tables and don't have workspace files
+    if (node.fileData?.tableName && node.fileData?.isLoaded && !node.fileData?.isTemporary && node.fileData?.fileType === 'query') {
+      console.log('[Sidebar] Opening saved table:', node.fileData.tableName);
+      const { files, setActiveFile, addFile } = useAppStore.getState();
+      
+      // Check if this saved table is already open
+      const existingFile = files.find((f) => f.tableName === node.fileData?.tableName);
+      if (existingFile) {
+        console.log('[Sidebar] Saved table already open, switching to it');
+        setActiveFile(existingFile.id);
+        return;
+      }
+      
+      // Create a new tab for this saved table
+      const savedTableData = {
+        data: [], // Data will be queried from DuckDB
+        columnTypes: [],
+        fileName: node.name,
+        rowCount: node.fileData.rowCount || 0,
+        columnCount: node.fileData.columnCount || 0,
+        sourceType: 'TABLE' as any, // Mark as TABLE type
+        loadedToDuckDB: true,
+        tableName: node.fileData.tableName,
+        metadata: {
+          isSavedTable: true,
+          originalName: node.name,
+        }
+      };
+      
+      addFile(savedTableData);
+      console.log('[Sidebar] Created new tab for saved table:', node.fileData.tableName);
       return;
     }
 
@@ -420,8 +461,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
     <>
       <div className="p-4">{/* Header space for collapsed mode */}</div>
 
-      <div className="mt-auto p-4 flex flex-col items-center gap-4 border-t border-gray-500/20">
+      {/* Vertical Toolbar */}
+      <div className="mb-12">
+        <SidebarToolbar
+          collapsed={true}
+          onOpenFolder={() => {
+            // Handled in SidebarToolbar directly
+          }}
+          onRemoteClick={() => setIsRemoteModalOpen(true)}
+        />
+      </div>
+
+      <div className="mt-auto pt-4 p-4 flex flex-col items-center gap-4 border-t border-gray-500/20">
         <div className="flex flex-col gap-2 items-center">
+          <Tooltip content={t('sidebar.footer.settings', 'Settings')} placement="right">
+            <button
+              onClick={handleOpenSettings}
+              className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/5 rounded"
+              aria-label={t('sidebar.footer.settings', 'Settings')}
+            >
+              <Settings size={16} />
+            </button>
+          </Tooltip>
           <a
             href="https://amin.contact"
             target="_blank"
@@ -456,12 +517,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
 
       {/* Toolbar */}
       <SidebarToolbar
+        collapsed={false}
         onOpenFolder={() => {
           // Handled in SidebarToolbar directly
         }}
         onRemoteClick={() => setIsRemoteModalOpen(true)}
-        onFileSelect={handleFileImport}
-        onFileHandleSelect={handleFileWithStreaming}
       />
 
       {/* Folder Tree View - Main content area */}
@@ -539,40 +599,93 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
           </div>
         </div>
 
-        {/* Attribution footer - Improved harmony */}
+        {/* Attribution footer - Responsive design */}
         <div className="px-2 py-2 border-t border-gray-400/15 bg-black/40">
-          <div className="flex items-center justify-end">
-            <p className="text-xs text-white text-opacity-50 flex items-center">
-              {t('sidebar.footer.poweredBy')}{' '}
-              <a
-                href="https://duckdb.org/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={DuckDBIcon}
-                  className="text-primary hover:text-primary-foreground transition-colors inline-flex items-center gap-0.5 mx-1 h-4 w-4"
-                />
-              </a>
-              <a
-                href="https://amin.contact"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                {t('sidebar.footer.built')}
-              </a>
-              {' @ '}
-              <a
-                href="https://www.linkedin.com/company/datakitpage"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                {t('sidebar.footer.company')}
-              </a>
-            </p>
-            <div className="flex-shrink-0 ml-1">
+          <div className="flex items-center justify-between">
+            {/* Responsive footer content */}
+            <div className="flex-1 min-w-0">
+              {/* Wide layout (>250px) - Full text */}
+              <div className="hidden xl:block">
+                <p className="text-[10px] text-white text-opacity-30 flex items-center flex-wrap">
+                  {t('sidebar.footer.poweredBy')}{' '}
+                  <a
+                    href="https://duckdb.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center mx-1"
+                  >
+                    <img
+                      src={DuckDBIcon}
+                      className="h-3 w-3 transition-colors hover:opacity-80"
+                      alt="DuckDB"
+                    />
+                  </a>
+                  <a
+                    href="https://amin.contact"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {t('sidebar.footer.built')}
+                  </a>
+                  {' @ '}
+                  <a
+                    href="https://www.linkedin.com/company/datakitpage"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {t('sidebar.footer.company')}
+                  </a>
+                </p>
+              </div>
+
+              {/* Compact layout (200-250px) - Stacked text */}
+              <div className="block xl:hidden">
+                <div className="text-[9px] text-white text-opacity-30 space-y-1">
+                  {/* First line: Powered by DuckDB */}
+                  <div className="flex items-center">
+                    <span>{t('sidebar.footer.poweredBy')}</span>
+                    <a
+                      href="https://duckdb.org/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center ml-1"
+                    >
+                      <img
+                        src={DuckDBIcon}
+                        className="h-2.5 w-2.5 transition-colors hover:opacity-80"
+                        alt="DuckDB"
+                      />
+                    </a>
+                  </div>
+                  
+                  {/* Second line: Built by links */}
+                  <div className="flex items-center gap-1">
+                    <a
+                      href="https://amin.contact"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      {t('sidebar.footer.built')}
+                    </a>
+                    <span>@</span>
+                    <a
+                      href="https://www.linkedin.com/company/datakitpage"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline truncate"
+                    >
+                      {t('sidebar.footer.company')}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Settings always on the right */}
+            <div className="flex-shrink-0 ml-2">
               <SettingsPopover variant="sidebar" />
             </div>
           </div>
@@ -637,7 +750,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onDataLoad }) => {
 
         <button
           onClick={toggleSidebar}
-          className="absolute top-5 right-3 w-6 h-6 flex items-center justify-center text-white/70 hover:text-white hover:border-white/10 transition-colors shadow-lg cursor-pointer"
+          className={`absolute top-3 w-8 h-8 flex items-center justify-center text-white/70 hover:text-white hover:border-white/10 transition-colors shadow-lg cursor-pointer rounded-md hover:bg-white/10 ${
+            sidebarCollapsed 
+              ? 'left-1/2 transform -translate-x-1/2' 
+              : 'right-3'
+          }`}
           aria-label={
             sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')
           }

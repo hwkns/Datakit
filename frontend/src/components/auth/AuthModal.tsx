@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { PasswordValidator } from '@/lib/duckdb/utils/passwordValidator';
@@ -55,6 +56,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onLoginSuccess,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
 
   // Update mode when defaultMode prop changes
@@ -76,6 +79,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   const { login, signup, isLoading, error, clearError } = useAuth();
   const { showSuccess } = useNotifications();
+
+  // Handle close with navigation logic for settings page
+  const handleClose = () => {
+    // If we're on the settings page, navigate to home instead of just closing
+    if (location.pathname.startsWith('/settings')) {
+      navigate('/');
+    } else {
+      onClose();
+    }
+  };
 
   // Load password requirements from frontend validator (no API call needed)
   useEffect(() => {
@@ -164,7 +177,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         );
         onLoginSuccess?.();
       }
-      onClose();
+      handleClose();
     } catch (error) {
       // Error is handled by the auth store
     }
@@ -205,7 +218,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={onClose}
+          onClick={handleClose}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -230,7 +243,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </h2>
               </div>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-white/70 hover:text-white transition-colors"
               >
                 <X size={20} />

@@ -209,7 +209,7 @@ const initialState = {
   emptyStateViewMode: 'preview' as ViewMode,
 
   // AI Assistant Sidebar state
-  showAIAssistant: false,
+  showAIAssistant: true,
   assistantSidebarWidth: 400,
 
   // Query history state
@@ -270,9 +270,9 @@ const getSavedSidebarState = () => {
     }
     
     const savedState = localStorage.getItem("sidebar-collapsed");
-    return savedState === "true"; // Convert string to boolean
+    return savedState !== null ? savedState === "true" : true; // Default to collapsed if no saved state
   } catch (e) {
-    return false; // Default to expanded if there's an error
+    return true; // Default to collapsed if there's an error
   }
 };
 

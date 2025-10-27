@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Cpu, Server, Settings } from 'lucide-react';
+import { ChevronDown, Check, Cpu, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -222,9 +222,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex items-center gap-1.5 px-2 py-1 rounded border transition-all duration-200 text-xs',
-          compact 
-            ? 'text-xs min-w-0' 
-            : 'space-x-2 p-2',
+          compact ? 'text-xs min-w-0' : 'space-x-2 p-2',
           currentModel && hasApiKey(activeProvider)
             ? 'bg-white/5 border-white/20 text-white/90 hover:bg-white/10'
             : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10',
@@ -237,27 +235,55 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
               className={cn(
                 compact ? 'h-3 w-3' : 'h-4 w-4',
                 'rounded flex items-center justify-center flex-shrink-0',
-                hasApiKey(activeProvider)
-                  ? 'text-white/80'
-                  : 'text-white/40'
+                hasApiKey(activeProvider) ? 'text-white/80' : 'text-white/40'
               )}
             >
-              {React.cloneElement(PROVIDER_ICONS[activeProvider] as React.ReactElement, {
-                className: compact ? 'h-3 w-3' : 'h-4 w-4'
-              })}
+              {React.cloneElement(
+                PROVIDER_ICONS[activeProvider] as React.ReactElement,
+                {
+                  className: compact ? 'h-3 w-3' : 'h-4 w-4',
+                }
+              )}
             </div>
-            <span className={cn(
-              'font-medium truncate',
-              compact ? 'text-xs max-w-16' : 'text-sm max-w-32'
-            )}>
-              {compact ? currentModel.name.split(' ')[0] : currentModel.name}
+            <span
+              className={cn(
+                'font-medium truncate',
+                compact ? 'text-xs max-w-20' : 'text-sm max-w-32'
+              )}
+            >
+              {compact
+                ? activeProvider === 'datakit'
+                  ? currentModel.id === 'datakit-smart'
+                    ? 'Smart'
+                    : currentModel.id === 'datakit-fast'
+                    ? 'Fast'
+                    : currentModel.name.split(' ')[0]
+                  : currentModel.name.includes('GPT')
+                  ? currentModel.name.replace('GPT-', 'GPT')
+                  : currentModel.name.includes('Claude')
+                  ? currentModel.name.replace('Claude ', '')
+                  : currentModel.name.includes('Llama')
+                  ? currentModel.name.split(' ')[0] +
+                    ' ' +
+                    currentModel.name.split(' ')[1]
+                  : currentModel.name.split(' ')[0]
+                : currentModel.name}
             </span>
           </>
         ) : (
           <>
-            <Cpu className={cn(compact ? 'h-3 w-3' : 'h-4 w-4', 'text-white/40 flex-shrink-0')} />
+            <Cpu
+              className={cn(
+                compact ? 'h-3 w-3' : 'h-4 w-4',
+                'text-white/40 flex-shrink-0'
+              )}
+            />
             <span className={compact ? 'text-xs' : 'text-sm'}>
-              {compact ? t('ai.modelSelector.model', { defaultValue: 'Model' }) : t('ai.modelSelector.selectModel', { defaultValue: 'Select Model' })}
+              {compact
+                ? t('ai.modelSelector.model', { defaultValue: 'Model' })
+                : t('ai.modelSelector.selectModel', {
+                    defaultValue: 'Select Model',
+                  })}
             </span>
           </>
         )}
@@ -287,41 +313,309 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
             <div className={compact ? 'p-2' : 'p-3'}>
               {!compact && (
                 <div className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
-                  {t('ai.modelSelector.title', { defaultValue: 'Select AI Model' })}
+                  {t('ai.modelSelector.title', {
+                    defaultValue: 'Select AI Model',
+                  })}
                 </div>
               )}
 
               <div className={compact ? 'space-y-2' : 'space-y-3'}>
-                {Array.from(availableModels.entries()).map(
-                  ([provider, models]) => (
+                {/* DataKit Models Section */}
+                {Array.from(availableModels.entries())
+                  .filter(([provider]) => provider === 'datakit')
+                  .map(([provider, models]) => (
                     <div key={provider}>
-                      <div className={cn(
-                        'text-xs font-medium text-white/50 flex items-center',
-                        compact ? 'mb-1' : 'mb-2'
-                      )}>
-                        {React.cloneElement(PROVIDER_ICONS[provider] as React.ReactElement, {
-                          className: compact ? 'h-3 w-3' : 'h-4 w-4'
-                        })}
-                        <span className={compact ? 'ml-1.5 capitalize' : 'ml-2 capitalize'}>
-                          {provider === 'datakit' ? t('ai.providers.datakit', { defaultValue: 'DataKit' }) : t(`ai.providers.${provider}`, { defaultValue: provider.charAt(0).toUpperCase() + provider.slice(1) })}
+                      <div
+                        className={cn(
+                          'text-xs font-medium text-white/50 flex items-center',
+                          compact ? 'mb-1' : 'mb-2'
+                        )}
+                      >
+                        {React.cloneElement(
+                          PROVIDER_ICONS[provider] as React.ReactElement,
+                          {
+                            className: compact ? 'h-3 w-3' : 'h-4 w-4',
+                          }
+                        )}
+                        <span
+                          className={
+                            compact ? 'ml-1.5 capitalize' : 'ml-2 capitalize'
+                          }
+                        >
+                          {t('ai.providers.datakit', {
+                            defaultValue: 'DataKit',
+                          })}
                         </span>
-                        {provider === 'datakit' && !compact && (
+                        {!compact && (
                           <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                            {t('ai.modelSelector.claudeModels', { defaultValue: 'Claude Models' })}
+                            {t('ai.modelSelector.claudeModels', {
+                              defaultValue: 'Claude Sonnet 4.5 & 4',
+                            })}
                           </span>
                         )}
                         {!compact && !isAuthenticated && (
                           <span className="ml-2 text-yellow-500 text-xs">
-                            ({t('ai.modelSelector.signInRequired', { defaultValue: 'Sign in required' })})
+                            (
+                            {t('ai.modelSelector.signInRequired', {
+                              defaultValue: 'Sign in required',
+                            })}
+                            )
                           </span>
                         )}
-                        {!compact && isAuthenticated &&
+                      </div>
+
+                      <div className="space-y-1">
+                        {models.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() =>
+                              handleModelSelect(provider, model.id)
+                            }
+                            disabled={!isAuthenticated || !hasApiKey(provider)}
+                            className={cn(
+                              'w-full text-left rounded border transition-all duration-200',
+                              compact ? 'p-1.5' : 'p-2',
+                              activeModel === model.id
+                                ? 'bg-primary/10 border-primary/30'
+                                : isAuthenticated && hasApiKey(provider)
+                                ? 'border-transparent hover:bg-white/5 hover:border-white/10'
+                                : 'border-transparent opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div
+                                  className={cn(
+                                    'font-medium text-white flex items-center gap-1.5',
+                                    compact ? 'text-xs' : 'text-sm'
+                                  )}
+                                >
+                                  <span>
+                                    {compact
+                                      ? provider === 'datakit'
+                                        ? model.id === 'datakit-smart'
+                                          ? 'Smart'
+                                          : model.id === 'datakit-fast'
+                                          ? 'Fast'
+                                          : model.name.split(' ')[0]
+                                        : model.name.includes('GPT')
+                                        ? model.name.replace('GPT-', 'GPT')
+                                        : model.name.includes('Claude')
+                                        ? model.name.replace('Claude ', '')
+                                        : model.name.includes('Llama')
+                                        ? model.name.split(' ')[0] +
+                                          ' ' +
+                                          model.name.split(' ')[1]
+                                        : model.name.split(' ')[0]
+                                      : model.name}
+                                  </span>
+                                  {provider === 'datakit' && (
+                                    <div className="flex items-center gap-1">
+                                      <img
+                                        src={AnthropicLogo}
+                                        className="h-2 w-2 opacity-60"
+                                        alt="Anthropic"
+                                      />
+                                      <span
+                                        className={cn(
+                                          'text-white/50 font-normal',
+                                          compact ? 'text-[10px]' : 'text-xs'
+                                        )}
+                                      >
+                                        {model.id === 'datakit-smart'
+                                          ? 'Claude 4.5'
+                                          : model.id === 'datakit-fast'
+                                          ? 'Claude 4'
+                                          : ''}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {!compact && (
+                                  <>
+                                    <div className="text-xs text-white/60">
+                                      {model?.contextWindow &&
+                                        `${model?.contextWindow?.toLocaleString?.()} tokens`}
+                                      {model?.costPer1kTokens && (
+                                        <span className="ml-2">
+                                          {provider === 'datakit'
+                                            ? t(
+                                                'ai.modelSelector.creditsPerToken',
+                                                {
+                                                  cost: model.costPer1kTokens.input.toFixed(
+                                                    2
+                                                  ),
+                                                  defaultValue:
+                                                    '{{cost}} credits/1K tokens',
+                                                }
+                                              )
+                                            : t(
+                                                'ai.modelSelector.dollarsPerToken',
+                                                {
+                                                  cost: model.costPer1kTokens.input.toFixed(
+                                                    3
+                                                  ),
+                                                  defaultValue: '${{cost}}/1K',
+                                                }
+                                              )}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-white/40 mt-1">
+                                      {provider === 'datakit'
+                                        ? model.description
+                                        : model.capabilities.join(', ')}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                {activeModel === model.id && (
+                                  <Check
+                                    className={cn(
+                                      'text-primary flex-shrink-0',
+                                      compact ? 'h-3 w-3' : 'h-4 w-4'
+                                    )}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Special sections for DataKit */}
+                      {!compact &&
+                        provider === 'datakit' &&
+                        !isAuthenticated && (
+                          <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                            <div className="text-sm text-white/70 mb-2">
+                              {t('ai.modelSelector.signUpCredits', {
+                                defaultValue: 'Sign up to use DataKit credits',
+                              })}
+                            </div>
+                            <div className="text-xs text-white/50 mb-3">
+                              {t('ai.modelSelector.noApiKeysNeeded', {
+                                defaultValue:
+                                  'No API keys needed. Credits included with your account.',
+                              })}
+                            </div>
+                            <button
+                              onClick={handleSignInClick}
+                              className="w-full px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-sm font-medium text-primary transition-all duration-200"
+                            >
+                              {t('ai.modelSelector.signUpButton', {
+                                defaultValue: 'Sign up to get started',
+                              })}
+                            </button>
+                          </div>
+                        )}
+
+                      {!compact &&
+                        provider === 'datakit' &&
+                        isAuthenticated &&
+                        user?.credits && (
+                          <div className="mt-2 p-2 bg-background/10 border border-white/10 rounded">
+                            <div className="text-xs text-white/60">
+                              {t('ai.modelSelector.creditsRemaining', {
+                                count: user.credits.remaining,
+                                defaultValue: 'Credits remaining: {{count}}',
+                              })}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  ))}
+
+                {/* Configuration Section - Between DataKit and Third-party */}
+                {isAuthenticated && (
+                  <div
+                    className={cn(
+                      'border-t border-white/10 pt-3',
+                      compact ? 'mt-2' : 'mt-4'
+                    )}
+                  >
+                    <div className="mb-3">
+                      <div
+                        className={cn(
+                          'text-xs font-medium text-white/70',
+                          compact ? 'mb-0.5' : 'mb-1'
+                        )}
+                      >
+                        {t('ai.modelSelector.useYourOwnModels', {
+                          defaultValue: 'Use Your Own Models',
+                        })}
+                      </div>
+                      <div className="text-xs text-white/50 mb-2">
+                        {t('ai.modelSelector.configureApiKeys', {
+                          defaultValue:
+                            'Configure API keys for external providers',
+                        })}
+                      </div>
+                      <button
+                        onClick={handleOpenApiKeyModal}
+                        className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-xs text-white/60 hover:text-white transition-all"
+                      >
+                        <Settings className="h-2.5 w-2.5" />
+                        <span>
+                          {t('ai.modelSelector.configure', {
+                            defaultValue: 'Configure',
+                          })}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Third-party Models Section */}
+                {Array.from(availableModels.entries())
+                  .filter(([provider]) => provider !== 'datakit')
+                  .map(([provider, models]) => (
+                    <div key={provider}>
+                      <div
+                        className={cn(
+                          'text-xs font-medium text-white/50 flex items-center',
+                          compact ? 'mb-1' : 'mb-2'
+                        )}
+                      >
+                        {React.cloneElement(
+                          PROVIDER_ICONS[provider] as React.ReactElement,
+                          {
+                            className: compact ? 'h-3 w-3' : 'h-4 w-4',
+                          }
+                        )}
+                        <span
+                          className={
+                            compact ? 'ml-1.5 capitalize' : 'ml-2 capitalize'
+                          }
+                        >
+                          {t(`ai.providers.${provider}`, {
+                            defaultValue:
+                              provider.charAt(0).toUpperCase() +
+                              provider.slice(1),
+                          })}
+                        </span>
+                        {!compact && !isAuthenticated && (
+                          <span className="ml-2 text-yellow-500 text-xs">
+                            (
+                            {t('ai.modelSelector.signInRequired', {
+                              defaultValue: 'Sign in required',
+                            })}
+                            )
+                          </span>
+                        )}
+                        {!compact &&
+                          isAuthenticated &&
                           !hasApiKey(provider) &&
                           provider !== 'local' &&
-                          provider !== 'datakit' &&
                           provider !== 'ollama' && (
                             <span className="ml-2 text-yellow-500 text-xs">
-                              ({t('ai.modelSelector.apiKeyRequired', { defaultValue: 'API key required' })})
+                              (
+                              {t('ai.modelSelector.apiKeyRequired', {
+                                defaultValue: 'API key required',
+                              })}
+                              )
                             </span>
                           )}
                       </div>
@@ -346,11 +640,25 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1 min-w-0">
-                                <div className={cn(
-                                  'font-medium text-white',
-                                  compact ? 'text-xs' : 'text-sm'
-                                )}>
-                                  {compact ? model.name.split(' ')[0] : model.name}
+                                <div
+                                  className={cn(
+                                    'font-medium text-white flex items-center gap-1.5',
+                                    compact ? 'text-xs' : 'text-sm'
+                                  )}
+                                >
+                                  <span>
+                                    {compact
+                                      ? model.name.includes('GPT')
+                                        ? model.name.replace('GPT-', 'GPT')
+                                        : model.name.includes('Claude')
+                                        ? model.name.replace('Claude ', '')
+                                        : model.name.includes('Llama')
+                                        ? model.name.split(' ')[0] +
+                                          ' ' +
+                                          model.name.split(' ')[1]
+                                        : model.name.split(' ')[0]
+                                      : model.name}
+                                  </span>
                                 </div>
                                 {!compact && (
                                   <>
@@ -359,86 +667,41 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ compact = false }) => {
                                         `${model?.contextWindow?.toLocaleString?.()} tokens`}
                                       {model?.costPer1kTokens && (
                                         <span className="ml-2">
-                                          {provider === 'datakit'
-                                            ? t('ai.modelSelector.creditsPerToken', { cost: model.costPer1kTokens.input.toFixed(2), defaultValue: '{{cost}} credits/1K tokens' })
-                                            : t('ai.modelSelector.dollarsPerToken', { cost: model.costPer1kTokens.input.toFixed(3), defaultValue: '${{cost}}/1K' })}
+                                          {t(
+                                            'ai.modelSelector.dollarsPerToken',
+                                            {
+                                              cost: model.costPer1kTokens.input.toFixed(
+                                                3
+                                              ),
+                                              defaultValue: '${{cost}}/1K',
+                                            }
+                                          )}
                                         </span>
                                       )}
                                     </div>
                                     <div className="text-xs text-white/40 mt-1">
-                                      {provider === 'datakit'
-                                        ? model.description
-                                        : model.capabilities.join(', ')}
+                                      {model.capabilities.join(', ')}
                                     </div>
                                   </>
                                 )}
                               </div>
 
-                              {activeModel === model.id && (
-                                <Check className={cn(
-                                  'text-primary flex-shrink-0',
-                                  compact ? 'h-3 w-3' : 'h-4 w-4'
-                                )} />
-                              )}
+                              <div className="flex items-center gap-1">
+                                {activeModel === model.id && (
+                                  <Check
+                                    className={cn(
+                                      'text-primary flex-shrink-0',
+                                      compact ? 'h-3 w-3' : 'h-4 w-4'
+                                    )}
+                                  />
+                                )}
+                              </div>
                             </div>
                           </button>
                         ))}
                       </div>
-
-                      {/* Special sections for DataKit */}
-                      {!compact && provider === 'datakit' && !isAuthenticated && (
-                        <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                          <div className="text-sm text-white/70 mb-2">
-                            {t('ai.modelSelector.signUpCredits', { defaultValue: 'Sign up to use DataKit credits' })}
-                          </div>
-                          <div className="text-xs text-white/50 mb-3">
-                            {t('ai.modelSelector.noApiKeysNeeded', { defaultValue: 'No API keys needed. Credits included with your account.' })}
-                          </div>
-                          <button
-                            onClick={handleSignInClick}
-                            className="w-full px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 rounded-lg text-sm font-medium text-primary transition-all duration-200"
-                          >
-                            {t('ai.modelSelector.signUpButton', { defaultValue: 'Sign up to get started' })}
-                          </button>
-                        </div>
-                      )}
-
-                      {!compact && provider === 'datakit' &&
-                        isAuthenticated &&
-                        user?.credits && (
-                          <div className="mt-2 p-2 bg-background/10 border border-white/10 rounded">
-                            <div className="text-xs text-white/60">
-                              {t('ai.modelSelector.creditsRemaining', { count: user.credits.remaining, defaultValue: 'Credits remaining: {{count}}' })}
-                            </div>
-                          </div>
-                        )}
                     </div>
-                  )
-                )}
-
-                {/* Configuration Section */}
-                {isAuthenticated && (
-                  <div className="pt-2 border-t border-white/10">
-                    <button
-                      onClick={handleOpenApiKeyModal}
-                      className="w-full text-left p-2 rounded border border-transparent hover:bg-white/5 hover:border-white/10 transition-all duration-200"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-6 w-6 rounded-md flex items-center justify-center mr-3 bg-white/5 border border-white/10">
-                          <Settings className="h-3 w-3 text-white/60" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-white/80">
-                            {t('ai.modelSelector.configuration', { defaultValue: 'Configuration' })}
-                          </div>
-                          <div className="text-xs text-white/50">
-                            {t('ai.modelSelector.configureProviders', { defaultValue: 'Configure API keys and settings' })}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                )}
+                  ))}
 
                 {/* Local Models Section - Coming Soon */}
                 {/* <div>
