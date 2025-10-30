@@ -153,14 +153,19 @@ const NotebooksWorkspace: React.FC = () => {
     },
   });
 
-  // Initialize Python on mount (only once)
+
+  // Initialize Python when NotebooksWorkspace is first opened
   useEffect(() => {
+    // Initialize Python if not already initialized or initializing
     if (!pyodide.isInitialized && !pyodide.isInitializing && !pyodide.error) {
-      initializePython();
+      console.log('[NotebooksWorkspace] Starting Python initialization for notebook environment...');
+      initializePython().then(() => {
+        console.log('[NotebooksWorkspace] Python environment ready for notebook execution');
+      }).catch((error) => {
+        console.warn('[NotebooksWorkspace] Python initialization failed:', error);
+      });
     }
-    // Only run on mount, not on state changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Only run once on mount
 
   // Initialize notebook for the active file when first opened
   useEffect(() => {
@@ -271,7 +276,7 @@ const NotebooksWorkspace: React.FC = () => {
         return (
           <div className="flex items-center gap-1 text-xs text-yellow-400">
             <AlertCircle size={12} />
-            <span>{t('notebooks.workspace.status.unsaved')}</span>
+            <span>{t('notebooks.workspace.status.unsaved', {defaultValue: 'Unsaved'})}</span>
           </div>
         );
       default:
@@ -439,7 +444,7 @@ const NotebooksWorkspace: React.FC = () => {
     <NotebookErrorBoundary>
       <div
         ref={containerRef}
-        className="h-full w-full flex overflow-hidden relative"
+        className="h-full w-full flex overflow-hidden relative border-t border-white/10"
       >
       {/* Resize Overlays */}
       {(isResizingLeft || isResizingRight) && (

@@ -70,7 +70,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
       icon: <img src={AnthropicLogo} className="h-4 w-4" />,
       color: 'blue',
       description: t('ai.apiKey.providers.anthropic.description', {
-        defaultValue: 'Claude 3.5 Sonnet and Haiku models',
+        defaultValue: 'Claude 4.5 Sonnet and smaller models',
       }),
       websiteUrl: 'https://console.anthropic.com/',
       helpText: t('ai.apiKey.providers.anthropic.helpText', {

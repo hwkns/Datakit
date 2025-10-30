@@ -269,8 +269,8 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
     'anthropic',
     [
       {
-        id: 'claude-3-5-sonnet-20241022',
-        name: 'Claude 3.5 Sonnet',
+        id: 'claude-sonnet-4-5-20250929',
+        name: 'Claude Sonnet 4.5',
         provider: 'anthropic',
         type: 'chat',
         contextWindow: 200000,
@@ -279,8 +279,8 @@ const DEFAULT_MODELS: Map<AIProvider, AIModel[]> = new Map([
         requiresApiKey: true,
       },
       {
-        id: 'claude-3-5-haiku-20241022',
-        name: 'Claude 3.5 Haiku',
+        id: 'claude-sonnet-4-20250514',
+        name: 'Claude Sonnet 4',
         provider: 'anthropic',
         type: 'chat',
         contextWindow: 200000,
@@ -360,7 +360,7 @@ export const useAIStore = create<AIState>()(
       showDataContext: true,
       showQueryHistory: false,
 
-      autoExecuteSQL: false,
+      autoExecuteSQL: true,
       showCostEstimates: true,
       maxHistoryItems: 50,
 

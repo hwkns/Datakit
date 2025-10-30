@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
-import {
-  Crown,
-  Key,
-  CheckCircle,
-  ExternalLink,
-  Settings as SettingsIcon,
-  CreditCard,
-} from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useAIStore } from "@/store/aiStore";
 import { AIProvider } from "@/types/ai";
@@ -98,16 +90,13 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
     updateSettings,
   } = useAIStore();
 
-  const { creditsRemaining, stats, isLoading: creditsLoading } = useCredits();
+  const { creditsRemaining, isLoading: creditsLoading } = useCredits();
   const navigate = useNavigate();
 
   const [keyInputs, setKeyInputs] = useState<Map<AIProvider, string>>(
     new Map()
   );
-  const [showKeys, setShowKeys] = useState<Map<AIProvider, boolean>>(new Map());
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(
-    activeProvider || "openai"
-  );
+
   const [editingProvider, setEditingProvider] = useState<AIProvider | null>(
     null
   );
@@ -131,17 +120,6 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
     return credits.toLocaleString();
   };
 
-  const getCreditStatus = () => {
-    if (creditsRemaining === -1)
-      return { color: "text-green-400", label: t('settings.ai.unlimited', { defaultValue: 'Unlimited' }) };
-    if (creditsRemaining > 50)
-      return { color: "text-green-400", label: t('settings.ai.creditStatus.good', { defaultValue: 'Good' }) };
-    if (creditsRemaining > 10)
-      return { color: "text-yellow-400", label: t('settings.ai.creditStatus.low', { defaultValue: 'Low' }) };
-    return { color: "text-red-400", label: t('settings.ai.creditStatus.veryLow', { defaultValue: 'Very Low' }) };
-  };
-
-  const creditStatus = getCreditStatus();
 
   // Initialize form with existing keys
   useEffect(() => {
@@ -154,10 +132,6 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
 
   const handleKeyChange = (provider: AIProvider, value: string) => {
     setKeyInputs(new Map(keyInputs.set(provider, value)));
-  };
-
-  const handleToggleKeyVisibility = (provider: AIProvider) => {
-    setShowKeys(new Map(showKeys.set(provider, !showKeys.get(provider))));
   };
 
   const handleSaveKey = (provider: AIProvider) => {
@@ -174,172 +148,46 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
     return key.slice(0, 6) + "•".repeat(20) + key.slice(-4);
   };
 
-  const getProviderStatus = (provider: AIProvider) => {
-    if (provider === "datakit") {
-      return isProOrTeam ? "available" : "upgrade";
-    }
-    const hasKey = apiKeys.has(provider) && !!apiKeys.get(provider);
-    return hasKey ? "configured" : "setup";
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "available":
-        return <CheckCircle className="h-4 w-4 text-green-400" />;
-      case "configured":
-        return <CheckCircle className="h-4 w-4 text-green-400" />;
-      case "upgrade":
-        return <Crown className="h-4 w-4 text-amber-400" />;
-      case "setup":
-        return <Key className="h-4 w-4 text-gray-400" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "available":
-        return t('settings.ai.providerStatus.available', { defaultValue: 'Available' });
-      case "configured":
-        return t('settings.ai.providerStatus.configured', { defaultValue: 'Configured' });
-      case "upgrade":
-        return t('settings.ai.providerStatus.upgradeRequired', { defaultValue: 'Pro/Team Required' });
-      case "setup":
-        return t('settings.ai.providerStatus.setupRequired', { defaultValue: 'Setup Required' });
-      default:
-        return "";
-    }
-  };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <div className="mb-5">
-        <h3 className="text-lg font-medium text-white">{t('settings.ai.title', { defaultValue: 'AI Configuration' })}</h3>
-        <p className="text-sm text-white/60">{t('settings.ai.description', { defaultValue: 'Choose how DataKit processes your data with AI' })}</p>
+    <div className="p-6 space-y-8">
+      {/* DataKit Models */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <img src={AnthropicLogo} className="h-4 w-4" alt="Anthropic" />
+          <div className="text-white">DataKit Models</div>
+        </div>
+        <div className="text-white/60 text-sm mb-3">
+          DataKit Smart (Claude 4.5 Sonnet) & DataKit Fast (Claude 4 Sonnert)
+        </div>
+        
+        <div className="text-white/50 text-sm">
+          {!creditsLoading && (
+            creditsRemaining === -1 
+              ? 'Unlimited credits'
+              : `${formatCredits(creditsRemaining)} of 300 credits`
+          )}
+          {!isProOrTeam && (
+            <div className="mt-1">
+              <button 
+                onClick={handleUpgrade}
+                className="text-white/60 text-sm hover:text-white underline"
+              >
+                Upgrade for unlimited
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Split View - Main Content */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-5 min-h-0">
-        {/* Left Column: DataKit AI Highlight */}
-        <div className="flex flex-col gap-4">
-          {/* DataKit AI Premium Card - More Compact */}
-          <div
-            className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 flex-1 ${
-              isProOrTeam
-                ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/50 shadow-lg shadow-primary/20"
-                : "bg-gradient-to-br from-white/10 to-white/5 border-white/20 hover:border-primary/40 hover:shadow-lg cursor-pointer"
-            }`}
-            onClick={!isProOrTeam ? handleUpgrade : undefined}
-          >
-            {!isProOrTeam && (
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 animate-pulse"></div>
-            )}
-            
-            <div className="relative p-5">
-             
-              
-              <div className="mb-3">
-                <h4 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                  {t('settings.ai.datakitModels.title', { defaultValue: 'DataKit Models' })}
-                </h4>
-                <p className="text-xs text-white/70 leading-relaxed">
-                  {t('settings.ai.datakitModels.description', { defaultValue: 'Premium AI models optimized for data analysis. No API keys needed.' })}
-                </p>
-                
-                {/* Anthropic Badge */}
-                <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-full">
-                  <img src={AnthropicLogo} className="h-3 w-3" alt="Anthropic" />
-                  <span className="text-xs text-white/70">{t('settings.ai.datakitModels.poweredBy', { defaultValue: 'Powered by Anthropic' })}</span>
-                </div>
-              </div>
-
-              {/* Compact Features */}
-              <div className="space-y-1.5 mb-4">
-                <div className="flex items-center gap-2 text-xs text-white/70">
-                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                  <span>{t('settings.ai.datakitModels.features.preTuned', { defaultValue: 'Pre-tuned for SQL & data transformation' })}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-white/70">
-                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                  <span>{t('settings.ai.datakitModels.features.claudeModels', { defaultValue: 'Claude 3.5 Sonnet & Haiku included' })}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-white/70">
-                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                  <span>{t('settings.ai.datakitModels.features.zeroConfig', { defaultValue: 'Zero configuration required' })}</span>
-                </div>
-              </div>
-
-              {/* Compact Status/CTA */}
-              {isProOrTeam ? (
-                <div className="bg-primary/10 border border-primary/30 rounded p-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                      <span className="text-xs text-white">{t('settings.ai.datakitModels.active', { defaultValue: 'Active' })}</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="bg-white/5 rounded p-2 border border-white/10 flex items-center justify-between">
-                    <span className="text-xs text-white/70">{t('settings.ai.datakitModels.proPlan', { defaultValue: 'Pro Plan' })}</span>
-                    <span className="text-xs text-white font-medium">$19/mo</span>
-                  </div>
-                  <button 
-                    onClick={handleUpgrade}
-                    className="w-full text-white py-2 px-3 rounded-lg font-medium text-sm transition-colors cursor-pointer"
-                  >
-                    {t('settings.ai.datakitModels.viewPlans', { defaultValue: 'View All Plans →' })}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Compact Credits */}
-          <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-3 w-3 text-blue-400" />
-                <span className="text-xs text-white">{t('settings.ai.credits.title', { defaultValue: 'Credits' })}</span>
-              </div>
-              <div className="text-right">
-                <span className={`text-sm font-bold ${creditStatus.color}`}>
-                  {formatCredits(creditsRemaining)}
-                </span>
-                <span className="text-xs text-white/50">/{!isProOrTeam ? "315" : "1,575"}</span>
-              </div>
-            </div>
-            
-            {creditsRemaining !== -1 && (
-              <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 ${
-                    creditsRemaining > 50 ? 'bg-green-400' : 
-                    creditsRemaining > 10 ? 'bg-yellow-400' : 'bg-red-400'
-                  }`}
-                  style={{
-                    width: `${Math.min(100, (creditsRemaining / (isProOrTeam ? 1575 : 315)) * 100)}%`
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: Alternative Providers */}
-        <div className="flex flex-col">
-          <div className="mb-3">
-            <h4 className="text-sm font-medium text-white/80">{t('settings.ai.alternativeProviders.title', { defaultValue: 'Alternative Providers' })}</h4>
-            <p className="text-xs text-white/60">{t('settings.ai.alternativeProviders.description', { defaultValue: 'Use your own API keys for these providers' })}</p>
-          </div>
-
-          <div className="flex-1 space-y-2.5 overflow-y-auto pr-2">
+      {/* Providers */}
+      <div>
+        <div className="text-white mb-4">Providers</div>
+        
+        <div className="space-y-3">
             {(["openai", "anthropic", "groq"] as AIProvider[]).map((provider) => {
               const config = PROVIDER_CONFIG[provider];
-              const status = getProviderStatus(provider);
               const isActive = activeProvider === provider;
               const hasKey = apiKeys.has(provider) && !!apiKeys.get(provider);
               const isEditing = editingProvider === provider;
@@ -374,25 +222,11 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
               };
 
               return (
-                <div
-                  key={provider}
-                  className={`rounded-xl border p-3 transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? "bg-gradient-to-br from-white/10 to-white/5 border-primary/50 shadow-lg shadow-primary/20"
-                      : "bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 hover:border-white/20 hover:shadow-lg"
-                  }`}
-                  onClick={handleSelectProvider}
-                >
-                  {/* Ultra Compact Header */}
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-5 w-5 rounded flex items-center justify-center flex-shrink-0 bg-white/10">
-                        {config.icon}
-                      </div>
-                      <h5 className="text-xs font-medium text-white">
-                        {config.name}
-                      </h5>
-                      {hasKey && <CheckCircle className="h-3 w-3 text-green-400" />}
+                <div key={provider} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/80 text-sm">{config.name}</span>
+                      {isActive && <span className="text-white/40 text-xs">active</span>}
                     </div>
                     {config.websiteUrl && (
                       <button
@@ -400,51 +234,58 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                           e.stopPropagation();
                           window.open(config.websiteUrl!, "_blank");
                         }}
-                        className="p-0.5 text-white/40 hover:text-white/80 rounded transition-colors"
-                        title={t('settings.ai.providers.getApiKey', { defaultValue: 'Get API key' })}
+                        className="text-white/40 hover:text-white/80 text-xs underline"
                       >
-                        <ExternalLink className="h-3 w-3" />
+                      {t('settings.ai.providers.getApiKey', { defaultValue: 'Get key' })}
                       </button>
                     )}
                   </div>
 
-                  {/* Ultra Compact API Key Section */}
-                  {hasKey && !isEditing && (
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-mono text-white/40 bg-white/5 px-1.5 py-0.5 rounded flex-1 truncate">
+                  {hasKey && !isEditing ? (
+                    <div className="space-y-2">
+                      <div className="text-xs font-mono text-white/40 truncate">
                         {maskApiKey(apiKeys.get(provider) || "")}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUpdateKey();
-                        }}
-                        className="text-xs text-white/50 hover:text-white/80 px-1"
-                      >
-                        {t('settings.ai.providers.edit', { defaultValue: 'Edit' })}
-                      </button>
+                      <div className="flex gap-2 text-xs">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectProvider();
+                          }}
+                          className={`text-white/60 hover:text-white ${
+                            isActive ? "underline" : ""
+                          }`}
+                        >
+                          {isActive ? 'Active' : 'Use'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateKey();
+                          }}
+                          className="text-white/40 hover:text-white/60"
+                        >
+                           {t('settings.ai.providers.edit', { defaultValue: 'Edit' })}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  {isEditing && (
-                    <div className="space-y-1">
+                  ) : isEditing ? (
+                    <div className="space-y-2">
                       <input
                         type="password"
                         value={keyInputs.get(provider) || ""}
-                        onChange={(e) =>
-                          handleKeyChange(provider, e.target.value)
-                        }
+                        onChange={(e) => handleKeyChange(provider, e.target.value)}
                         placeholder={`${config.keyFormat || 'API key'}`}
-                        className="w-full px-2 py-0.5 text-xs bg-white/5 border border-white/10 rounded text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
+                        className="w-full px-2 py-1 bg-transparent border-b border-white/20 text-white text-sm placeholder-white/40 focus:outline-none focus:border-white/50"
                         autoFocus
-                        onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex gap-1">
+                      <div className="flex gap-2 text-xs">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSaveUpdate();
                           }}
-                          className="px-2 py-0.5 text-xs bg-primary/20 text-primary rounded hover:bg-primary/30 flex-1"
+                          className="text-white/60 hover:text-white underline"
                         >
                           {t('settings.ai.providers.save', { defaultValue: 'Save' })}
                         </button>
@@ -453,24 +294,20 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                             e.stopPropagation();
                             handleCancelUpdate();
                           }}
-                          className="px-2 py-0.5 text-xs text-white/60 hover:text-white/80"
+                          className="text-white/40 hover:text-white/60"
                         >
-                          {t('settings.ai.providers.cancel', { defaultValue: 'Cancel' })}
+                          Cancel
                         </button>
                       </div>
                     </div>
-                  )}
-                  {!hasKey && !isEditing && (
-                    <div className="space-y-1">
+                  ) : (
+                    <div className="space-y-2">
                       <input
                         type="password"
                         value={keyInputs.get(provider) || ""}
-                        onChange={(e) =>
-                          handleKeyChange(provider, e.target.value)
-                        }
+                        onChange={(e) => handleKeyChange(provider, e.target.value)}
                         placeholder={`${config.keyFormat || 'API key'}`}
-                        className="w-full px-2 py-0.5 text-xs bg-white/5 border border-white/10 rounded text-white placeholder-white/40 focus:outline-none focus:border-primary/50"
-                        onClick={(e) => e.stopPropagation()}
+                        className="w-full px-2 py-1 bg-transparent border-b border-white/20 text-white text-sm placeholder-white/40 focus:outline-none focus:border-white/50"
                       />
                       <button
                         onClick={(e) => {
@@ -478,18 +315,10 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
                           handleSaveKey(provider);
                         }}
                         disabled={!keyInputs.get(provider)?.trim()}
-                        className="w-full px-2 py-0.5 text-xs text-white/50 rounded hover:border border-primary/30 disabled:opacity-50 transition-colors"
+                        className="text-white/60 hover:text-white text-xs underline disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        {t('settings.ai.providers.activate', { defaultValue: 'Activate' })}
+                        Save
                       </button>
-                    </div>
-                  )}
-
-                  {/* Active Indicator */}
-                  {isActive && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-primary">
-                      <div className="w-1 h-1 bg-primary rounded-full"></div>
-                      {t('settings.ai.providers.active', { defaultValue: 'Active' })}
                     </div>
                   )}
                 </div>
@@ -497,63 +326,33 @@ const AISettings: React.FC<AISettingsProps> = ({ onTabChange }) => {
             })}
           </div>
           
-          {/* Why DataKit AI */}
-          {!isProOrTeam && (
-            <div className="border border-primary/20 rounded-lg p-3 mt-3">
-              <h5 className="text-xs font-medium text-white mb-1.5">{t('settings.ai.whyDatakit.title', { defaultValue: 'Why DataKit Models?' })}</h5>
-              <ul className="space-y-1 text-xs text-white/70">
-                <li className="flex items-start gap-1.5">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{t('settings.ai.whyDatakit.features.noApiKeys', { defaultValue: 'No API keys to manage' })}</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{t('settings.ai.whyDatakit.features.monthlyCredits', { defaultValue: 'Credits monthly' })}</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{t('settings.ai.whyDatakit.features.optimized', { defaultValue: 'Optimized for data tasks' })}</span>
-                </li>
-              </ul>
-              <button 
-                onClick={handleUpgrade}
-                className="mt-2 text-xs text-primary hover:text-primary/80 font-medium"
+        </div>
+
+        {/* Settings */}
+        <div>
+          <div className="text-white mb-4">Settings</div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white text-sm">Auto-execute SQL</div>
+                <div className="text-white/50 text-xs">Automatically run AI-generated SQL queries</div>
+              </div>
+              <button
+                onClick={() => updateSettings({ autoExecuteSQL: !autoExecuteSQL })}
+                className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                  autoExecuteSQL ? "bg-white/30" : "bg-white/10"
+                }`}
               >
-                {t('settings.ai.whyDatakit.learnMore', { defaultValue: 'Learn More →' })}
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    autoExecuteSQL ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
               </button>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Compact Settings Footer */}
-      <div className="mt-4 pt-4 border-t border-white/10">
-        <div className="flex items-center justify-between p-3 bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-xl">
-          <div className="flex items-center gap-2">
-            <SettingsIcon className="h-3 w-3 text-white/60" />
-            <div>
-              <label className="text-xs text-white/80 font-medium">
-                {t('settings.ai.autoExecuteSql.title', { defaultValue: 'Auto-execute SQL' })}
-              </label>
-              <p className="text-xs text-white/50">{t('settings.ai.autoExecuteSql.description', { defaultValue: 'Run AI queries automatically' })}</p>
-            </div>
           </div>
-          <button
-            onClick={() =>
-              updateSettings({ autoExecuteSQL: !autoExecuteSQL })
-            }
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              autoExecuteSQL ? "bg-primary" : "bg-white/20"
-            }`}
-          >
-            <span
-              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                autoExecuteSQL ? "translate-x-5" : "translate-x-1"
-              }`}
-            />
-          </button>
         </div>
-      </div>
     </div>
   );
 };

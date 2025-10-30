@@ -7,6 +7,7 @@ interface FolderStore extends FolderTreeState {
   // State
   draftFolderId: string | null;
   remoteFolderId: string | null;
+  tempFolderId: string | null;
   
   // Core Actions
   initializeStore: () => void;
@@ -21,6 +22,12 @@ interface FolderStore extends FolderTreeState {
   expandFolder: (folderId: string) => void;
   collapseFolder: (folderId: string) => void;
   linkFolder: (directoryHandle: FileSystemDirectoryHandle, parentId?: string | null) => Promise<void>;
+  
+  // Special folder management
+  ensureDraftFolder: () => string;
+  ensureRemoteFolder: () => string;
+  ensureTempFolder: () => string;
+  cleanupTempFolder: () => void;
   
   // File Actions
   addFile: (file: File, fileData: FileData, targetFolderId?: string) => string;
@@ -97,6 +104,7 @@ export const useFolderStore = create<FolderStore>()(
       expandedIds: new Set(),
       draftFolderId: null,
       remoteFolderId: null,
+      tempFolderId: null,
       
       // Initialize store with default folders
       initializeStore: () => {
@@ -105,20 +113,24 @@ export const useFolderStore = create<FolderStore>()(
         // Create Draft folder if it doesn't exist
         if (!state.draftFolderId) {
           const draftId = get().createFolder('Draft', null);
-          const draftNode = get().getNodeById(draftId);
+          const nodeMap = new Map(get().nodeMap);
+          const draftNode = nodeMap.get(draftId);
           if (draftNode) {
             draftNode.folderData = { ...draftNode.folderData, isDraft: true };
-            set({ draftFolderId: draftId });
+            const roots = rebuildTree(nodeMap);
+            set({ draftFolderId: draftId, nodeMap, roots });
           }
         }
         
         // Create Remote Sources folder if it doesn't exist
         if (!state.remoteFolderId) {
           const remoteId = get().createFolder('Remote Sources', null);
-          const remoteNode = get().getNodeById(remoteId);
+          const nodeMap = new Map(get().nodeMap);
+          const remoteNode = nodeMap.get(remoteId);
           if (remoteNode) {
             remoteNode.folderData = { ...remoteNode.folderData, isRemote: true };
-            set({ remoteFolderId: remoteId });
+            const roots = rebuildTree(nodeMap);
+            set({ remoteFolderId: remoteId, nodeMap, roots });
           }
         }
       },
@@ -452,6 +464,7 @@ export const useFolderStore = create<FolderStore>()(
           nodeMap: Array.from(state.nodeMap.entries()),
           draftFolderId: state.draftFolderId,
           remoteFolderId: state.remoteFolderId,
+          tempFolderId: state.tempFolderId,
         }, null, 2);
       },
       
@@ -467,11 +480,77 @@ export const useFolderStore = create<FolderStore>()(
             nodeMap,
             draftFolderId: data.draftFolderId,
             remoteFolderId: data.remoteFolderId,
+            tempFolderId: data.tempFolderId,
             selectedIds: new Set(),
             expandedIds: new Set(),
           });
         } catch (error) {
           console.error('Error importing tree:', error);
+        }
+      },
+      
+      // Ensure Draft folder exists
+      ensureDraftFolder: () => {
+        const state = get();
+        if (!state.draftFolderId) {
+          const draftId = get().createFolder('Draft', null);
+          const nodeMap = new Map(get().nodeMap);
+          const draftNode = nodeMap.get(draftId);
+          if (draftNode) {
+            draftNode.folderData = { ...draftNode.folderData, isDraft: true };
+            const roots = rebuildTree(nodeMap);
+            set({ draftFolderId: draftId, nodeMap, roots });
+          }
+          return draftId;
+        }
+        return state.draftFolderId;
+      },
+      
+      // Ensure Remote Sources folder exists
+      ensureRemoteFolder: () => {
+        const state = get();
+        if (!state.remoteFolderId) {
+          const remoteId = get().createFolder('Remote Sources', null);
+          const nodeMap = new Map(get().nodeMap);
+          const remoteNode = nodeMap.get(remoteId);
+          if (remoteNode) {
+            remoteNode.folderData = { ...remoteNode.folderData, isRemote: true };
+            const roots = rebuildTree(nodeMap);
+            set({ remoteFolderId: remoteId, nodeMap, roots });
+          }
+          return remoteId;
+        }
+        return state.remoteFolderId;
+      },
+      
+      // Ensure Temporary Tables folder exists
+      ensureTempFolder: () => {
+        const state = get();
+        if (!state.tempFolderId) {
+          const tempId = get().createFolder('Temporary Tables', null);
+          const nodeMap = new Map(get().nodeMap);
+          const tempNode = nodeMap.get(tempId);
+          if (tempNode) {
+            tempNode.folderData = { ...tempNode.folderData, isTemp: true };
+            const roots = rebuildTree(nodeMap);
+            set({ tempFolderId: tempId, nodeMap, roots });
+          }
+          return tempId;
+        }
+        return state.tempFolderId;
+      },
+      
+      // Clean up temporary folder - remove all files
+      cleanupTempFolder: () => {
+        const state = get();
+        if (state.tempFolderId) {
+          const tempNode = get().getNodeById(state.tempFolderId);
+          if (tempNode && tempNode.children) {
+            // Remove all children (files) from temp folder
+            tempNode.children.forEach(child => {
+              get().removeNode(child.id);
+            });
+          }
         }
       },
       
@@ -484,18 +563,33 @@ export const useFolderStore = create<FolderStore>()(
           expandedIds: new Set(),
           draftFolderId: null,
           remoteFolderId: null,
+          tempFolderId: null,
         });
       },
     }),
     {
       name: 'folder-tree-storage',
-      partialize: (state) => ({
-        roots: state.roots,
-        nodeMap: Array.from(state.nodeMap.entries()),
-        expandedIds: Array.from(state.expandedIds),
-        draftFolderId: state.draftFolderId,
-        remoteFolderId: state.remoteFolderId,
-      }),
+      partialize: (state) => {
+        // Filter out temporary folder and its contents from persistence
+        const filteredNodeMap = new Map(state.nodeMap);
+        let filteredRoots = [...state.roots];
+        
+        if (state.tempFolderId) {
+          // Remove temp folder from nodeMap
+          filteredNodeMap.delete(state.tempFolderId);
+          // Remove temp folder from roots
+          filteredRoots = filteredRoots.filter(root => root.id !== state.tempFolderId);
+        }
+        
+        return {
+          roots: filteredRoots,
+          nodeMap: Array.from(filteredNodeMap.entries()),
+          expandedIds: Array.from(state.expandedIds),
+          draftFolderId: state.draftFolderId,
+          remoteFolderId: state.remoteFolderId,
+          // Don't persist tempFolderId - it will be recreated when needed
+        };
+      },
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Restore Map and Set objects
@@ -503,7 +597,10 @@ export const useFolderStore = create<FolderStore>()(
           state.expandedIds = new Set(state.expandedIds as any);
           state.selectedIds = new Set();
           
-          // Initialize default folders
+          // Temp folder is not persisted, so reset tempFolderId
+          state.tempFolderId = null;
+          
+          // Initialize store (will create draft and remote folders, but not temp)
           state.initializeStore();
         }
       },

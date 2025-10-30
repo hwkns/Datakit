@@ -53,54 +53,59 @@ export async function initializePyodide(): Promise<PyodideInterface> {
     }
     console.log("[Python] Core packages loaded successfully");
 
-    // Install additional packages via micropip (optional)
     try {
-      console.log("[Python] Installing additional packages...");
-      // TODO: Do we need this from very beginning?
-      //
-      // await pyodide.runPythonAsync(`
-      //   import micropip
+      console.log("[Python] Installing additional data science packages...");
+      
+      await pyodide.runPythonAsync(`
+        import micropip
         
-      //   async def install_additional_packages():
-      //       try:
-      //           # Install basic packages first
-      //           await micropip.install(['plotly', 'seaborn'])
-
-      //           # Try to install and setup transformers-js-py
-      //           try:
-      //               await micropip.install('transformers-js-py')
+        async def install_data_science_packages():
+            """Install packages that are commonly available in Pyodide and useful for data analysis"""
+            try:
+                # Essential data science and visualization packages
+                packages_to_install = [
+                    'plotly',           # Interactive visualizations
+                    'altair',           # Grammar of graphics visualization
+                    'scikit-learn',     # Machine learning
+                    'scipy',            # Scientific computing
+                ]
+                
+                print("📦 Installing data science packages...")
+                for package in packages_to_install:
+                    try:
+                        print(f"   Installing {package}...")
+                        await micropip.install(package)
+                        print(f"   ✅ {package} installed successfully")
+                    except Exception as pkg_error:
+                        print(f"   ⚠️ Failed to install {package}: {pkg_error}")
+                        
+                # Try to install seaborn if available
+                try:
+                    print("   Installing seaborn...")
+                    # Import seaborn after installation to verify it works
+                    await micropip.install('seaborn')
+                    import seaborn as sns
+                    print("   ✅ seaborn installed and imported successfully")
+                except Exception as seaborn_error:
+                    print(f"   ⚠️ seaborn installation failed: {seaborn_error}")
+                
+                print("📦 Data science package installation completed")
                     
-      //               # Try to load transformers.js
-      //               from transformers_js_py import import_transformers_js
-      //               transformers = await import_transformers_js()
-                    
-      //               # Make it globally available
-      //               import builtins
-      //               builtins.transformers = transformers
-      //               builtins.transformers_available = True
-                  
-      //           except Exception as tf_error:
-      //               print(f"⚠️ transformers-js-py setup failed: {tf_error}")
-      //               print("   Hugging Face models will not be available")
-      //               import builtins
-      //               builtins.transformers = None
-      //               builtins.transformers_available = False
-                    
-      //       except Exception as e:
-      //           print(f"⚠️ Some packages failed to install: {e}")
+            except Exception as e:
+                print(f"⚠️ Some data science packages failed to install: {e}")
         
-      //   # Install packages
-      //   await install_additional_packages()
-      // `);
-      console.log("[Python] Additional packages installed successfully");
+        # Install packages
+        await install_data_science_packages()
+      `);
+      console.log("[Python] Additional data science packages installed successfully");
     } catch (error) {
       console.warn("[Python] Failed to install additional packages (non-critical):", error);
       // Don't throw here, these are optional packages
     }
 
-    // Setup matplotlib for web with yield point
+    // Setup visualization libraries and helpers
     try {
-      console.log("[Python] Setting up matplotlib...");
+      console.log("[Python] Setting up visualization libraries...");
       await pyodide.runPythonAsync(`
         import matplotlib
         matplotlib.use('Agg')  # Use non-interactive backend
@@ -121,20 +126,76 @@ export async function initializePyodide(): Promise<PyodideInterface> {
             
             return f"data:image/{format};base64,{img_base64}"
         
-        # Make it globally available
+        # Setup additional visualization helpers
+        def show_plotly_chart(fig):
+            """Helper to display Plotly charts as HTML"""
+            try:
+                import plotly
+                html_str = fig.to_html(include_plotlyjs='cdn', div_id="plotly-div")
+                return html_str
+            except Exception as e:
+                print(f"Plotly visualization error: {e}")
+                return None
+                
+        def show_altair_chart(chart):
+            """Helper to display Altair charts as HTML"""
+            try:
+                import altair as alt
+                return chart.to_html()
+            except Exception as e:
+                print(f"Altair visualization error: {e}")
+                return None
+        
+        # Make visualization helpers globally available
         import builtins
         builtins.get_plot_base64 = get_plot_base64
+        builtins.show_plotly_chart = show_plotly_chart
+        builtins.show_altair_chart = show_altair_chart
         
         # Also make micropip globally available for easy package installation
         import micropip
         builtins.micropip = micropip
+        
+        # Try to import and setup additional visualization libraries
+        try:
+            import plotly.express as px
+            import plotly.graph_objects as go
+            builtins.px = px
+            builtins.go = go
+            print("📊 Plotly imported and ready")
+        except ImportError:
+            print("📊 Plotly not available")
+            
+        try:
+            import altair as alt
+            builtins.alt = alt
+            print("📊 Altair imported and ready")
+        except ImportError:
+            print("📊 Altair not available")
+            
+        try:
+            import seaborn as sns
+            builtins.sns = sns
+            print("📊 Seaborn imported and ready")
+        except ImportError:
+            print("📊 Seaborn not available")
+            
+        try:
+            from sklearn import datasets, model_selection, preprocessing, metrics
+            builtins.sklearn_datasets = datasets
+            builtins.train_test_split = model_selection.train_test_split
+            builtins.StandardScaler = preprocessing.StandardScaler
+            builtins.sklearn_metrics = metrics
+            print("🤖 Scikit-learn basics imported and ready")
+        except ImportError:
+            print("🤖 Scikit-learn not available")
       `);
       // Yield to browser
       await new Promise(resolve => setTimeout(resolve, 0));
-      console.log("[Python] Matplotlib setup complete");
+      console.log("[Python] Visualization libraries setup complete");
     } catch (error) {
-      console.error("[Python] Failed to setup matplotlib:", error);
-      throw new Error(`Failed to setup matplotlib: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("[Python] Failed to setup visualization libraries:", error);
+      throw new Error(`Failed to setup visualization libraries: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // Setup DataFrame display helpers with yield point

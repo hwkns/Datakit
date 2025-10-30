@@ -19,7 +19,7 @@ export class AnthropicProvider {
   private model: string;
   private apiProvider: SafeAPIProvider;
 
-  constructor(apiKey: string, model: string = "claude-3-sonnet-20240229") {
+  constructor(apiKey: string, model: string = "claude-sonnet-4-5-20250929") {
     this.apiKey = apiKey;
     this.model = model;
     this.apiProvider = new SafeAPIProvider("https://api.anthropic.com/v1", {

@@ -8,7 +8,7 @@ import { aiService } from "@/lib/ai/aiService";
 import { DataKitProvider } from "@/lib/ai/providers/datakit";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { AIQuery, QueryIntent } from "@/types/ai";
-import { createMultiTableSystemPrompt } from "@/lib/ai/prompts/sqlPrompts";
+import { createMultiTableSystemPrompt, createSQLOnlyMultiTableSystemPrompt } from "@/lib/ai/prompts/sqlPrompts";
 
 export const useAIOperations = () => {
   const [isExecuting, setIsExecuting] = useState(false);
@@ -41,6 +41,13 @@ export const useAIOperations = () => {
   const activeFileInfo = useAppStore(selectActiveFileInfo);
   const activeFile = useAppStore(selectActiveFile);
   const { isAuthenticated } = useAuth();
+  
+  // Get current view mode for context-aware prompts
+  const currentViewMode = useAppStore((state) => {
+    const activeFile = selectActiveFile(state);
+    const emptyStateViewMode = state.emptyStateViewMode;
+    return activeFile?.viewMode || emptyStateViewMode;
+  });
 
   useEffect(() => {
     if (activeFile?.id) {
@@ -179,8 +186,8 @@ export const useAIOperations = () => {
     if (sqlBlockMatches) {
       sqlBlockMatches.forEach(match => {
         const query = match.replace(/```(?:sql)?\s*\n?/gi, '').replace(/\n?\s*```/gi, '').trim();
-        // Check if it looks like SQL
-        if (query && query.length > 10 && /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(query)) {
+        // Check if it looks like SQL - expanded to include more SQL commands
+        if (query && query.length > 5 && /^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE|SUMMARIZE|DESCRIBE|PRAGMA|SHOW|EXPLAIN|ALTER|DROP)/i.test(query)) {
           queries.push(query);
         }
       });
@@ -193,7 +200,7 @@ export const useAIOperations = () => {
       let currentQuery: string[] = [];
       
       for (const line of lines) {
-        if (/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)/i.test(line.trim())) {
+        if (/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE|SUMMARIZE|DESCRIBE|PRAGMA|SHOW|EXPLAIN|ALTER|DROP)/i.test(line.trim())) {
           inQuery = true;
           currentQuery = [line];
         } else if (inQuery) {
@@ -226,6 +233,40 @@ export const useAIOperations = () => {
     }
     
     return queries;
+  }, []);
+
+  // Extract Python code from AI response text
+  const extractPythonQueries = useCallback((response: string): string[] => {
+    const pythonCodes: string[] = [];
+    
+    // Look for Python code blocks (with flexible whitespace)
+    const pythonBlockMatches = response.match(/```python\s*\n([\s\S]*?)\n\s*```/gi) || [];
+    
+    if (pythonBlockMatches) {
+      pythonBlockMatches.forEach(match => {
+        const code = match.replace(/```python\s*\n?/gi, '').replace(/\n?\s*```/gi, '').trim();
+        // Basic validation - must have some content and look like Python
+        if (code && code.length > 5) {
+          pythonCodes.push(code);
+        }
+      });
+    }
+    
+    // Also look for generic code blocks that might be Python
+    if (pythonCodes.length === 0) {
+      const genericCodeMatches = response.match(/```\s*\n([\s\S]*?)\n\s*```/gi) || [];
+      
+      genericCodeMatches.forEach(match => {
+        const code = match.replace(/```\s*\n?/gi, '').replace(/\n?\s*```/gi, '').trim();
+        // Check if it looks like Python (contains common Python patterns)
+        if (code && code.length > 5 && 
+            (/import |from |def |class |if __name__|print\(|\.iloc|\.loc|pd\.|np\.|plt\.|sql\(|await sql/i.test(code))) {
+          pythonCodes.push(code);
+        }
+      });
+    }
+    
+    return pythonCodes;
   }, []);
 
   const generateSQL = useCallback(async (prompt: string) => {
@@ -275,6 +316,7 @@ export const useAIOperations = () => {
     setCurrentError(null);
 
     const startTime = Date.now();
+    console.log('[AI Operations] Starting AI query stream processing...');
     
     try {
       const multiContext = await getMultiTableContext();
@@ -282,8 +324,12 @@ export const useAIOperations = () => {
         throw new Error('No data context available');
       }
 
-      // Build system message with multi-table context
-      const systemPrompt = createMultiTableSystemPrompt(multiContext);
+      // Build system message with context-aware prompts
+      const isNotebookMode = currentViewMode === 'notebook';
+      const systemPrompt = isNotebookMode 
+        ? createMultiTableSystemPrompt(multiContext)  // Python + SQL hybrid for notebooks
+        : createSQLOnlyMultiTableSystemPrompt(multiContext);  // SQL-only for other tabs
+        
       const systemMessage = {
         role: 'system' as const,
         content: systemPrompt,
@@ -420,6 +466,7 @@ export const useAIOperations = () => {
     setCurrentError,
     autoExecuteSQL,
     extractSQLQueries,
+    currentViewMode,
   ]);
 
   const executeGeneratedSQL = useCallback(async (sql: string, switchToQueryTab = true) => {
@@ -450,8 +497,21 @@ export const useAIOperations = () => {
     try {
       const result = await executePaginatedQuery(sql, 1, 100);
       
-      if (result.data && result.data.length >= 0) {
-        // Update the AI store with results
+      if (result && result.data && result.data.length >= 0) {
+        // Try to use overlay handler for tabular results
+        const overlayHandler = (window as any).__queryResultsOverlayHandler;
+        
+        if (overlayHandler && typeof overlayHandler === 'function') {
+          // Pass the PaginatedQueryResult directly - our overlay hook now handles this format
+          const wasHandledByOverlay = overlayHandler(result, sql, result.queryTime || 0);
+          
+          if (wasHandledByOverlay) {
+            // Overlay handled the result, no need to update AI store
+            return;
+          }
+        }
+        
+        // Fallback to AI store if overlay couldn't handle it (inline display)
         const { setQueryResults } = useAIStore.getState();
         
         const columns = result.columns || (result.data.length > 0 ? Object.keys(result.data[0]) : []);
@@ -519,6 +579,7 @@ export const useAIOperations = () => {
     
     // Utilities
     extractSQLQueries,
+    extractPythonQueries,
     clearResponse: () => {
       setCurrentResponse(null);
       setStreamingResponse("");

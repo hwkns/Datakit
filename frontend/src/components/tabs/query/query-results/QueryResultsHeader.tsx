@@ -14,6 +14,7 @@ interface QueryResultsHeaderProps {
   columns: string[];
   onImportAsTable?: () => void;
   isImporting?: boolean;
+  showDownloadCSV?: boolean;
 }
 
 const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({ 
@@ -24,7 +25,8 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
   results,
   columns,
   onImportAsTable,
-  isImporting = false
+  isImporting = false,
+  showDownloadCSV = true
 }) => {
   const { t } = useTranslation();
   const { formatCellValue } = useQueryColumnFormatting({
@@ -81,7 +83,7 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
       <div className="flex items-center space-x-2">
         {onImportAsTable && (
           <Tooltip 
-            content="Save these results as a new table in your database"
+            content="Save results in DataKit"
             placement="bottom"
           >
             <Button
@@ -96,15 +98,17 @@ const QueryResultsHeader: React.FC<QueryResultsHeaderProps> = ({
             </Button>
           </Tooltip>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 px-2 text-xs border-primary"
-          onClick={downloadCSV}
-        >
-          <Download size={12} className="mr-1" />
-          <span>{t('queryResults.header.downloadCSV', { defaultValue: 'Download CSV' })}</span>
-        </Button>
+        {showDownloadCSV && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs border-primary"
+            onClick={downloadCSV}
+          >
+            <Download size={12} className="mr-1" />
+            <span>{t('queryResults.header.downloadCSV', { defaultValue: 'Download CSV' })}</span>
+          </Button>
+        )}
       </div>
     </div>
   );

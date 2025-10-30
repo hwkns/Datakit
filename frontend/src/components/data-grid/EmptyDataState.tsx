@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
-import { Container, Terminal, Code, Hexagon, Upload, PlayCircle, FilePlus } from "lucide-react";
+import { Container, Terminal, Code, Hexagon, FilePlus, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAppStore } from "@/store/appStore";
+import { useFolderStore } from "@/store/folderStore";
 
 import S3 from "@/assets/s3.png";
 import HuggingFace from "@/assets/huggingface.png";
@@ -10,7 +12,7 @@ import postgresIcon from "@/assets/postgres.png";
 
 import { ImportProvider } from "@/types/remoteImport";
 import { useFileUpload } from "@/components/data-grid/hooks";
-import DemoVideoModal from "@/components/data-grid/DemoVideoModal";
+import DemoWizard from "@/components/demo/DemoWizard";
 
 interface RemoteImportOption {
   id: ImportProvider;
@@ -25,12 +27,35 @@ interface Props {
 
 const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
   const { fileInputRef, handleButtonClick, handleFileSelect, isProcessing } = useFileUpload();
-  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showDemoWizard, setShowDemoWizard] = useState(false);
+  
   const { t } = useTranslation();
+  const { showAIAssistant } = useAppStore();
+  const { linkFolder } = useFolderStore();
 
   const getUploadText = () => {
     if (isProcessing) return t('preview.empty.processing', 'Processing files...');
     return t('preview.empty.dropOrClick', 'Drop files here or click to browse');
+  };
+
+  const handleOpenFolder = async () => {
+    if (!('showDirectoryPicker' in window)) {
+      alert(t('workspace.toolbar.browserNotSupported', 'Your browser does not support folder access. Please use Chrome or Edge.'));
+      return;
+    }
+
+    try {
+      const directoryHandle = await (window as any).showDirectoryPicker({
+        mode: 'read',
+      });
+      
+      // Import the folder structure
+      await linkFolder(directoryHandle, null);
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error('Error opening folder:', error);
+      }
+    }
   };
 
   const remoteOptions: RemoteImportOption[] = [
@@ -57,7 +82,7 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
       name: t('preview.providers.googleSheets.name'),
       icon: <GoogleSheetsIcon className="h-5 w-5" />,
       description: t('preview.providers.googleSheets.description'),
-    },
+    }
   ];
 
   const installOptions = [
@@ -97,13 +122,15 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         className="text-center max-w-4xl"
       >
         {/* Main heading with demo button */}
-        <div className="flex items-center justify-center gap-3 mb-3 flex-wrap">
+        <div className="flex items-center justify-center gap-3 mb-5 flex-wrap">
           <h1 className="text-2xl font-heading font-semibold text-white">
             {t('preview.empty.title')}
           </h1>
           <span className="text-white/40 text-sm">{t('common.labels.or')}</span>
+          
+          {/* Interactive Demo Button */}
           <motion.button
-            onClick={() => setShowDemoModal(true)}
+            onClick={() => setShowDemoWizard(true)}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ 
               opacity: 1, 
@@ -122,9 +149,8 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.2 }}
             >
-              <PlayCircle className="h-4 w-4" />
             </motion.div>
-            <span>{t('preview.empty.watchDemo')}</span>
+            <span>Take a tour</span>
           </motion.button>
         </div>
 
@@ -162,67 +188,132 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-0 items-center">
+          <div className="grid gap-6 items-center grid-cols-1">
             
-            {/* Primary Drop Zone - Left/Top */}
+            {/* Import Options */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4 }}
-              className="lg:col-span-2"
             >
-              <motion.button
-                onClick={handleButtonClick}
-                disabled={isProcessing}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="group relative w-full border-2 border-dashed border-white/20 hover:border-primary/40 rounded-xl p-6 transition-all duration-300 hover:bg-white/[0.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                type="button"
-              >
-                {/* Subtle gradient background on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                <div className="relative flex items-center gap-4">
-                  {/* Floating upload icon */}
-                  <motion.div
-                    animate={{ 
-                      y: [0, -2, 0],
-                      scale: [1, 1.02, 1],
-                      opacity: [0.6, 0.8, 0.6]
-                    }}
-                    transition={{ 
-                      duration: 3, 
-                      repeat: Infinity, 
-                      ease: "easeInOut" 
-                    }}
-                    className="flex-shrink-0"
-                  >
-                    <FilePlus className="h-6 w-6 text-white/60 group-hover:text-primary/80 transition-colors" />
-                  </motion.div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                {/* Import Files Button */}
+                <motion.button
+                  onClick={handleButtonClick}
+                  disabled={isProcessing}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="group relative border-2 border-dashed border-white/20 hover:border-primary/40 rounded-xl p-3 sm:p-4 transition-all duration-300 hover:bg-white/[0.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                >
+                  {/* Subtle gradient background on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
-                  <div className="flex-1 text-left">
-                    {/* Dynamic text with gradient */}
-                    <div className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-white transition-all duration-300 font-medium text-base whitespace-nowrap">
-                      {getUploadText()}
+                  <div className="relative flex flex-col items-center gap-2 sm:gap-3">
+                    {/* Upload icon */}
+                    <div className="flex-shrink-0">
+                      <FilePlus className="h-5 w-5 sm:h-6 sm:w-6 text-white/60 group-hover:text-primary/80 transition-colors" />
                     </div>
                     
-                    {/* Minimal file type indicators */}
-                    <div className="flex gap-1 mt-2">
-                      {['CSV', 'JSON', 'XLS', 'Parquet', 'TXT', 'DB'].map((type, i) => (
-                        <motion.span
-                          key={type}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.5 + i * 0.05 }}
-                          className="text-[10px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 group-hover:text-white/60 group-hover:border-white/20 transition-colors"
-                        >
-                          {type}
-                        </motion.span>
-                      ))}
+                    <div className="text-center">
+                      {/* Dynamic text with gradient */}
+                      <div className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-white transition-all duration-300 font-medium text-xs sm:text-sm">
+                        Import Files
+                      </div>
+                      
+                      {/* Minimal file type indicators */}
+                      <div className="flex gap-1 mt-1.5 sm:mt-2 justify-center flex-wrap">
+                        {['CSV', 'JSON', 'XLS', 'Parquet'].map((type, i) => (
+                          <motion.span
+                            key={type}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.5 + i * 0.05 }}
+                            className="text-[9px] sm:text-[10px] text-white/40 bg-white/5 px-1 sm:px-1.5 py-0.5 rounded border border-white/10 group-hover:text-white/60 group-hover:border-white/20 transition-colors"
+                          >
+                            {type}
+                          </motion.span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.button>
+                </motion.button>
+
+                {/* Open Folder Button */}
+                <motion.button
+                  onClick={handleOpenFolder}
+                  disabled={isProcessing}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="group relative border-2 border-dashed border-white/20 hover:border-blue-500/40 rounded-xl p-3 sm:p-4 transition-all duration-300 hover:bg-white/[0.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                >
+                  {/* Subtle gradient background on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative flex flex-col items-center gap-2 sm:gap-3">
+                    {/* Folder icon */}
+                    <div className="flex-shrink-0">
+                      <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white/60 group-hover:text-blue-500/80 transition-colors" />
+                    </div>
+                    
+                    <div className="text-center">
+                      {/* Dynamic text with gradient */}
+                      <div className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:to-white transition-all duration-300 font-medium text-xs sm:text-sm">
+                        Open Folder
+                      </div>
+                      
+                      {/* Description */}
+                      <div className="text-[9px] sm:text-[10px] text-white/40 mt-1 group-hover:text-white/60 transition-colors">
+                        Import entire directories
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+
+                {/* Remote Sources Button */}
+                <motion.button
+                  onClick={() => {
+                    // Show the first remote option as default, or could open a selector
+                    onImportOptionClick('postgresql');
+                  }}
+                  disabled={isProcessing}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="group relative border-2 border-dashed border-white/20 hover:border-tertiary/40 rounded-xl p-3 sm:p-4 transition-all duration-300 hover:bg-white/[0.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                >
+                  {/* Subtle gradient background on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-tertiary/5 via-transparent to-green-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative flex flex-col items-center gap-2 sm:gap-3">
+                    {/* Remote provider icons */}
+                    <div className="flex-shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {remoteOptions.map((option, i) => (
+                          <div key={option.id} className="w-5 h-5 flex items-center justify-center">
+                            <div className="scale-90 group-hover:scale-100 transition-transform duration-300">
+                              {option.icon}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      {/* Dynamic text with gradient */}
+                      <div className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent group-hover:from-tertiary group-hover:to-white transition-all duration-300 font-medium text-xs sm:text-sm">
+                        Remote Sources
+                      </div>
+                      
+                      {/* Description */}
+                      <div className="text-[9px] sm:text-[10px] text-white/40 mt-1 group-hover:text-white/60 transition-colors">
+                        Databases & cloud storage
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+              </div>
               
               <input
                 ref={fileInputRef}
@@ -235,70 +326,6 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
               />
             </motion.div>
 
-            {/* Divider */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-              className="hidden lg:flex flex-col items-center justify-center lg:-ml-12"
-            >
-              <div className="w-px h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-              <span className="text-white/40 text-sm mt-1 mb-1">{t('common.labels.or')}</span>
-              <div className="w-px h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-            </motion.div>
-
-            {/* Mobile divider */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-              className="lg:hidden flex items-center justify-center py-4"
-            >
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              <span className="text-white/40 text-sm mx-3">{t('common.labels.or')}</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            </motion.div>
-
-            {/* Remote Options - Right/Bottom */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
-              className="flex flex-col items-center lg:-ml-20"
-            >
-              <div className="text-sm text-white/60 mb-4 text-center whitespace-nowrap">
-                {t('preview.empty.importFrom')}
-              </div>
-              
-              {/* Original compact remote options */}
-              <div className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-1.5 gap-1">
-                {remoteOptions.map((option, index) => (
-                  <motion.button
-                    key={option.id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onImportOptionClick(option.id);
-                    }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.7 + index * 0.1, duration: 0.3 }}
-                    className="group relative w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 flex items-center justify-center transition-all duration-200 hover:scale-110 cursor-pointer"
-                    type="button"
-                  >
-                    <div className="pointer-events-none">{option.icon}</div>
-
-                    {/* Tooltip */}
-                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                      <div className="font-medium">{option.name}</div>
-                      <div className="text-white/70">{option.description}</div>
-                      {/* Tooltip arrow */}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
           </div>
         </motion.div>
 
@@ -342,12 +369,14 @@ const EmptyDataState: React.FC<Props> = ({ onImportOptionClick }) => {
         </motion.div>
       </motion.div>
       
-      {/* Demo Video Modal */}
-      <DemoVideoModal
-        isOpen={showDemoModal}
-        onClose={() => setShowDemoModal(false)}
-        videoUrl="/video/datakit-demo.mp4"
-        title={t('demo.title')}
+      {/* Demo Wizard Modal */}
+      <DemoWizard
+        isOpen={showDemoWizard}
+        onClose={() => setShowDemoWizard(false)}
+        onGetStarted={() => {
+          setShowDemoWizard(false);
+          // Could trigger file upload flow or open getting started guide
+        }}
       />
     </div>
   );

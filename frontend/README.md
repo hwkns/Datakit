@@ -46,23 +46,10 @@ DataKit is a powerful browser-based data analysis platform that processes multi-
   - Export query results to CSV
   - Full-screen mode for focused work
 
-### 📈 **Data Visualization**
-- **Chart Types**: Create bar, line, area, pie, and scatter charts
-- **Interactive Charts**: Zoom, pan, and hover for details
-- **Smart Recommendations**: AI-powered chart suggestions based on your data
-- **Customization Options**:
-  - Colors and themes
-  - Axis configuration
-  - Legend positioning
-  - Title and labels
-- **Export Formats**: Save charts as PNG, SVG, or interactive HTML
-- **Chart Gallery**: Save and reuse your favorite visualizations
-
 ### 🤖 **AI Assistant**
 - **Natural Language Queries**: Ask questions in plain English
 - **SQL Generation**: Automatically generate SQL from your questions
 - **Data Insights**: Get AI-powered insights and recommendations
-- **Visualization Generation**: Create charts from natural language descriptions
 - **Multiple AI Providers**:
   - DataKit Cloud AI (default)
   - OpenAI GPT models
@@ -95,7 +82,6 @@ DataKit is a powerful browser-based data analysis platform that processes multi-
 ### For Data Analysts
 - Import sales data from CSV files
 - Write SQL queries to analyze trends
-- Create visualizations for reports
 - Export results for presentations
 
 ### For Data Scientists
@@ -131,7 +117,6 @@ DataKit is a powerful browser-based data analysis platform that processes multi-
 3. **Choose your workflow**:
    - Preview data in the grid view
    - Write SQL queries in the Query tab
-   - Create visualizations in the Visualize tab
    - Ask questions using the AI Assistant
    - Write Python code in Notebooks
 

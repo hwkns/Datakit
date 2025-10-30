@@ -1,23 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft, 
   User, 
-  Trees, 
+  Cpu, 
   Bell, 
   CreditCard, 
   Users, 
   Palette, 
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Home
+  LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
-import { Button } from "@components/ui/Button";
+import DuckDBIcon from '@/assets/duckdb.svg';
 
 interface SettingsSidebarProps {
   activeTab: string;
@@ -32,7 +28,6 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { showSuccess } = useNotifications();
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -56,98 +51,33 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const tabs = [
     { id: "profile", name: t('settings.tabs.profile', { defaultValue: 'Profile' }), icon: User },
     { id: "workspace", name: t('settings.tabs.workspace', { defaultValue: 'Workspace & Team' }), icon: Users },
-    { id: "ai", name: t('settings.tabs.ai', { defaultValue: 'AI assistant settings' }), icon: Trees },
+    { id: "ai", name: t('settings.tabs.ai', { defaultValue: 'AI assistant settings' }), icon: Cpu },
     { id: "appearance", name: t('settings.tabs.appearance', { defaultValue: 'Appearance' }), icon: Palette },
     { id: "notifications", name: t('settings.tabs.notifications', { defaultValue: 'Notifications' }), icon: Bell },
     { id: "subscription", name: t('settings.tabs.subscription', { defaultValue: 'Subscription' }), icon: CreditCard },
   ];
 
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
-  // Variants for framer-motion animations
-  const sidebarVariants = {
-    expanded: { width: "16rem" }, // w-64 = 16rem
-    collapsed: { width: "4rem" }, // mini sidebar width
-  };
-
-  // Render collapsed content
-  const renderCollapsedContent = () => (
-    <>
-      <div className="p-4 border-b border-white/10">
-        {/* Header space for collapsed mode */}
-      </div>
-
-      {/* Settings Navigation - Icon Only */}
-      <div className="px-2 pt-2 pb-2 flex-1">
-        <div className="space-y-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`w-full flex items-center justify-center p-3 rounded transition-custom ${
-                  activeTab === tab.id
-                    ? "bg-primary/20 text-primary"
-                    : "text-white text-opacity-60 hover:bg-white/5 hover:text-white"
-                }`}
-                title={tab.name}
-              >
-                <Icon size={16} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Home and Sign Out Buttons */}
-      <div className="px-2 py-3 space-y-2 border-t border-white/10">
+  return (
+    <div className="bg-darkNav flex flex-col h-full border-r border-gray-500/20 overflow-hidden w-56">
+      {/* Header with title - matching main sidebar style */}
+      <div className="px-5 py-4 border-b border-gray-500/20 bg-black/20 flex items-center gap-3">
         <button
           onClick={() => navigate("/")}
-          className="w-full flex items-center justify-center p-2 text-white/60 hover:text-white hover:bg-white/5 rounded transition-custom"
-          title={t('settings.navigation.backToDataKit', { defaultValue: 'Back to DataKit' })}
+          className="text-white/70 hover:text-white transition-colors p-1 cursor-pointer hover:bg-white/5 rounded"
+          aria-label="Back to DataKit"
         >
-          <Home size={16} />
+          <ArrowLeft size={18} />
         </button>
-        
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center p-2 text-red-400/60 hover:text-red-400 hover:bg-red-400/5 rounded transition-custom"
-          title={t('settings.navigation.signOut', { defaultValue: 'Sign Out' })}
-        >
-          <LogOut size={16} />
-        </button>
-      </div>
-    </>
-  );
-
-  // Render expanded content
-  const renderExpandedContent = () => (
-    <>
-      {/* Header with title - matching main sidebar style */}
-      <div className="px-5 py-4 border-b border-white border-opacity-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/")}
-            className="text-white text-opacity-70 hover:text-opacity-100 transition-custom p-1 cursor-pointer hover:bg-white/5 rounded"
-            aria-label="Back to DataKit"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-white font-heading font-medium text-lg">
-              {t('settings.header.title', { defaultValue: 'Settings' })}
-            </h1>
-            <p className="text-xs text-white/50">{t('settings.header.subtitle', { defaultValue: 'Manage your account' })}</p>
-          </div>
+        <div>
+          <h1 className="text-white font-heading font-medium text-lg">
+            {t('settings.header.title', { defaultValue: 'Settings' })}
+          </h1>
+          <p className="text-xs text-white/50">{t('settings.header.subtitle', { defaultValue: 'Manage your account' })}</p>
         </div>
       </div>
 
       {/* Settings Navigation */}
       <div className="px-5 pt-2 pb-2 flex-1">
-     
         <div className="space-y-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -155,16 +85,16 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`w-full text-left flex items-center p-3 rounded text-sm transition-custom ${
+                className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
                   activeTab === tab.id
-                    ? "border border-primary text-white"
-                    : "text-white text-opacity-80 hover:bg-background hover:bg-opacity-30"
+                    ? "bg-primary/20 text-white"
+                    : "text-white/80 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon
                   size={16}
-                  className={`mr-3 flex-shrink-0 ${
-                    activeTab === tab.id ? "text-white" : "text-primary"
+                  className={`flex-shrink-0 ${
+                    activeTab === tab.id ? "text-primary" : "text-white/70"
                   }`}
                 />
                 <span className="font-medium">{tab.name}</span>
@@ -174,66 +104,58 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
       </div>
 
-      {/* Sign Out Button */}
-      <div className="px-5 py-3 border-t border-white border-opacity-10">
-        <Button
-          variant="outline"
-          onClick={handleLogout}
-          className="w-full flex items-center p-3 rounded text-sm text-white text-opacity-80 hover:bg-background hover:bg-opacity-30 transition-custom"
-        >
-          <LogOut
-            size={16}
-            className="mr-1 flex-shrink-0 text-white/50"
-          />
-          <span className="font-medium">{t('settings.signout.button', { defaultValue: 'Sign Out' })}</span>
-        </Button>
-      </div>
-
-      <div className="px-4 py-3 text-center border-t border-white border-opacity-5">
-        <p className="text-xs text-white text-opacity-50">
-          {t('settings.footer.poweredBy', { defaultValue: 'Powered by DuckDB' })} {" | "}
-          <a
-            href="https://amin.contact"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
+      {/* Footer area - Enhanced */}
+      <div className="border-t border-gray-500/20 bg-black/30">
+        {/* Sign Out Button */}
+        <div className="px-3 py-2.5 border-b border-gray-400/15">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2.5 px-2 py-1.5 text-xs hover:bg-white/5 rounded transition-all duration-200 group text-red-400/80 hover:text-red-400"
           >
-            {t('settings.footer.built', { defaultValue: 'built' })}
-          </a>
-          {" @ "}
-          <a
-            href="https://www.linkedin.com/company/datakitpage"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            {t('settings.footer.company', { defaultValue: 'DataKit' })}
-          </a>
-        </p>
-      </div>
-    </>
-  );
+            <LogOut size={14} className="flex-shrink-0" />
+            <span className="font-medium">{t('settings.signout.button', { defaultValue: 'Sign Out' })}</span>
+          </button>
+        </div>
 
-  return (
-    <div className="relative">
-      <motion.div
-        className="bg-darkNav flex flex-col h-full border-r border-white border-opacity-10 overflow-hidden"
-        initial={isCollapsed ? "collapsed" : "expanded"}
-        animate={isCollapsed ? "collapsed" : "expanded"}
-        variants={sidebarVariants}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        {isCollapsed ? renderCollapsedContent() : renderExpandedContent()}
-      </motion.div>
-      
-      {/* Collapse/Expand Toggle Button on Border */}
-      <button
-        onClick={toggleSidebar}
-        className="absolute top-4 -right-3 w-6 h-6 bg-black border border-white/100 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:border/10 transition-colors z-100 shadow-lg"
-        aria-label={isCollapsed ? t('settings.sidebar.expand', { defaultValue: 'Expand sidebar' }) : t('settings.sidebar.collapse', { defaultValue: 'Collapse sidebar' })}
-      >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+        {/* Attribution footer */}
+        <div className="px-2 py-2 border-t border-gray-400/15 bg-black/40">
+          <div className="text-[9px] text-white text-opacity-30">
+            <div className="flex items-center justify-center gap-1">
+              <span>Powered by</span>
+              <a
+                href="https://duckdb.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center"
+              >
+                <img
+                  src={DuckDBIcon}
+                  className="h-2.5 w-2.5 transition-colors hover:opacity-80"
+                  alt="DuckDB"
+                />
+              </a>
+              <span>•</span>
+              <a
+                href="https://amin.contact"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                {t('settings.footer.built', { defaultValue: 'built' })}
+              </a>
+              <span>@</span>
+              <a
+                href="https://www.linkedin.com/company/datakitpage"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                {t('settings.footer.company', { defaultValue: 'DataKit' })}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

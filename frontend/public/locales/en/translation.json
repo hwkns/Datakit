@@ -419,7 +419,7 @@
     "tabs": {
       "profile": "Profile",
       "workspace": "Workspace & Team",
-      "ai": "AI assistant settings",
+      "ai": "AI settings",
       "appearance": "Appearance",
       "notifications": "Notifications",
       "subscription": "Subscription"
@@ -714,7 +714,7 @@
       "status": {
         "saved": "Saved",
         "initializing": "Initializing Python",
-        "loadingPackages": "Loading pandas, numpy..."
+        "loadingPackages": "Loading pandas, numpy on your browser..."
       }
     },
     "apiKey": {
@@ -748,7 +748,7 @@
           "helpText": "Most capable models for complex reasoning and analysis."
         },
         "anthropic": {
-          "description": "Claude 3.5 Sonnet and Haiku models",
+          "description": "Claude 4.5 Sonnet and smaller models",
           "helpText": "Excellent for detailed analysis and explanations. Free credits for new users."
         },
         "groq": {
@@ -963,6 +963,40 @@
   },
   "demo": {
     "title": "Take a look at your DataKit"
+  },
+  "demoWizard": {
+    "steps": {
+      "welcome": {
+        "title": "Welcome to DataKit",
+        "description": "Datakit doesn’t upload your data anywhere, it works with your files locally, with your browser as the engine.",
+        "ctaText": "Get started"
+      },
+      "preview": {
+        "title": "Inspect & Analyze",
+        "description": "Preview your data, clean it, transform it and change and use it to build insights.",
+        "ctaText": "Explore data"
+      },
+      "sql": {
+        "title": "SQL Editor",
+        "description": "Work with your data files just like you would as if they were in a database with the help of our AI assistance on intelligent autocomplete and suggestions.",
+        "ctaText": "Try it now"
+      },
+      "notebooks": {
+        "title": "Python Notebooks",
+        "description": "Run Python code directly in your browser. Create interactive notebooks for advanced data science workflows.",
+        "ctaText": "Start analyzing"
+      },
+      "remoteSources": {
+        "title": "Remote Sources",
+        "description": "Connect to cloud databases and data sources. Import from PostgreSQL, S3, HuggingFace, Google Sheets, and more remote locations.",
+        "ctaText": "Start exploring"
+      }
+    },
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "getStarted": "Get Started"
+    }
   },
   "seo": {
     "title": "DataKit",
@@ -1421,7 +1455,7 @@
       "setup": {
         "configure": "Configure your AI model to start asking questions",
         "signUpCredits": "Sign Up for Free Credits",
-        "useApiKeys": "Use Your Own API Keys",
+        "useApiKeys": "Or Use Your Own API Keys",
         "privacyNote": "Models only see your table structure, not your actual data"
       },
       "suggestions": {

@@ -21,6 +21,8 @@ interface QueryResultsProps {
   // Import as table props
   onImportAsTable?: () => void;
   isImporting?: boolean;
+  // UI control props
+  showDownloadCSV?: boolean;
 }
 
 /**
@@ -39,7 +41,8 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   onPageChange,
   onRowsPerPageChange,
   onImportAsTable,
-  isImporting = false
+  isImporting = false,
+  showDownloadCSV = true
 }) => {
   const { t } = useTranslation();
   // Show loading state
@@ -78,6 +81,7 @@ const QueryResults: React.FC<QueryResultsProps> = ({
         columns={columns} 
         onImportAsTable={onImportAsTable}
         isImporting={isImporting}
+        showDownloadCSV={showDownloadCSV}
       />
       
       {/* Main table component with virtualization */}

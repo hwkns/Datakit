@@ -72,6 +72,12 @@ interface AppState {
   /** View mode when no files are active */
   emptyStateViewMode: ViewMode;
 
+  // AI Assistant Sidebar state
+  /** Whether the AI assistant sidebar is open */
+  showAIAssistant: boolean;
+  /** Width of the AI assistant sidebar */
+  assistantSidebarWidth: number;
+
   // Query history state
   /** Array of recent queries */
   recentQueries: SavedQuery[];
@@ -131,6 +137,15 @@ interface AppState {
   setShowColumnStats: (show: boolean) => void;
   /** Change view mode for active file or empty state */
   changeViewMode: (mode: ViewMode) => void;
+  
+  // AI Assistant Sidebar actions
+  /** Toggle AI assistant sidebar */
+  toggleAIAssistant: () => void;
+  /** Set AI assistant sidebar visibility */
+  setShowAIAssistant: (show: boolean) => void;
+  /** Set AI assistant sidebar width */
+  setAssistantSidebarWidth: (width: number) => void;
+  
   isRemoteModalOpen: boolean;
   activeProviderRemoteModal: ImportProvider;
 
@@ -193,6 +208,10 @@ const initialState = {
   showColumnStats: false,
   emptyStateViewMode: 'preview' as ViewMode,
 
+  // AI Assistant Sidebar state
+  showAIAssistant: true,
+  assistantSidebarWidth: 400,
+
   // Query history state
   recentQueries: [],
   savedQueries: [],
@@ -251,9 +270,9 @@ const getSavedSidebarState = () => {
     }
     
     const savedState = localStorage.getItem("sidebar-collapsed");
-    return savedState === "true"; // Convert string to boolean
+    return savedState !== null ? savedState === "true" : true; // Default to collapsed if no saved state
   } catch (e) {
-    return false; // Default to expanded if there's an error
+    return true; // Default to collapsed if there's an error
   }
 };
 
@@ -408,6 +427,30 @@ export const useAppStore = create<AppState>((set, get) => ({
         console.error(`[AppStore] Error dropping ${fileToRemove.isView ? 'VIEW' : 'TABLE'}: ${fileToRemove.tableName}`, error);
       });
     }
+
+    // Clean up temporary folder if this was a query result
+    if (fileToRemove?.metadata?.isQueryResult) {
+      // Import folder store dynamically to avoid circular dependency
+      import('@/store/folderStore').then(({ useFolderStore }) => {
+        const { tempFolderId, getNodeById, removeNode } = useFolderStore.getState();
+        
+        if (tempFolderId) {
+          const tempNode = getNodeById(tempFolderId);
+          if (tempNode && tempNode.children) {
+            // Find and remove the corresponding file node in the temp folder
+            const fileNode = tempNode.children.find(child => 
+              child.type === 'file' && 
+              child.fileData?.tableName === fileToRemove.tableName
+            );
+            
+            if (fileNode) {
+              console.log('[AppStore] Removing temp file node:', fileNode.name);
+              removeNode(fileNode.id);
+            }
+          }
+        }
+      }).catch(console.error);
+    }
   },
 
   setActiveFile: (fileId: string) => {
@@ -515,6 +558,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowColumnStats: (show) => {
     localStorage.setItem("show-column-stats", String(show));
     set({ showColumnStats: show });
+  },
+
+  toggleAIAssistant: () => {
+    const newState = !get().showAIAssistant;
+    set({ showAIAssistant: newState });
+  },
+
+  setShowAIAssistant: (show) => {
+    set({ showAIAssistant: show });
+  },
+
+  setAssistantSidebarWidth: (width) => {
+    set({ assistantSidebarWidth: width });
   },
 
   // View mode change logic (reusable across components)
