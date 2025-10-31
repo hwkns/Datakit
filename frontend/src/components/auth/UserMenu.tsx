@@ -134,15 +134,15 @@ const UserMenu: React.FC<UserMenuProps> = ({
         <motion.button
           whileHover={{
             scale: 1.02,
-            boxShadow: '0 0 25px rgba(139, 92, 246, 0.3)',
+            boxShadow: '0 0 15px rgba(255, 255, 255, 0.1)',
           }}
           whileTap={{ scale: 0.98 }}
           onClick={() => handleOpenAuthModal('signup')}
-          className="w-full py-2 px-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-500/30 hover:border-purple-400/50 rounded-lg transition-all duration-300 group"
+          className="w-full py-2 px-3 bg-white/8 hover:bg-white/12 border border-white/20 hover:border-white/30 rounded-lg transition-all duration-300 group"
           disabled={isLoading}
         >
           <div className="flex items-center justify-center">
-            <span className="text-xs font-medium text-white group-hover:text-purple-100 transition-colors cursor-pointer">
+            <span className="text-xs font-medium text-white group-hover:text-white transition-colors cursor-pointer">
               {t('auth.userMenu.getStartedFree', { defaultValue: 'Get Started Free' })}
             </span>
           </div>
