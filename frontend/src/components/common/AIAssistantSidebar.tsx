@@ -741,14 +741,14 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                         onClick={handleOpenSettings}
                         variant="outline"
                         disabled={isAuthLoading}
-                        className="w-full flex items-center justify-between px-4 py-3 text-sm group hover:bg-white/5 h-auto disabled:opacity-50 disabled:cursor-not-allowed border-gradient-to-r from-purple-400/30 to-blue-400/30 hover:from-purple-400/40 hover:to-blue-400/40 transition-all duration-200"
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm group hover:bg-white/8 h-auto disabled:opacity-50 disabled:cursor-not-allowed border border-white/20 hover:border-white/30 bg-white/5 transition-all duration-200"
                       >
                         <div className="flex flex-col items-start gap-1">
-                          <span className="font-medium text-white/90 text-left">
-                            {isAuthLoading ? 'Loading...' : 'Bring Your Own Model'}
+                          <span className="font-semibold text-white text-left">
+                            {isAuthLoading ? 'Loading...' : 'Login or Bring Your Own Model'}
                           </span>
                           {!isAuthLoading && (
-                            <span className="text-xs text-white/50 text-left">Login or connect your AI provider</span>
+                            <span className="text-xs text-white/60 text-left font-medium">Connect your AI provider</span>
                           )}
                         </div>
                         {!isAuthLoading && (
