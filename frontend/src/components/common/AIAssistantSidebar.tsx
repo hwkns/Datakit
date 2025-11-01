@@ -34,6 +34,7 @@ import { useDuckDBStore } from '@/store/duckDBStore';
 import { usePythonStore } from '@/store/pythonStore';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
+import LoadingDots from '@/components/ui/LoadingDots';
 import ModelSelector from '@/components/tabs/ai/ModelSelector';
 import ErrorDisplay from '@/components/tabs/ai/ErrorDisplay';
 import SidebarSQLQueryCard from '@/components/tabs/ai/SidebarSQLQueryCard';
@@ -726,32 +727,32 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                       </p>
                      
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <Button
-                        onClick={() => handleOpenAuthModal('signup')}
-                        variant="outline"
-                        size="md"
-                        disabled={isAuthLoading}
-                        className="w-full text-sm font-medium py-3 h-auto bg-white text-black hover:bg-white/90 hover:text-black border-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isAuthLoading ? 'Loading...' : t('ai.prompts.setup.signUpCredits')}
-                      </Button>
+                    {isAuthLoading ? (
+                      <div className="flex justify-center py-8">
+                        <LoadingDots size="md" />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <Button
+                          onClick={() => handleOpenAuthModal('signup')}
+                          variant="outline"
+                          size="md"
+                          className="w-full text-sm font-medium py-3 h-auto bg-white text-black hover:bg-white/90 hover:text-black border-white"
+                        >
+                          {t('ai.prompts.setup.signUpCredits')}
+                        </Button>
 
-                      <Button
-                        onClick={handleOpenSettings}
-                        variant="outline"
-                        disabled={isAuthLoading}
-                        className="w-full flex items-center justify-between px-4 py-3 text-sm group hover:bg-white/8 h-auto disabled:opacity-50 disabled:cursor-not-allowed border border-white/20 hover:border-white/30 bg-white/5 transition-all duration-200"
-                      >
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="font-semibold text-white text-left">
-                            {isAuthLoading ? 'Loading...' : 'Login or Bring Your Own Model'}
-                          </span>
-                          {!isAuthLoading && (
+                        <Button
+                          onClick={handleOpenSettings}
+                          variant="outline"
+                          className="w-full flex items-center justify-between px-4 py-3 text-sm group hover:bg-white/8 h-auto border border-white/20 hover:border-white/30 bg-white/5 transition-all duration-200"
+                        >
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="font-semibold text-white text-left">
+                              Login or Bring Your Own Model
+                            </span>
                             <span className="text-xs text-white/60 text-left font-medium">Connect your AI provider</span>
-                          )}
-                        </div>
-                        {!isAuthLoading && (
+                          </div>
                           <div className="flex items-center gap-1.5 opacity-50 group-hover:opacity-70 transition-opacity">
                             <img
                               src={OpenAILogo}
@@ -769,9 +770,9 @@ const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                               alt="Ollama"
                             />
                           </div>
-                        )}
-                      </Button>
-                    </div>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
