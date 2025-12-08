@@ -17,13 +17,21 @@ const posthogOptions = {
   disable_session_recording: false, // Enable recordings but with heavy masking by default
   opt_out_capturing_by_default: false, // Allow basic tracking by default
   
-  // Heavy masking for non-consented users
+  // Maximum privacy - mask everything in session recordings
   session_recording: {
+    // Mask all inputs
     maskAllInputs: true,
     maskAllText: true,
     maskAllImages: true,
     blockAllMedia: true,
-    maskTextSelector: "*", // Mask all text elements
+    
+    // Mask all elements
+    maskTextSelector: "*",
+    maskNumberInputs: true,
+    maskCreditCards: true,
+    maskEmails: true,
+    
+    // Comprehensive input masking
     maskInputOptions: {
       color: true,
       date: true,
@@ -40,7 +48,29 @@ const posthogOptions = {
       textarea: true,
       select: true,
       password: true,
+      checkbox: true,
+      radio: true,
+      file: true,
     },
+    
+    // Block sensitive elements completely
+    blockClass: "ph-no-capture",
+    blockSelector: "input, textarea, [contenteditable], select",
+    
+    // Ignore all form interactions
+    ignoreClass: "ph-ignore",
+    
+    // Additional privacy settings
+    recordCanvas: false,
+    recordCrossOriginIframes: false,
+    recordHeaders: false,
+    recordBody: false,
+    
+    // Mask specific attributes that might contain data
+    maskAttributes: ["data-*", "aria-label", "title", "alt", "placeholder", "value"],
+    
+    // Don't capture console logs (may contain sensitive data)
+    captureConsoleLogs: false,
   },
   
   loaded: (posthog) => {
