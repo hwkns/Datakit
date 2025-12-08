@@ -4,12 +4,12 @@
 
 <div align="center">
 
-[![Website](https://img.shields.io/badge/Website-datakit.studio-blue)](https://datakit.studio)
-[![Documentation](https://img.shields.io/badge/Docs-Read-green)](https://docs.datakit.studio)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black)](https://github.com/datakitpage/datakit)
-[![Discord](https://img.shields.io/badge/Discord-Join-7289da)](https://discord.com/invite/gZmXmhbBdP)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5)](https://www.linkedin.com/company/datakitpage)
-[![License](https://img.shields.io/badge/License-Dual%20AGPL--3.0%2FCommercial-blue)](LICENSING)
+[![Website](https://img.shields.io/badge/Website-datakit.studio-0ea5e9)](https://datakit.studio)
+[![Documentation](https://img.shields.io/badge/Docs-Read-10b981)](https://docs.datakit.studio)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-171717)](https://github.com/datakitpage/datakit)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2)](https://discord.com/invite/gZmXmhbBdP)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2)](https://www.linkedin.com/company/datakitpage)
+[![License](https://img.shields.io/badge/License-Dual%20AGPL--3.0%2FCommercial-ef4444)](LICENSING)
 
 </div>
 
