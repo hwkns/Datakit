@@ -21,7 +21,7 @@ DataKit is a browser-based data analysis platform that processes multi-gigabyte 
 
 ### Data Import & Processing
 - **Local File Support**: Import CSV, Excel (XLSX), JSON, and Parquet files directly in your browser
-- **Large File Handling**: Process files up to several GBs efficiently using WebAssembly technology
+- **Large File Handling**: Process files up to several GBs efficiently using WASM
 - **Remote Data Sources**: Connect to various cloud platforms:
   - Amazon S3 buckets
   - Google Sheets (public)
@@ -29,8 +29,6 @@ DataKit is a browser-based data analysis platform that processes multi-gigabyte 
   - MotherDuck (cloud DuckDB)
   - PostgreSQL databases
   - Custom URLs
-- **Split View**: Compare two datasets side-by-side
-- **Multi-file Management**: Work with multiple datasets simultaneously with tabbed interface
 
 ### Data Preview & Inspection
 - **Interactive Grid View**: Browse your data with sortable columns and resizable cells
