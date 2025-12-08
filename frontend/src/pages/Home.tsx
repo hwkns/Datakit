@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, BarChart3, ChevronRight } from "lucide-react";
+import { Search, BarChart3, ChevronRight, Github } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/Tooltip";
 
@@ -355,6 +355,18 @@ const Home = () => {
                         </Tooltip>
                       )}
 
+
+    {/* GitHub Repository Button */}
+                      <Tooltip content="View on GitHub" placement="bottom">
+                        <motion.button
+                          onClick={() => window.open('https://github.com/datakitpage/datakit', '_blank', 'noopener,noreferrer')}
+                          className="relative group p-2 rounded-md bg-black/50 backdrop-blur-sm border border-white/10 transition-all duration-200 hover:border-white/20 hover:bg-white/5 cursor-pointer"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Github className="h-4 w-4 text-white/70 hover:text-white/90 transition-colors duration-200 relative z-10" />
+                        </motion.button>
+                      </Tooltip>
                       {/* AI Assistant Button - Always available in all view modes */}
                       <motion.button
                         onClick={toggleAIAssistant}
@@ -387,6 +399,8 @@ const Home = () => {
                           Datakit Assistant
                         </span>
                       </motion.button>
+
+                  
                     </div>
                   </motion.div>
           </motion.div>
