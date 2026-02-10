@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Eye, Code2, FileText } from 'lucide-react';
+import { Eye, Code2, FileText, Table } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
@@ -25,10 +25,11 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
   const { t } = useTranslation();
 
   const modes: {
-    value: ViewMode;
+    value: ViewMode | 'opensheet';
     label: string;
     icon: React.ReactNode;
     description: string;
+    externalUrl?: string;
   }[] = [
     {
       value: 'preview',
@@ -47,6 +48,13 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
       label: t('viewMode.notebook.label', { defaultValue: 'Notebook' }),
       icon: <FileText size={16} />,
       description: t('viewMode.notebook.description', { defaultValue: 'Analyze with Jupyter notebook' }),
+    },
+    {
+      value: 'opensheet',
+      label: 'OpenSheet',
+      icon: <Table size={16} />,
+      description: 'Open cross-platform spreadsheet',
+      externalUrl: 'https://opensheet.app',
     },
     // {
     //   value: 'visualization',
@@ -80,7 +88,13 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
         {modes.map((mode) => (
           <motion.button
             key={mode.value}
-            onClick={() => onModeChange(mode.value)}
+            onClick={() => {
+              if (mode.externalUrl) {
+                window.open(mode.externalUrl, '_blank', 'noopener,noreferrer');
+              } else {
+                onModeChange(mode.value as ViewMode);
+              }
+            }}
             disabled={false} // Always clickable
             className={cn(
               'responsive-view-mode-button relative group flex items-center rounded-md transition-all duration-200 cursor-pointer gap-1.5 px-3 py-1.5 text-xs border',
